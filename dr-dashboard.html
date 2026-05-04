@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Must-Fix DR Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg:     #ffffff;
+    --bg2:    #f5f6f8;
+    --bg3:    #eceef2;
+    --border: rgba(0,0,0,0.08);
+    --text:   #1a1d24;
+    --text2:  #5a6070;
+    --text3:  #9098aa;
+    --red:    #d63b3a;
+    --orange: #d98a1a;
+    --blue:   #2272c3;
+    --green:  #2e8a4d;
+    --purple: #6b63cc;
+    --teal:   #3aaa88;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #e8eaed;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .dashboard-title {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .panels-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .panel {
+    width: 640px;
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text2);
+  }
+  .panel-body {
+    padding: 14px 18px;
+    flex: 1;
+  }
+
+  /* Metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .metric-card {
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 10px 10px 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .metric-val {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .metric-val.red   { color: var(--red); }
+  .metric-val.blue  { color: var(--blue); }
+  .metric-val.teal  { color: var(--teal); }
+  .metric-val.orange{ color: var(--orange); }
+  .metric-label {
+    font-size: 0.65rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 3px;
+  }
+  .metric-sub {
+    font-size: 0.6rem;
+    color: var(--text3);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* Range buttons */
+  .range-btns {
+    display: flex;
+    gap: 4px;
+  }
+  .range-btn {
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text2);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .range-btn.active {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+
+  /* Chart containers */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .chart-wrap canvas {
+    width: 100% !important;
+  }
+
+  /* Legend */
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin-top: 8px;
+    padding: 0 2px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    color: var(--text2);
+  }
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Projection section */
+  .projection-section {
+    margin-top: 12px;
+    background: var(--bg2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+  }
+  .proj-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .slider-row label {
+    font-size: 0.67rem;
+    color: var(--text2);
+    white-space: nowrap;
+    min-width: 140px;
+  }
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--blue);
+  }
+  .slider-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--blue);
+    min-width: 36px;
+    text-align: right;
+  }
+  .proj-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.62rem;
+    color: var(--text2);
+    flex-wrap: wrap;
+  }
+  .proj-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .proj-stat-val {
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.73rem;
+    color: var(--text);
+  }
+  .proj-stat-val.red { color: var(--red); }
+  .proj-stat-val.green { color: var(--green); }
+  .proj-stat-lbl {
+    color: var(--text3);
+    font-size: 0.6rem;
+  }
+
+  /* Issues table */
+  .issues-section {
+    margin-top: 12px;
+  }
+  .issues-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .issues-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text2);
+  }
+  .issues-filter {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .issues-filter select {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg2);
+    color: var(--text2);
+  }
+  .issues-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.62rem;
+  }
+  .issues-table th {
+    padding: 5px 7px;
+    text-align: left;
+    background: var(--bg3);
+    color: var(--text2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.58rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+  }
+  .issues-table td {
+    padding: 4px 7px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text);
+  }
+  .issues-table tr:hover td {
+    background: var(--bg2);
+  }
+  .issues-scroll {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .issue-key {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--blue);
+    font-size: 0.62rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .issue-key:hover { text-decoration: underline; }
+  .badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.58rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-sc { background: #fde8e8; color: #b91c1c; }
+  .badge-cert { background: #e8f5ed; color: #166534; }
+
+  /* Footer */
+  .panel-footer {
+    padding: 8px 18px;
+    border-top: 1px solid var(--border);
+    font-size: 0.6rem;
+    color: var(--text3);
+    text-align: center;
+    background: var(--bg2);
+  }
+  .stat-bar {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .stat-chip {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .stat-chip-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .stat-chip-lbl {
+    font-size: 0.58rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="dashboard-title">Must-Fix DR Dashboard · Merlin Labs</div>
+
+<div class="panels-row">
+
+  <!-- LEFT PANEL: Open DRs by Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Open DRs by Status</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val red">60</div>
+          <div class="metric-label">Total Open</div>
+          <div class="metric-sub">Queue 21 · Active 39</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val blue">36</div>
+          <div class="metric-label">MPPT Open</div>
+          <div class="metric-sub">SC: 2</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val teal">24</div>
+          <div class="metric-label">FFT Open</div>
+          <div class="metric-sub">SC: 6</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val orange">8</div>
+          <div class="metric-label">Safety Critical</div>
+          <div class="metric-sub">of 60 total</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="statusChart"></canvas>
+      </div>
+
+      <div class="chart-legend" id="statusLegend"></div>
+
+      <div class="issues-section">
+        <div class="issues-header">
+          <span class="issues-title">Open Issues (60)</span>
+          <div class="issues-filter">
+            <select id="filterProject" onchange="filterTable()">
+              <option value="">All Projects</option>
+              <option value="MPPT">MPPT</option>
+              <option value="FFT">FFT</option>
+            </select>
+            <select id="filterSystem" onchange="filterTable()">
+              <option value="">All Systems</option>
+              <option value="Certification">Certification</option><option value="FCC Platform SW + Model SW - IO">FCC Platform SW + Model SW - IO</option><option value="Human Factors">Human Factors</option><option value="Natural Language Processing">Natural Language Processing</option><option value="Systems Engineering">Systems Engineering</option><option value="Unclassified">Unclassified</option><option value="VTE">VTE</option>
+            </select>
+          </div>
+        </div>
+        <div class="issues-scroll">
+          <table class="issues-table">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Summary</th>
+                <th>Status</th>
+                <th>System</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="issuesTbody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="panel-footer">
+      Refreshed May 04, 2026 · Next refresh: May 06, 2026 · Jira filters 18332 + 18331
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: DR Trend -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">DR Trend — Weekly Open Count &amp; Activity</span>
+      <div class="range-btns">
+        <button class="range-btn" onclick="setRange('3mo')">3mo</button>
+        <button class="range-btn" onclick="setRange('6mo')">6mo</button>
+        <button class="range-btn active" onclick="setRange('all')">All</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <div class="stat-bar">
+        <div class="stat-chip">
+          <span class="stat-chip-val" style="color:var(--red)">102</span>
+          <span class="stat-chip-lbl">Peak Open (Apr 20)</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-val" style="color:var(--blue)">Jan 26</span>
+          <span class="stat-chip-lbl">First Closure Week</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-val" style="color:var(--orange)">5.3</span>
+          <span class="stat-chip-lbl">Avg New/wk (6wk)</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-chip-val" style="color:var(--green)">39</span>
+          <span class="stat-chip-lbl">Active Now</span>
+        </div>
+      </div>
+
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="burndownChart"></canvas>
+      </div>
+
+      <div class="projection-section">
+        <div class="proj-title">Projection to May 22, 2026 — Closure Rate Scenarios</div>
+        <div class="chart-wrap" style="height:130px">
+          <canvas id="projChart"></canvas>
+        </div>
+        <div class="slider-row" style="margin-top:8px">
+          <label>Your closure rate (DRs/wk):</label>
+          <input type="range" id="rateSlider" min="1" max="20" step="0.5" value="6" oninput="updateProjection()">
+          <span class="slider-val" id="rateVal">6.0</span>
+        </div>
+        <div class="proj-stats" id="projStats"></div>
+      </div>
+    </div>
+    <div class="panel-footer">
+      Refreshed May 04, 2026 · Next refresh: May 06, 2026 · Jira filters 18332 + 18331
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WEEK_LABELS   = ["Sep 23", "Sep 30", "Oct 07", "Oct 14", "Oct 21", "Oct 28", "Nov 04", "Nov 11", "Nov 18", "Nov 25", "Dec 02", "Dec 09", "Dec 16", "Dec 23", "Dec 30", "Jan 06", "Jan 13", "Jan 20", "Jan 27", "Feb 03", "Feb 10", "Feb 17", "Feb 24", "Mar 03", "Mar 10", "Mar 17", "Mar 24", "Mar 31", "Apr 07", "Apr 14", "Apr 21", "Apr 28", "May 05", "May 12", "May 19", "May 26", "Jun 02", "Jun 09", "Jun 16", "Jun 23", "Jun 30", "Jul 07", "Jul 14", "Jul 21", "Jul 28", "Aug 04", "Aug 11", "Aug 18", "Aug 25", "Sep 01", "Sep 08", "Sep 15", "Sep 22", "Sep 29", "Oct 06", "Oct 13", "Oct 20", "Oct 27", "Nov 03", "Nov 10", "Nov 17", "Nov 24", "Dec 01", "Dec 08", "Dec 15", "Dec 22", "Dec 29", "Jan 05", "Jan 12", "Jan 19", "Jan 26", "Feb 02", "Feb 09", "Feb 16", "Feb 23", "Mar 02", "Mar 09", "Mar 16", "Mar 23", "Mar 30", "Apr 06", "Apr 13", "Apr 20", "Apr 27", "May 04"];
+const WEEK_OPEN     = [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 8, 8, 8, 8, 8, 8, 8, 8, 9, 11, 13, 13, 13, 14, 14, 18, 19, 21, 22, 22, 23, 23, 23, 27, 30, 30, 30, 31, 33, 35, 35, 35, 36, 38, 38, 43, 45, 47, 49, 55, 56, 59, 59, 59, 59, 62, 62, 63, 67, 69, 68, 72, 81, 84, 78, 83, 87, 95, 102, 99, 99];
+const WEEK_NEW      = [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 0, 0, 1, 0, 4, 1, 2, 1, 0, 1, 0, 0, 4, 3, 0, 0, 1, 2, 2, 0, 0, 1, 2, 0, 5, 2, 2, 2, 6, 1, 3, 0, 0, 0, 3, 1, 1, 5, 3, 2, 8, 9, 4, 8, 8, 5, 9, 8, 2, 0];
+const WEEK_CLOSED   = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 3, 4, 0, 1, 14, 3, 1, 1, 1, 5, 0];
+const QUEUE_COUNT   = 21;
+const AVG_NEW       = 5.3;
+const REQUIRED_RATE = 14.0;
+const TODAY_STR     = "May 04, 2026";
+const TOTAL_OPEN    = 60;
+
+const ISSUES = [{"key": "MPPT-7276", "summary": "Update out of range limits for ACS Altitude and Airspeed commands", "status": "New", "system": "FCC Platform SW + Model SW - IO", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-7276"}, {"key": "FFT-2610", "summary": "Left and Right Display Fails", "status": "To-Do / Triaged", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2610"}, {"key": "FFT-2609", "summary": "IFD 1 Reset during takeoff roll", "status": "To-Do / Triaged", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2609"}, {"key": "FFT-2608", "summary": "Aircraft Airspeed is ~10kts (or more) under commanded airspeed", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2608"}, {"key": "FFT-2605", "summary": "\"Don't Sink\" aural directly after takeoff", "status": "To-Do / Triaged", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2605"}, {"key": "MPPT-7152", "summary": "An ACS message with no Proposed Response but containing an ATC message and a Pro\u2026", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-7152"}, {"key": "FFT-2591", "summary": "IFD provided magnetic runway heading differs from expected value", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2591"}, {"key": "FFT-2590", "summary": "On N208B, when airplane is on ground, RA2 status presents as FAIL on the status \u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2590"}, {"key": "MPPT-7054", "summary": "New Avidyne CAS messages: CALLOUTS DEGRADED, CALLOUTS DISABLED, HSBF LINK; are t\u2026", "status": "Investigating", "system": "Human Factors", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-7054"}, {"key": "MPPT-7027", "summary": "On Bench, Distance to Runway from IFD Snaps to 0 upon crossing threshold", "status": "Need Team Input", "system": "VTE", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-7027"}, {"key": "MPPT-7017", "summary": "ACS TTS pronounces \"resume own navigation\" as \"resum\u00e9 own navigation\"", "status": "To-Do / Triaged", "system": "Natural Language Processing", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-7017"}, {"key": "FFT-2583", "summary": "On an LPV approach to an autotouchdown, GP was lost and the system degraded to T\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2583"}, {"key": "FFT-2581", "summary": "\"NO AUTOMATED LAND\" displayed on every approach at 600 ft AGL", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2581"}, {"key": "FFT-2580", "summary": "\"NO AUTOMATED LAND\" Truncates when displayed on the IFD", "status": "Need Team Input", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2580"}, {"key": "MPPT-6914", "summary": "ACS pilot PTT press to accept response freezes ACS display", "status": "Needs Testing / Ready to Test Fix", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6914"}, {"key": "MPPT-6898", "summary": "Update Requirement, TP, and Tracing due to findings from SOF Regression run for \u2026", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6898"}, {"key": "FFT-2561", "summary": "magHdgVoted appears to be incorrect during takeoff ground roll", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2561"}, {"key": "MPPT-6890", "summary": "ACS/TTS pipeline does not turn on when the ACC is rebooted from the enabled stat\u2026", "status": "To-Do / Triaged", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6890"}, {"key": "MPPT-6856", "summary": "Not all ACS System requirements trace to an HLR", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6856"}, {"key": "MPPT-6769", "summary": "On N208B, ACS is not transmitting audio based on the accepted response from the \u2026", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6769"}, {"key": "MPPT-6739", "summary": "MRY-TP-74 (Engine Data Voting and Miscompare) Procedure Updates", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6739"}, {"key": "MPPT-6699", "summary": "NO AUTOMATED LAND caution not displaying as expected.", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6699"}, {"key": "MPPT-6697", "summary": "Procedure Updates for MRY-TP-4 (AFCS Capable)", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6697"}, {"key": "MPPT-6696", "summary": "FCC1A/B Status Showing as NORM with CBs pulled", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6696"}, {"key": "MPPT-6694", "summary": "MRY-TP-188: Test case failures - Possible TP update/System Issue", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6694"}, {"key": "MPPT-6693", "summary": "MRY-TP-181: CWS Activates during Landing, Landing AP disconnects prevented furth\u2026", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6693"}, {"key": "MPPT-6665", "summary": "MRY-TP-118: Test case failures, missing test cases, SOF determination for Carava\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6665"}, {"key": "MPPT-6455", "summary": "System behavior following exit of TO config is undefined", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6455"}, {"key": "FFT-2519", "summary": "\"CPU CORE TOO FEW\" warning displayed after Avidyne core configuration change fro\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2519"}, {"key": "FFT-2518", "summary": "Turning the Vantage Display Knobs did not update the heading or altitude bug. ", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2518"}, {"key": "MPPT-6392", "summary": "ACS Enable/Disable Switch does not conform with requirements", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6392"}, {"key": "MPPT-6270", "summary": "\"FCC In Maintenance Mode\" Notice is Not Displayed as Expected", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6270"}, {"key": "MPPT-6267", "summary": "When in ACS Disabled state, display shows \"ACS Disabled\" instead of \"ACS Disable\u2026", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6267"}, {"key": "MPPT-6265", "summary": "Powering off the ACC does not cause the ACS state to transition to ACS Failed", "status": "To-Do / Triaged", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6265"}, {"key": "MPPT-6263", "summary": "CAS message \"ACS Unavailable\" is displayed even though ACS is not failed", "status": "To-Do / Triaged", "system": "FCC Platform SW + Model SW - IO", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6263"}, {"key": "MPPT-6251", "summary": "Hardware and FCC SW reqts are needed for Maintenance Test Switch", "status": "Blocked", "system": "Certification", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6251"}, {"key": "MPPT-6217", "summary": "Determine whether Automated Land requirements are missing for loss of NAV APPR b\u2026", "status": "To-Do / Triaged", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6217"}, {"key": "FFT-2476", "summary": "Torque exceedance during auto takeoff", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2476"}, {"key": "MPPT-6169", "summary": "Need default display text for ACS page on MFD", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6169"}, {"key": "MPPT-6164", "summary": "Avidyne Display processes invalid actions by reading data from the proposed resp\u2026", "status": "Blocked", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-6164"}, {"key": "FFT-2440", "summary": "Nuisance AP disconnects at/near Vr during Auto-takeoff testing", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2440"}, {"key": "FFT-2431", "summary": "SII: For dedicated flight test where the AP servos (ELE & AIL) are deselected vi\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2431"}, {"key": "FFT-2414", "summary": "Observed unexpected lateral deviation displayed on Vantage displays & IFDs", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2414"}, {"key": "MPPT-5881", "summary": "Lpv FAIL + Land ARM Causes Landing Arm/Disarm Continuously", "status": "Needs Testing / Ready to Test Fix", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5881"}, {"key": "FFT-2404", "summary": "Set Pitch trim to middle of OEM takeoff band for Merlin Pilot Automated takeoffs", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/FFT-2404"}, {"key": "FFT-2402", "summary": "Lag in updating HDG bug when making heading changes from the MFD.", "status": "Needs Testing / Ready to Test Fix", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2402"}, {"key": "MPPT-5617", "summary": "Test Failure: Automatic Pitch Trim", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5617"}, {"key": "FFT-2363", "summary": "Radalt 1 Fail or Radalt 2 Fail Displayed on Avidyne Vantage Displays below 2500 \u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2363"}, {"key": "MPPT-5526", "summary": "PIT is currently not supported as an armed mode, which may be an issue for autom\u2026", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5526"}, {"key": "FFT-2354", "summary": "Consistent Airspeed Miscompares Through Takeoff and Landing", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2354"}, {"key": "MPPT-5461", "summary": "System Validation: Pilot concerns with FMA presentation during automated takeoff", "status": "To-Do / Triaged", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5461"}, {"key": "FFT-2348", "summary": "Engine Data Showing Dashed Out on MFD", "status": "Need Team Input", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2348"}, {"key": "FFT-2346", "summary": "Intermittent Red X on the glidepath between FAF and MAP", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2346"}, {"key": "FFT-2324", "summary": "Uncommanded AP/AT Disconnect without Cavalry Charge or CAS (Red Flashing AP/AT a\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2324"}, {"key": "FFT-2313", "summary": "With an individual IRS breaker pulled, but the other breaker remaining closed, A\u2026", "status": "In Progress / Review", "system": "Unclassified", "project": "FFT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/FFT-2313"}, {"key": "MPPT-5265", "summary": "After deleting all waypoints from flight plan, TRK target updated to 0\u00b0/360\u00b0", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5265"}, {"key": "MPPT-5259", "summary": "When power to FCC1A is removed, system disengages, but no disengage aural", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "1 - Safety Critical", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5259"}, {"key": "MPPT-5254", "summary": "During automated takeoff, system remains engaged regardless of  lateral deviatio\u2026", "status": "Needs Testing / Ready to Test Fix", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5254"}, {"key": "MPPT-5253", "summary": "During automated takeoff, NAV SRC displayed immediately upon FMS Failure", "status": "Investigating", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-5253"}, {"key": "MPPT-4917", "summary": "Can still arm NAV mode when AFCS is disengaged", "status": "In Progress / Review", "system": "Systems Engineering", "project": "MPPT", "dr_type": "2 - Required for Certification", "url": "https://merlinlabs.atlassian.net/browse/MPPT-4917"}];
+
+const STATUS_ORDER = ["New", "Need Team Input", "To-Do / Triaged", "Investigating", "In Progress / Review", "Needs Testing / Ready to Test Fix", "Blocked", "Watch"];
+const STATUS_DATASETS = [{"label": "Systems Engineering", "data": [0, 0, 4, 7, 14, 3, 1, 0], "backgroundColor": "#378ADD"}, {"label": "Unclassified", "data": [0, 2, 3, 0, 19, 1, 0, 0], "backgroundColor": "#6b7280"}, {"label": "FCC Platform SW + Model SW - IO", "data": [1, 0, 1, 0, 0, 0, 0, 0], "backgroundColor": "#EF9F27"}, {"label": "Human Factors", "data": [0, 0, 0, 1, 0, 0, 0, 0], "backgroundColor": "#D4537E"}, {"label": "VTE", "data": [0, 1, 0, 0, 0, 0, 0, 0], "backgroundColor": "#639922"}, {"label": "Natural Language Processing", "data": [0, 0, 1, 0, 0, 0, 0, 0], "backgroundColor": "#A78BFA"}, {"label": "Certification", "data": [0, 0, 0, 0, 0, 0, 1, 0], "backgroundColor": "#3b9b5a"}];
+
+const SYSTEM_COLORS = {"Systems Engineering": "#378ADD", "Unclassified": "#6b7280", "FCC Platform SW + Model SW - IO": "#EF9F27", "Certification": "#3b9b5a", "Human Factors": "#D4537E", "VTE": "#639922", "Natural Language Processing": "#A78BFA", "Aircraft Integration": "#D85A30", "Model SW - AFCS": "#7F77DD"};
+
+// ---- Status chart ----
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+  type: 'bar',
+  data: {
+    labels: STATUS_ORDER,
+    datasets: STATUS_DATASETS.map(ds => ({
+      label: ds.label,
+      data: ds.data,
+      backgroundColor: ds.backgroundColor,
+      borderRadius: 3,
+      borderSkipped: false,
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          footer: (items) => {
+            const tot = items.reduce((s, i) => s + i.parsed.y, 0);
+            return tot > 0 ? 'Total: ' + tot : '';
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        ticks: { font: { size: 9 }, color: '#5a6070', maxRotation: 35 },
+        grid: { display: false },
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        ticks: { font: { size: 9 }, color: '#9098aa', stepSize: 5 },
+        grid: { color: 'rgba(0,0,0,0.05)' },
+      }
+    }
+  }
+});
+
+// Build legend
+const legendEl = document.getElementById('statusLegend');
+STATUS_DATASETS.forEach(ds => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<div class="legend-dot" style="background:${ds.backgroundColor}"></div><span>${ds.label}</span>`;
+  legendEl.appendChild(item);
+});
+
+// ---- Burndown chart ----
+const bdCtx = document.getElementById('burndownChart').getContext('2d');
+let bdChart = null;
+
+function buildBurndown(range) {
+  let labels, open, newW, closedW;
+  const n = WEEK_LABELS.length;
+  if (range === '3mo') {
+    const s = Math.max(0, n - 13);
+    labels = WEEK_LABELS.slice(s); open = WEEK_OPEN.slice(s); newW = WEEK_NEW.slice(s); closedW = WEEK_CLOSED.slice(s);
+  } else if (range === '6mo') {
+    const s = Math.max(0, n - 26);
+    labels = WEEK_LABELS.slice(s); open = WEEK_OPEN.slice(s); newW = WEEK_NEW.slice(s); closedW = WEEK_CLOSED.slice(s);
+  } else {
+    labels = WEEK_LABELS; open = WEEK_OPEN; newW = WEEK_NEW; closedW = WEEK_CLOSED;
+  }
+
+  const maxOpen = Math.max(...open);
+  const maxAct  = Math.max(...newW, ...closedW);
+
+  if (bdChart) bdChart.destroy();
+  bdChart = new Chart(bdCtx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line',
+          label: 'Total Open DRs',
+          data: open,
+          borderColor: '#d63b3a',
+          backgroundColor: 'rgba(214,59,58,0.08)',
+          borderWidth: 2,
+          pointRadius: (ctx) => ctx.dataIndex === open.length-1 ? 5 : 2,
+          pointBackgroundColor: '#d63b3a',
+          fill: true,
+          tension: 0.3,
+          yAxisID: 'yOpen',
+          order: 1,
+        },
+        {
+          type: 'bar',
+          label: 'New this week',
+          data: newW,
+          backgroundColor: 'rgba(34,114,195,0.65)',
+          borderRadius: 2,
+          yAxisID: 'yAct',
+          order: 2,
+        },
+        {
+          type: 'bar',
+          label: 'Closed this week',
+          data: closedW,
+          backgroundColor: 'rgba(46,138,77,0.65)',
+          borderRadius: 2,
+          yAxisID: 'yAct',
+          order: 3,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { boxWidth: 10, font: { size: 9 }, color: '#5a6070', padding: 8 }
+        },
+        tooltip: { bodyFont: { size: 10 } }
+      },
+      scales: {
+        x: {
+          ticks: {
+            font: { size: 8 },
+            color: '#9098aa',
+            maxRotation: 45,
+            autoSkip: true,
+            maxTicksLimit: range === 'all' ? 18 : (range === '6mo' ? 13 : 13),
+          },
+          grid: { display: false },
+        },
+        yOpen: {
+          position: 'left',
+          beginAtZero: true,
+          max: Math.ceil(maxOpen * 1.15 / 10) * 10,
+          ticks: { font: { size: 9 }, color: '#d63b3a', stepSize: 20 },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          title: { display: true, text: 'Open DRs', font: { size: 8 }, color: '#d63b3a' }
+        },
+        yAct: {
+          position: 'right',
+          beginAtZero: true,
+          max: Math.max(20, Math.ceil(maxAct * 1.3 / 5) * 5),
+          ticks: { font: { size: 9 }, color: '#5a6070', stepSize: 5 },
+          grid: { display: false },
+          title: { display: true, text: 'Weekly Activity', font: { size: 8 }, color: '#5a6070' }
+        }
+      }
+    }
+  });
+}
+buildBurndown('all');
+
+function setRange(r) {
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  buildBurndown(r);
+}
+
+// ---- Projection chart ----
+const TARGET_DATE = 'May 22';
+const TARGET_WEEKS = 2.4;
+
+function getProjectionData(rate) {
+  const weeks = Math.ceil(TARGET_WEEKS + 4);
+  const labels = [];
+  const scenario = [];
+  const today = new Date(2026, 4, 4); // May 4
+  for (let i = 0; i <= weeks; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i * 7);
+    labels.push(d.toLocaleDateString('en-US', {month:'short', day:'numeric'}));
+    const remaining = Math.max(0, QUEUE_COUNT + AVG_NEW * i - rate * i);
+    scenario.push(remaining);
+  }
+  return { labels, scenario };
+}
+
+const projCtx = document.getElementById('projChart').getContext('2d');
+let projChart = null;
+
+const SCENARIO_RATES = [2, 4, 6, 10];
+const SCENARIO_COLORS = ['#9098aa','#d98a1a','#2272c3','#2e8a4d'];
+
+function buildProjection(userRate) {
+  const allLabels = getProjectionData(userRate).labels;
+  const weeks = allLabels.length;
+  
+  // Build all scenario datasets
+  const datasets = [];
+  SCENARIO_RATES.forEach((r, i) => {
+    const data = [];
+    for (let w = 0; w < weeks; w++) {
+      data.push(Math.max(0, QUEUE_COUNT + AVG_NEW * w - r * w));
+    }
+    datasets.push({
+      label: r + '/wk',
+      data,
+      borderColor: SCENARIO_COLORS[i],
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 0,
+      fill: false,
+      tension: 0.2,
+    });
+  });
+  
+  // Required rate scenario
+  const reqData = [];
+  for (let w = 0; w < weeks; w++) {
+    reqData.push(Math.max(0, QUEUE_COUNT + AVG_NEW * w - REQUIRED_RATE * w));
+  }
+  datasets.push({
+    label: REQUIRED_RATE + '/wk (required)',
+    data: reqData,
+    borderColor: '#d63b3a',
+    borderWidth: 2,
+    borderDash: [2, 2],
+    pointRadius: 0,
+    fill: false,
+    tension: 0.2,
+  });
+
+  // User rate
+  const userData = getProjectionData(userRate).scenario;
+  datasets.push({
+    label: userRate + '/wk (your rate)',
+    data: userData,
+    borderColor: '#6b63cc',
+    backgroundColor: 'rgba(107,99,204,0.1)',
+    borderWidth: 2.5,
+    pointRadius: 0,
+    fill: true,
+    tension: 0.2,
+  });
+
+  if (projChart) projChart.destroy();
+  projChart = new Chart(projCtx, {
+    type: 'line',
+    data: { labels: allLabels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { bodyFont: { size: 9 }, titleFont: { size: 9 } },
+        annotation: {}
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 8 }, color: '#9098aa', maxRotation: 0 },
+          grid: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { font: { size: 8 }, color: '#9098aa', stepSize: 10 },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          title: { display: true, text: 'Queue Remaining', font: { size: 7 }, color: '#9098aa' }
+        }
+      }
+    }
+  });
+}
+buildProjection(6);
+
+function updateProjection() {
+  const rate = parseFloat(document.getElementById('rateSlider').value);
+  document.getElementById('rateVal').textContent = rate.toFixed(1);
+  buildProjection(rate);
+  
+  // Update stats
+  const weeksToZero = (QUEUE_COUNT) / Math.max(0.1, rate - AVG_NEW);
+  const clearDate = new Date(2026, 4, 4);
+  clearDate.setDate(clearDate.getDate() + Math.ceil(weeksToZero) * 7);
+  const clearStr = clearDate.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  
+  const onTarget = rate >= REQUIRED_RATE;
+  document.getElementById('projStats').innerHTML = `
+    <div class="proj-stat">
+      <span class="proj-stat-val ${onTarget ? 'green' : 'red'}">${rate.toFixed(1)}/wk</span>
+      <span class="proj-stat-lbl">Your Rate</span>
+    </div>
+    <div class="proj-stat">
+      <span class="proj-stat-val red">${REQUIRED_RATE}/wk</span>
+      <span class="proj-stat-lbl">Required for May 22</span>
+    </div>
+    <div class="proj-stat">
+      <span class="proj-stat-val">${QUEUE_COUNT}</span>
+      <span class="proj-stat-lbl">Queue Now</span>
+    </div>
+    <div class="proj-stat">
+      <span class="proj-stat-val ${onTarget ? 'green' : 'red'}">${onTarget ? '✓ On Track' : '✗ Behind'}</span>
+      <span class="proj-stat-lbl">vs May 22 Target</span>
+    </div>
+    <div class="proj-stat">
+      <span class="proj-stat-val">${weeksToZero > 50 ? '50+ wks' : clearStr}</span>
+      <span class="proj-stat-lbl">Est. Clear Date</span>
+    </div>
+  `;
+}
+updateProjection();
+
+// ---- Issues table ----
+function filterTable() {
+  const proj = document.getElementById('filterProject').value;
+  const sys  = document.getElementById('filterSystem').value;
+  const tbody = document.getElementById('issuesTbody');
+  tbody.innerHTML = '';
+  ISSUES.filter(i => (!proj || i.project === proj) && (!sys || i.system === sys))
+    .forEach(i => {
+      const badge = i.dr_type === '1 - Safety Critical'
+        ? '<span class="badge badge-sc">SC</span>'
+        : '<span class="badge badge-cert">Cert</span>';
+      tbody.innerHTML += `
+        <tr>
+          <td><a class="issue-key" href="${i.url}" target="_blank">${i.key}</a></td>
+          <td>${i.summary}</td>
+          <td><span style="font-size:0.6rem;color:var(--text2)">${i.status}</span></td>
+          <td><span style="font-size:0.6rem;color:var(--text2)">${i.system}</span></td>
+          <td>${badge}</td>
+        </tr>
+      `;
+    });
+}
+filterTable();
+</script>
+</body>
+</html>
