@@ -160,10 +160,7 @@ let sharedData = {};
 let sheetLoaded = false;
 
 async function loadSharedData() {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "__APPS_SCRIPT_URL__") {
-    document.getElementById("sheetStatus").textContent = "⚠ Google Sheet not connected yet";
-    sheetLoaded = true; render(); return;
-  }
+  if (!APPS_SCRIPT_URL) { document.getElementById("sheetStatus").textContent = "⚠ Google Sheet not connected"; sheetLoaded=true; render(); return; }
   document.getElementById("loadingBar").style.display = "block";
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
@@ -181,7 +178,7 @@ async function loadSharedData() {
 }
 
 async function saveToSheet(key, fields) {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "__APPS_SCRIPT_URL__") return;
+  if (!APPS_SCRIPT_URL) return;
   if (!currentUser) { showToast("Please enter your name at the top first", false); return; }
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -441,7 +438,7 @@ function updateStats(){
 async function syncRow(key,btn){
   const changes=dirty[key];const note=getShared(key,"Notes");
   if(!changes&&!note){showToast("Nothing to sync for "+key,false);return;}
-  if(!WORKER_URL||WORKER_URL==="__WORKER_URL_PLACEHOLDER__"){showToast("⚠ Worker URL not set",false);return;}
+  if(!WORKER_URL||WORKER_URL==="__WORKER_URL_PLACEHOLDER__"){showToast("⚠ Worker URL not configured yet — Jira sync disabled",false);return;}
   btn.disabled=true;btn.textContent="…";btn.className="sync-row-btn syncing";
   const payload={issueKey:key,updates:{},note:note||""};
   if(changes){
