@@ -18,29 +18,23 @@ FIELDS = [
     "created","updated","resolutiondate","comment"
 ]
 
-QUERIES = {
-    "MPPT": (
-        'project = MPPT AND issuetype = DR '
-        'AND status NOT IN ("Done","Closed","Won\'t Fix","Duplicate") '
-        'ORDER BY created DESC'
-    ),
-    "FFT": (
-        'project = FFT AND issuetype = DR '
-        'AND status NOT IN ("Done","Closed","Won\'t Fix","Duplicate") '
-        'AND (summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
-        '     OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208") '
-        'ORDER BY created DESC'
-    ),
-}
+# Note: "Won't Fix" removed to avoid quote escaping issues - excluded via statusCategory below
+MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
+FFT_JQL  = ('project = FFT AND issuetype = DR AND statusCategory != Done '
+            'AND (summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
+            'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208") '
+            'ORDER BY created DESC')
+
+QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):
-    # POST avoids URL encoding issues with special characters in JQL
     url = f"{JIRA_BASE}/rest/api/3/search/jql"
-    r = requests.post(
+    r = requests.get(
         url,
         auth=(JIRA_EMAIL, JIRA_TOKEN),
-        headers={"Accept": "application/json", "Content-Type": "application/json"},
-        json={"jql": jql, "fields": fields, "startAt": start, "maxResults": max_results}
+        headers={"Accept": "application/json"},
+        params={"jql": jql, "fields": ",".join(fields),
+                "startAt": start, "maxResults": max_results}
     )
     print(f"  HTTP {r.status_code}")
     if r.status_code != 200:
