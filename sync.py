@@ -1,9 +1,9 @@
 """
-DR Sync Script — runs from repo root
+DR Sync Script - runs from repo root
 Fetches live DR data from Jira and rebuilds index.html from template.html
 """
 
-import json, os, re, requests
+import json, os, requests
 from datetime import datetime, timezone
 
 JIRA_BASE  = os.environ["JIRA_BASE"]
@@ -34,12 +34,17 @@ QUERIES = {
 }
 
 def jira_search(jql, fields, start=0, max_results=100):
+    # POST avoids URL encoding issues with special characters in JQL
     url = f"{JIRA_BASE}/rest/api/3/search"
-    r = requests.get(url,
+    r = requests.post(
+        url,
         auth=(JIRA_EMAIL, JIRA_TOKEN),
-        headers={"Accept": "application/json"},
-        params={"jql": jql, "fields": ",".join(fields),
-                "startAt": start, "maxResults": max_results})
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
+        json={"jql": jql, "fields": fields, "startAt": start, "maxResults": max_results}
+    )
+    print(f"  HTTP {r.status_code}")
+    if r.status_code != 200:
+        print(f"  Response: {r.text[:500]}")
     r.raise_for_status()
     return r.json()
 
@@ -135,11 +140,10 @@ def main():
         rows = [parse_issue(i) for i in issues]
         rows.sort(key=lambda r: -int(r["Key"].split("-")[1]))
         all_rows.extend(rows)
-        print(f"  → {len(rows)} {project} DRs")
+        print(f"  -> {len(rows)} {project} DRs")
 
     print(f"\nTotal: {len(all_rows)} DRs")
 
-    # Files are at repo root
     root = os.path.dirname(os.path.abspath(__file__))
     template_path = os.path.join(root, "template.html")
     output_path   = os.path.join(root, "index.html")
@@ -156,7 +160,7 @@ def main():
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"✅  index.html rebuilt — {len(all_rows)} rows, {timestamp}")
+    print(f"index.html rebuilt - {len(all_rows)} rows, {timestamp}")
 
 if __name__ == "__main__":
     main()
