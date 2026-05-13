@@ -1,0 +1,41 @@
+name: Daily DR Sync
+
+on:
+  schedule:
+    # 6am Eastern = 10am UTC (EST) / 11am UTC (EDT)
+    # Using 11:00 UTC to cover EDT (summer). Adjust to 10:00 in winter if needed.
+    - cron: '0 11 * * *'
+  workflow_dispatch:   # allows manual trigger from GitHub Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to push the rebuilt index.html back to the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run DR sync
+        env:
+          JIRA_EMAIL:  ${{ secrets.JIRA_EMAIL }}
+          JIRA_TOKEN:  ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE:   https://merlinlabs.atlassian.net
+        run: python scripts/sync.py
+
+      - name: Commit and push updated index.html
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "chore: daily DR sync $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
