@@ -7,134 +7,116 @@
 <title>FFT + MPPT DR Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f9;--border:#e2e5f0;--border2:#cdd2e8;
-    --text:#1a1d2e;--text2:#4a5068;--text3:#8891b0;
-    --accent:#1f3864;--accent2:#2952a3;
-    --mppt-bg:#dbeafe;--mppt-fg:#1d4ed8;--fft-bg:#ffedd5;--fft-fg:#c2410c;
-    --sc-bg:#fee2e2;--sc-fg:#991b1b;--cert-bg:#dcfce7;--cert-fg:#166534;
-    --row-hover:#eef1fb;--closed-bg:#fff0f0;--dirty-bg:#fffbeb;--local-bg:#f0fdf4;
-  }
+  :root{--bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f9;--border:#e2e5f0;--border2:#cdd2e8;--text:#1a1d2e;--text2:#4a5068;--text3:#8891b0;--accent:#1f3864;--accent2:#2952a3;--mppt-bg:#dbeafe;--mppt-fg:#1d4ed8;--fft-bg:#ffedd5;--fft-fg:#c2410c;--sc-bg:#fee2e2;--sc-fg:#991b1b;--cert-bg:#dcfce7;--cert-fg:#166534;--row-hover:#eef1fb;--closed-bg:#fff0f0;--dirty-bg:#fffbeb;}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
-
   .header{background:var(--accent);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
   .header h1{font-size:15px;font-weight:600}.header .sub{font-size:10px;opacity:.6;margin-top:2px;font-family:'IBM Plex Mono',monospace}
   .hbtns{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-  .sync-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
-  .sync-badge strong{color:#7dd3fc}
-
+  .sync-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap}.sync-badge strong{color:#7dd3fc}
+  .user-bar{background:#162a50;padding:5px 20px;display:flex;align-items:center;gap:10px;font-size:11px;color:rgba(255,255,255,.7)}
+  .user-bar input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;font-family:inherit;outline:none;width:180px}
+  .user-bar input::placeholder{color:rgba(255,255,255,.4)}
+  .user-bar input:focus{border-color:#7dd3fc}
+  .loading-bar{background:#1d4ed8;color:#fff;padding:6px 20px;font-size:11px;text-align:center;display:none}
   .stats{display:flex;gap:7px;padding:8px 20px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
   .chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:4px}
   .chip .label{color:var(--text3)}.chip .val{font-weight:600;font-family:'IBM Plex Mono',monospace}
   .chip.danger .val{color:#991b1b}.chip.warn .val{color:#9a3412}.chip.info .val{color:#1d4ed8}.chip.dirty .val{color:#b45309}
-
-  .col-toggle-bar{padding:6px 20px;border-bottom:1px solid var(--border);background:#f8f9fe;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px}
-  .col-toggle-bar span{color:var(--text3);font-weight:600;margin-right:4px}
+  .col-toggle-bar{padding:5px 20px;border-bottom:1px solid var(--border);background:#f8f9fe;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px}
+  .col-toggle-bar span{color:var(--text3);font-weight:600;margin-right:3px}
   .col-pill{padding:3px 9px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:10px;font-weight:500;color:var(--text2);transition:all .15s;user-select:none}
   .col-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .col-pill.local{border-color:#16a34a;color:#15803d}
-  .col-pill.local.active{background:#16a34a;border-color:#16a34a;color:#fff}
-
-  .filters{padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .col-pill.shared{border-color:#16a34a;color:#15803d}.col-pill.shared.active{background:#16a34a;border-color:#16a34a;color:#fff}
+  .filters{padding:7px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .filters input,.filters select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none}
   .filters input:focus,.filters select:focus{border-color:var(--accent2)}
-  .filters input{width:190px}.fsep{width:1px;background:var(--border2);height:18px;margin:0 2px}
+  .filters input{width:185px}.fsep{width:1px;background:var(--border2);height:18px;margin:0 2px}
   .btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);font-size:11px;cursor:pointer;color:var(--text2);font-family:inherit;transition:background .15s}
   .btn:hover{background:var(--border)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.primary:hover{background:var(--accent2)}
   .btn.success{background:#16a34a;color:#fff;border-color:#16a34a}.btn.success:hover{background:#15803d}
-
-  .table-wrap{overflow-x:auto;max-height:calc(100vh - 230px);overflow-y:auto}
+  .table-wrap{overflow-x:auto;max-height:calc(100vh - 250px);overflow-y:auto}
   table{width:100%;border-collapse:collapse}
   thead th{position:sticky;top:0;z-index:3;background:var(--accent);color:rgba(255,255,255,.85);padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;cursor:pointer;user-select:none;border-right:1px solid rgba(255,255,255,.08)}
-  thead th:hover{color:#fff}thead th.sorted{color:#7dd3fc}thead th .arr{font-size:9px;margin-left:2px;opacity:.5}thead th.sorted .arr{opacity:1}
-  thead th.no-sort{cursor:default}
-  thead th.local-col{background:#1a4a2e}
+  thead th:hover{color:#fff}thead th.sorted{color:#7dd3fc}thead th .arr{font-size:9px;margin-left:2px;opacity:.5}thead th.sorted .arr{opacity:1}thead th.no-sort{cursor:default}
+  thead th.shared-col{background:#1a4a2e}
   tbody tr{border-bottom:1px solid var(--border);transition:background .08s}tbody tr:hover{background:var(--row-hover)}
-  tbody tr.closed-row{background:var(--closed-bg)}tbody tr.dirty-row td.jira-dirty{background:var(--dirty-bg)}
+  tbody tr.closed-row{background:var(--closed-bg)}
   tbody td{padding:4px 8px;vertical-align:top;font-size:11px;color:var(--text2);border-right:1px solid var(--border)}
-  tbody td.local-col{background:#f8fffe;border-right:1px solid #bbf7d0}
-
+  tbody td.shared-col{background:#f0fdf8;border-right:1px solid #bbf7d0}
   .key-link{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}.key-link:hover{text-decoration:underline}
   .badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
   .mppt{background:var(--mppt-bg);color:var(--mppt-fg)}.fft{background:var(--fft-bg);color:var(--fft-fg)}
   .sc{background:var(--sc-bg);color:var(--sc-fg)}.cert{background:var(--cert-bg);color:var(--cert-fg)}
   .status-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
-  .summary-cell{max-width:260px}.summary-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;color:var(--text)}
+  .summary-cell{max-width:250px}.summary-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;color:var(--text)}
   .pri-highest{color:#dc2626;font-weight:600}.pri-high{color:#ea580c;font-weight:600}.pri-default{color:var(--text3)}
   .date-cell{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap}
   .ltag{display:inline-block;background:#e8eaf6;color:#3949ab;padding:1px 4px;border-radius:3px;font-size:9px;margin:1px}
   .closed-tag{color:#dc2626;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:10px}
   .dirty-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#d97706;margin-left:4px;vertical-align:middle}
-
-  /* Editable cells — Jira fields */
   .edit-select{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text);outline:none;cursor:pointer;min-width:120px}
-  .edit-select:focus{border-color:var(--accent2)}
-  .edit-select.changed{border-color:#d97706;background:#fffbeb}
-
-  /* Local text fields */
-  .local-text{width:100%;min-width:130px;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;resize:none;transition:border .15s}
-  .local-text:hover{border-color:var(--border2);background:#fff}
-  .local-text:focus{border-color:#16a34a;background:#fff}
-  .local-select{width:100%;min-width:120px;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;cursor:pointer;transition:border .15s}
-  .local-select:hover{border-color:var(--border2);background:#fff}
-  .local-select:focus{border-color:#16a34a;background:#fff}
-  .local-select.has-value,.local-text.has-value{color:var(--text);font-weight:500}
-
-  /* Sync button */
+  .edit-select:focus{border-color:var(--accent2)}.edit-select.changed{border-color:#d97706;background:#fffbeb}
+  .shared-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;resize:none;transition:border .15s;min-width:120px}
+  .shared-input:hover{border-color:#86efac;background:#fff}
+  .shared-input:focus{border-color:#16a34a;background:#fff}
+  .shared-input.has-val{color:var(--text);font-weight:500}
+  .shared-select{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;cursor:pointer;transition:border .15s;min-width:120px}
+  .shared-select:hover{border-color:#86efac;background:#fff}.shared-select:focus{border-color:#16a34a;background:#fff}
+  .shared-select.has-val{color:var(--text);font-weight:500}
+  .edited-by{font-size:9px;color:var(--text3);margin-top:2px;font-style:italic}
   .sync-cell{text-align:center;vertical-align:middle !important;min-width:68px}
   .sync-row-btn{padding:3px 8px;border-radius:4px;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
   .sync-row-btn:hover{background:#16a34a;color:#fff}.sync-row-btn:disabled{opacity:.5;cursor:not-allowed}
   .sync-row-btn.syncing{background:#dbeafe;border-color:#3b82f6;color:#1d4ed8}
   .sync-row-btn.synced{background:#f0fdf4;border-color:#86efac;color:#15803d}
   .sync-row-btn.error{background:#fee2e2;border-color:#dc2626;color:#991b1b}
-
-  /* Notes */
-  .notes-display{min-height:20px;cursor:pointer;line-height:1.4;font-size:11px;border-radius:3px;padding:2px 3px;transition:background .1s;word-break:break-word;color:var(--text2)}
-  .notes-display:hover{background:rgba(0,0,0,.04)}.notes-display.empty{color:var(--text3);font-style:italic;font-size:10px}.notes-display.empty::before{content:"Add note…"}
-  .notes-textarea{width:100%;min-height:50px;resize:vertical;border:1.5px solid #16a34a;border-radius:4px;padding:3px 5px;font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:var(--text);background:#fff;outline:none;display:none}
-
-  /* Avidyne */
   .avi-cell{text-align:center;vertical-align:middle !important}
   .avi-check{appearance:none;-webkit-appearance:none;width:15px;height:15px;border:2px solid var(--border2);border-radius:3px;cursor:pointer;position:relative;transition:all .15s;background:var(--surface)}
   .avi-check:checked{background:#1d4ed8;border-color:#1d4ed8}.avi-check:checked::after{content:"✓";position:absolute;top:-2px;left:0;font-size:11px;color:#fff;font-weight:700}
-
   .footer{padding:6px 20px;border-top:1px solid var(--border);background:var(--surface);font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center}
   ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
   .no-results{padding:50px;text-align:center;color:var(--text3)}
   #toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
-  #toast.show{opacity:1}#toast.ok{background:#16a34a;color:#fff}#toast.err{background:#dc2626;color:#fff}
-  .legend{font-size:10px;display:flex;gap:12px;align-items:center;padding:5px 20px;background:#f8f9fe;border-bottom:1px solid var(--border)}
+  #toast.show{opacity:1}#toast.ok{background:#16a34a;color:#fff}#toast.err{background:#dc2626;color:#fff}#toast.info{background:#1d4ed8;color:#fff}
+  .legend{font-size:10px;display:flex;gap:14px;align-items:center;padding:4px 20px;background:#f8f9fe;border-bottom:1px solid var(--border)}
   .legend-item{display:flex;align-items:center;gap:4px;color:var(--text3)}
-  .legend-swatch{width:10px;height:10px;border-radius:2px}
+  .legend-dot{width:9px;height:9px;border-radius:2px}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div><h1>FFT + MPPT DR Tracker</h1><div class="sub">MPPT (all) · FFT (N208B / ZK-MLN) · Auto-synced from Jira daily at 6am ET</div></div>
+  <div><h1>FFT + MPPT DR Tracker</h1><div class="sub">MPPT (all) · FFT (N208B / ZK-MLN) · Synced from Jira daily 6am ET · Shared notes via Google Sheets</div></div>
   <div class="hbtns">
     <button class="btn success" onclick="syncAllDirty()" id="syncAllBtn" style="display:none">⬆ Sync All to Jira</button>
     <button class="btn primary" onclick="exportCSV()">Export CSV</button>
-    <div class="sync-badge">Last sync: <strong id="syncDate">—</strong></div>
+    <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong></div>
   </div>
 </div>
 
+<div class="user-bar">
+  👤 <span>Editing as:</span>
+  <input type="text" id="userName" placeholder="Enter your name…" oninput="saveUserName(this.value)">
+  <span id="sheetStatus" style="margin-left:8px;color:rgba(255,255,255,.5)">Loading shared data…</span>
+</div>
+
+<div class="loading-bar" id="loadingBar">Loading shared data from Google Sheets…</div>
 <div class="stats" id="stats"></div>
 
 <div class="legend">
-  <span style="font-weight:600;color:var(--text2)">Columns:</span>
-  <div class="legend-item"><div class="legend-swatch" style="background:#1f3864"></div>From Jira (syncs back)</div>
-  <div class="legend-item"><div class="legend-swatch" style="background:#16a34a"></div>Local only (saved in browser)</div>
-  <div class="legend-item"><div class="legend-swatch" style="background:#d97706"></div>Unsaved Jira changes</div>
+  <strong style="color:var(--text2)">Columns:</strong>
+  <div class="legend-item"><div class="legend-dot" style="background:#1f3864"></div>Jira (syncs back to Jira)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Shared (saves to Google Sheet, visible to everyone)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Unsaved Jira change</div>
 </div>
 
 <div class="col-toggle-bar">
-  <span>Show columns:</span>
+  <span>Columns:</span>
   <span class="col-pill active" data-group="core">Core</span>
-  <span class="col-pill active local" data-group="observation">Observation</span>
-  <span class="col-pill active local" data-group="builds">Builds</span>
-  <span class="col-pill active local" data-group="planning">Planning</span>
+  <span class="col-pill active shared" data-group="observation">Observation</span>
+  <span class="col-pill active shared" data-group="builds">Builds</span>
+  <span class="col-pill active shared" data-group="planning">Planning</span>
 </div>
 
 <div class="filters">
@@ -151,17 +133,10 @@
 </div>
 
 <div class="table-wrap">
-  <table id="mainTable">
-    <thead id="thead"></thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <table id="mainTable"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
   <div class="no-results" id="noResults" style="display:none">No DRs match.</div>
 </div>
-
-<div class="footer">
-  <span id="footerCount"></span>
-  <span>✏️ Jira columns sync back · 🟢 Green columns save locally in browser · Ctrl+Enter to save text cells</span>
-</div>
+<div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared with your whole team via Google Sheets · Changes auto-save on blur</span></div>
 <div id="toast"></div>
 
 <script>
@@ -170,43 +145,83 @@ const DR_DATA = __DR_DATA_PLACEHOLDER__;
 const SYNC_TIMESTAMP = "__SYNC_TIMESTAMP_PLACEHOLDER__";
 // SYNC_DATA_END
 
-const WORKER_URL = "__WORKER_URL_PLACEHOLDER__";
+// ── CONFIG ──
+const WORKER_URL     = "__WORKER_URL_PLACEHOLDER__";
+const APPS_SCRIPT_URL = "https://script.google.com/a/macros/merlinlabs.com/s/AKfycbzBpziNta_FO5ohuHXw2Uedz39Z5txwT7hujyuDrbu0rygWQxxft9SnUn-nDCDzabSF/exec";
 
-// ── STORAGE KEYS ──
-const NOTES_KEY  = "dr_notes_v1";
-const AVI_KEY    = "dr_avi_v1";
-const DIRTY_KEY  = "dr_dirty_v1";
-const LOCAL_KEY  = "dr_local_v2";  // all local-only fields
+// ── USER NAME ──
+let currentUser = localStorage.getItem("dr_username") || "";
+document.getElementById("userName").value = currentUser;
+function saveUserName(v){ currentUser=v.trim(); localStorage.setItem("dr_username",currentUser); }
 
-let userNotes= JSON.parse(localStorage.getItem(NOTES_KEY) ||"{}");
-let userAvi  = JSON.parse(localStorage.getItem(AVI_KEY)   ||"{}");
-let dirty    = JSON.parse(localStorage.getItem(DIRTY_KEY) ||"{}");
-let local    = JSON.parse(localStorage.getItem(LOCAL_KEY) ||"{}");
-// local[key] = { whereObserved, observedBehavior, expectedBehavior, effectCrew, effectOccupants,
-//                effectAircraft, reqAffected, whenObserved, campaign,
-//                fccBuildFound, accBuildFound, avidineBuildFound,
-//                fccBuildFix, accBuildFix, avidineBuildFix, plannedCompletion }
+// ── SHARED DATA (from Google Sheets) ──
+// sharedData[key] = { Notes, Avidyne, WhereObserved, ... , LastEditedBy, LastEditedAt }
+let sharedData = {};
+let sheetLoaded = false;
 
-function saveNotes(){ localStorage.setItem(NOTES_KEY, JSON.stringify(userNotes)); }
-function saveAvi()  { localStorage.setItem(AVI_KEY,   JSON.stringify(userAvi));   }
-function saveDirty(){
-  localStorage.setItem(DIRTY_KEY, JSON.stringify(dirty));
-  const n = Object.keys(dirty).length;
-  document.getElementById("syncAllBtn").style.display = n > 0 ? "block" : "none";
+async function loadSharedData() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "__APPS_SCRIPT_URL__") {
+    document.getElementById("sheetStatus").textContent = "⚠ Google Sheet not connected yet";
+    sheetLoaded = true; render(); return;
+  }
+  document.getElementById("loadingBar").style.display = "block";
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
+    const data = await res.json();
+    sharedData = {};
+    (data.rows || []).forEach(row => { if(row.Key) sharedData[row.Key] = row; });
+    document.getElementById("sheetStatus").textContent = `✓ Shared data loaded (${Object.keys(sharedData).length} rows)`;
+    sheetLoaded = true;
+  } catch(e) {
+    document.getElementById("sheetStatus").textContent = "⚠ Could not load sheet: " + e.message;
+    sheetLoaded = true;
+  }
+  document.getElementById("loadingBar").style.display = "none";
+  render();
 }
-function saveLocal(){ localStorage.setItem(LOCAL_KEY, JSON.stringify(local)); }
 
-function getLocal(key, field){ return (local[key]||{})[field] || ""; }
-function setLocal(key, field, val){
-  if (!local[key]) local[key] = {};
-  local[key][field] = val;
-  saveLocal();
+async function saveToSheet(key, fields) {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "__APPS_SCRIPT_URL__") return;
+  if (!currentUser) { showToast("Please enter your name at the top first", false); return; }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"save", key, fields, user: currentUser })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (!sharedData[key]) sharedData[key] = { Key: key };
+      Object.assign(sharedData[key], fields);
+      sharedData[key].LastEditedBy = currentUser;
+      sharedData[key].LastEditedAt = data.timestamp;
+      showToast(`✓ Saved to sheet`, true);
+    } else {
+      showToast("Sheet error: " + (data.error||"unknown"), false);
+    }
+  } catch(e) {
+    showToast("Save failed: " + e.message, false);
+  }
+}
+
+function getShared(key, field){ return (sharedData[key]||{})[field] || ""; }
+
+// ── JIRA DIRTY STATE ──
+let dirty = JSON.parse(localStorage.getItem("dr_dirty_v1") || "{}");
+function saveDirty(){
+  localStorage.setItem("dr_dirty_v1", JSON.stringify(dirty));
+  document.getElementById("syncAllBtn").style.display = Object.keys(dirty).length > 0 ? "block" : "none";
 }
 
 function isAviDefault(r){ return [r.Labels||"",r.Summary||"",r.Components||"",r["Functional Team (System)"]||""].join(" ").toLowerCase().includes("avidyne"); }
-function getAvi(key,r){ return key in userAvi ? userAvi[key] : isAviDefault(r); }
+function getAvi(key,r){
+  const v = getShared(key, "Avidyne");
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return isAviDefault(r);
+}
 
-// ── DROPDOWN OPTIONS ──
+// ── OPTIONS ──
 const DR_TYPES   = ["","1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII"];
 const SYSTEMS    = ["","ACC + MCC Platform SW","Aircraft Integration","Certification","FCC Platform SW + Model SW - IO","Human Factors","Natural Language Processing","Systems Engineering","VTE"];
 const PRIORITIES = ["","Highest","High","Medium","Low"];
@@ -214,216 +229,193 @@ const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalash
 const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
 const CAMPAIGNS  = ["","Takeoff (TO)","Landing","LPV","ACC","Human Factors (HF)","Multiple","Other"];
 
-// ── STATUS COLOURS ──
 const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
 
-// ── COLUMN DEFINITIONS ──
-// type: jira-select, jira-text(notes), local-select, local-text, local-textarea, local-date, static, avi, sync
-const COLS = [
-  // Core — Jira
-  {id:"key",        label:"Key",          group:"core",  type:"static",       minW:95,  sortField:"Key"},
-  {id:"proj",       label:"Proj",         group:"core",  type:"static",       minW:55,  sortField:"Project"},
-  {id:"summary",    label:"Summary",      group:"core",  type:"static",       minW:250, sortField:"Summary"},
-  {id:"status",     label:"Status",       group:"core",  type:"static",       minW:120, sortField:"Status"},
-  {id:"drtype",     label:"DR Type ✏️",   group:"core",  type:"jira-select",  minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
-  {id:"system",     label:"System ✏️",    group:"core",  type:"jira-select",  minW:165, sortField:"Functional Team (System)", field:"Functional Team (System)",   options:SYSTEMS},
-  {id:"priority",   label:"Priority ✏️",  group:"core",  type:"jira-select",  minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
-  {id:"assignee",   label:"Assignee ✏️",  group:"core",  type:"jira-select",  minW:145, sortField:"Assignee",                 field:"Assignee",                   options:ASSIGNEES},
-  {id:"labels",     label:"Labels",       group:"core",  type:"static",       minW:100, sortField:"Labels"},
-  {id:"updated",    label:"Updated",      group:"core",  type:"static",       minW:82,  sortField:"Updated"},
-  {id:"comments",   label:"💬",           group:"core",  type:"static",       minW:42,  sortField:"Comment Count"},
-  {id:"notes",      label:"Notes ✏️",     group:"core",  type:"jira-notes",   minW:155},
-  {id:"avidyne",    label:"Avidyne",      group:"core",  type:"avi",          minW:58},
-  {id:"sync",       label:"Sync",         group:"core",  type:"sync",         minW:68},
-  // Observation — Local
-  {id:"whereObs",   label:"Where Observed",        group:"observation", type:"local-select",   minW:145, lfield:"whereObserved",    options:WHERE_OBS,  local:true},
-  {id:"whenObs",    label:"When Observed",          group:"observation", type:"local-date",     minW:115, lfield:"whenObserved",     local:true},
-  {id:"campaign",   label:"FT Campaign Blocking",   group:"observation", type:"local-select",   minW:160, lfield:"campaign",         options:CAMPAIGNS,  local:true},
-  {id:"obsBeh",     label:"Observed Behavior",      group:"observation", type:"local-textarea", minW:180, lfield:"observedBehavior", local:true},
-  {id:"expBeh",     label:"Expected Behavior",      group:"observation", type:"local-textarea", minW:180, lfield:"expectedBehavior", local:true},
-  {id:"effCrew",    label:"Effect on Crew",         group:"observation", type:"local-textarea", minW:160, lfield:"effectCrew",       local:true},
-  {id:"effOcc",     label:"Effect on Occupants",    group:"observation", type:"local-textarea", minW:160, lfield:"effectOccupants",  local:true},
-  {id:"effAc",      label:"Effect on Aircraft",     group:"observation", type:"local-textarea", minW:160, lfield:"effectAircraft",   local:true},
-  {id:"reqAff",     label:"Requirement Affected",   group:"observation", type:"local-textarea", minW:170, lfield:"reqAffected",      local:true},
-  // Builds — Local
-  {id:"fccFound",   label:"FCC SW Build Found On",  group:"builds", type:"local-text", minW:145, lfield:"fccBuildFound",   local:true},
-  {id:"accFound",   label:"ACC SW Build Found On",  group:"builds", type:"local-text", minW:145, lfield:"accBuildFound",   local:true},
-  {id:"aviFound",   label:"Avidyne Build Found On", group:"builds", type:"local-text", minW:145, lfield:"avidineBuildFound",local:true},
-  {id:"fccFix",     label:"FCC SW Fix Build",       group:"builds", type:"local-text", minW:130, lfield:"fccBuildFix",     local:true},
-  {id:"accFix",     label:"ACC SW Fix Build",       group:"builds", type:"local-text", minW:130, lfield:"accBuildFix",     local:true},
-  {id:"aviFix",     label:"Avidyne Fix Build",      group:"builds", type:"local-text", minW:130, lfield:"avidineBuildFix", local:true},
-  // Planning — Local
-  {id:"planned",    label:"Planned Completion",     group:"planning", type:"local-date", minW:130, lfield:"plannedCompletion", local:true},
+const COLS=[
+  {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
+  {id:"proj",     label:"Proj",            group:"core",        type:"static",        minW:55,  sortField:"Project"},
+  {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
+  {id:"status",   label:"Status",          group:"core",        type:"static",        minW:120, sortField:"Status"},
+  {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
+  {id:"system",   label:"System ✏️",       group:"core",        type:"jira-select",   minW:165, sortField:"Functional Team (System)", field:"Functional Team (System)",   options:SYSTEMS},
+  {id:"priority", label:"Priority ✏️",     group:"core",        type:"jira-select",   minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
+  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-select",   minW:145, sortField:"Assignee",                 field:"Assignee",                   options:ASSIGNEES},
+  {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
+  {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
+  {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
+  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, sfield:"Notes"},
+  {id:"avidyne",  label:"Avidyne",         group:"core",        type:"avi",           minW:58},
+  {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
+  {id:"whereObs", label:"Where Observed 🟢",     group:"observation", type:"shared-select",   minW:145, sfield:"WhereObserved",    options:WHERE_OBS},
+  {id:"whenObs",  label:"When Observed 🟢",      group:"observation", type:"shared-date",     minW:115, sfield:"WhenObserved"},
+  {id:"campaign", label:"FT Campaign Blocking 🟢",group:"observation",type:"shared-select",   minW:175, sfield:"Campaign",         options:CAMPAIGNS},
+  {id:"obsBeh",   label:"Observed Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ObservedBehavior"},
+  {id:"expBeh",   label:"Expected Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ExpectedBehavior"},
+  {id:"effCrew",  label:"Effect on Crew 🟢",      group:"observation", type:"shared-textarea", minW:170, sfield:"EffectCrew"},
+  {id:"effOcc",   label:"Effect on Occupants 🟢", group:"observation", type:"shared-textarea", minW:170, sfield:"EffectOccupants"},
+  {id:"effAc",    label:"Effect on Aircraft 🟢",  group:"observation", type:"shared-textarea", minW:170, sfield:"EffectAircraft"},
+  {id:"reqAff",   label:"Requirement Affected 🟢",group:"observation", type:"shared-textarea", minW:180, sfield:"ReqAffected"},
+  {id:"fccFound", label:"FCC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"FccBuildFound"},
+  {id:"accFound", label:"ACC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"AccBuildFound"},
+  {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound"},
+  {id:"fccFix",   label:"FCC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"FccBuildFix"},
+  {id:"accFix",   label:"ACC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"AccBuildFix"},
+  {id:"aviFix",   label:"Avidyne Fix Build 🟢",  group:"builds", type:"shared-text", minW:140, sfield:"AvidineBuildFix"},
+  {id:"planned",  label:"Planned Completion 🟢",  group:"planning", type:"shared-date", minW:140, sfield:"PlannedCompletion"},
+  {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
 ];
 
-// Which groups are visible
-let visGroups = {core:true, observation:true, builds:true, planning:true};
-let visibleCols = () => COLS.filter(c => visGroups[c.group]);
-
+let visGroups={core:true,observation:true,builds:true,planning:true};
+let visibleCols=()=>COLS.filter(c=>visGroups[c.group]);
 let sortCol="Key", sortDir=1, filtered=[];
 
-document.getElementById("syncDate").textContent = SYNC_TIMESTAMP;
+document.getElementById("syncDate").textContent=SYNC_TIMESTAMP;
 
-// Populate Jira-driven dropdowns
-function uniq(key){ return [...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort(); }
+function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort();}
 [["statusFilter","Status"],["typeFilter","DR Type"],["assigneeFilter","Assignee"]].forEach(([id,key])=>{
-  const sel=document.getElementById(id); uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
+  const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
 WHERE_OBS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("whereFilter").appendChild(o);});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
 
-// ── RENDER HEADER ──
 function renderHeader(){
-  const vc = visibleCols();
-  document.getElementById("thead").innerHTML = `<tr>${vc.map(c=>`<th ${c.type==="static"||c.type==="avi"||c.type==="sync"?'class="no-sort"':''}${c.local?'class="local-col no-sort"':''} data-col="${c.sortField||''}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':''}</th>`).join("")}</tr>`;
-  document.querySelectorAll("thead th[data-col]").forEach(th=>{
-    if(!th.dataset.col) return;
-    th.classList.remove("no-sort");
-    th.style.cursor="pointer";
+  const vc=visibleCols();
+  document.getElementById("thead").innerHTML=`<tr>${vc.map(c=>{
+    const isShared=c.group!=="core"||["notes","avidyne"].includes(c.id);
+    const cls=isShared?"shared-col no-sort":"";
+    return`<th class="${cls}${c.sortField?" sortable":""}" data-col="${c.sortField||""}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':""}</th>`;
+  }).join("")}</tr>`;
+  document.querySelectorAll("thead th.sortable").forEach(th=>{
+    th.classList.remove("no-sort"); th.style.cursor="pointer";
     th.addEventListener("click",()=>{
       const col=th.dataset.col;
       document.querySelectorAll("thead th").forEach(h=>{h.classList.remove("sorted");const a=h.querySelector(".arr");if(a)a.textContent="↕";});
-      if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
-      th.classList.add("sorted");th.querySelector(".arr").textContent=sortDir===1?"↓":"↑";
-      render();
+      if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}
+      th.classList.add("sorted");th.querySelector(".arr").textContent=sortDir===1?"↓":"↑";render();
     });
   });
 }
 
-// ── HELPERS ──
-function pill(s){ const[bg,fg]=SC[s]||["#f1f5f9","#475569"]; return`<span class="status-pill" style="background:${bg};color:${fg}">${s}</span>`; }
-function drBadge(t){ if(!t)return"—"; if(t.includes("Safety Critical"))return`<span class="badge sc">SC</span>`; if(t.includes("Certification"))return`<span class="badge cert">Cert</span>`; return`<span class="badge" style="background:#f1f5f9;color:#475569">${t.replace(/^\d+ - /,"")}</span>`; }
-function ltags(l){ if(!l)return"—"; return l.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span class="ltag">${s}</span>`).join(" "); }
+function pill(s){const[bg,fg]=SC[s]||["#f1f5f9","#475569"];return`<span class="status-pill" style="background:${bg};color:${fg}">${s}</span>`;}
+function ltags(l){if(!l)return"—";return l.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span class="ltag">${s}</span>`).join(" ");}
 
-function makeJiraSelect(options, current, field, key){
-  const d=dirty[key]||{}; const val=field in d?d[field]:current; const changed=field in d&&d[field]!==current;
-  return `<select class="edit-select${changed?" changed":""}" data-key="${key}" data-field="${field}" onchange="onJiraChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"(none)"}</option>`).join("")}</select>`;
+function makeJiraSelect(options,current,field,key){
+  const d=dirty[key]||{};const val=field in d?d[field]:current;const changed=field in d&&d[field]!==current;
+  return`<select class="edit-select${changed?" changed":""}" data-key="${key}" data-field="${field}" onchange="onJiraChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"(none)"}</option>`).join("")}</select>`;
 }
 
-function makeLocalSelect(options, key, lfield){
-  const val=getLocal(key,lfield);
-  return `<select class="local-select${val?" has-value":""}" data-key="${key}" data-lfield="${lfield}" onchange="onLocalChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"—"}</option>`).join("")}</select>`;
+function makeSharedSelect(options,key,sfield){
+  const val=getShared(key,sfield);
+  return`<select class="shared-select${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" onchange="onSharedChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"—"}</option>`).join("")}</select>`;
 }
 
-function makeLocalText(key, lfield, multiline=false){
-  const val=getLocal(key,lfield);
-  if(multiline) return `<textarea class="local-text${val?" has-value":""}" data-key="${key}" data-lfield="${lfield}" rows="2" onchange="onLocalTextChange(this)" onkeydown="localKeydown(event,this)" placeholder="—">${val}</textarea>`;
-  return `<input type="text" class="local-text${val?" has-value":""}" data-key="${key}" data-lfield="${lfield}" value="${val.replace(/"/g,"&quot;")}" onchange="onLocalTextChange(this)" placeholder="—">`;
+function makeSharedText(key,sfield,multi=false){
+  const val=getShared(key,sfield).replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  if(multi)return`<textarea class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" rows="2" onblur="onSharedBlur(this)" placeholder="—">${getShared(key,sfield)}</textarea>`;
+  return`<input type="text" class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" value="${val}" onblur="onSharedBlur(this)" placeholder="—">`;
 }
 
-function makeLocalDate(key, lfield){
-  const val=getLocal(key,lfield);
-  return `<input type="date" class="local-text${val?" has-value":""}" data-key="${key}" data-lfield="${lfield}" value="${val}" onchange="onLocalTextChange(this)">`;
+function makeSharedDate(key,sfield){
+  const val=getShared(key,sfield);
+  return`<input type="date" class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" value="${val}" onblur="onSharedBlur(this)">`;
 }
 
-function cellForCol(c, r){
-  const key=r.Key;
-  const isClosed=r.Status==="[CLOSED]";
-  const localClass=c.local?` class="local-col"`:"";
+function cellForCol(c,r){
+  const key=r.Key;const isClosed=r.Status==="[CLOSED]";
+  const isShared=c.group!=="core";
+  const tdCls=isShared?` class="shared-col"`:"";
   switch(c.type){
-    case "static": {
+    case"static":{
       let content="";
-      if(c.id==="key") content=`<a class="key-link" href="${r.URL}" target="_blank">${r.Key}</a>${(dirty[key]&&Object.keys(dirty[key]).length)?'<span class="dirty-dot"></span>':""}`;
-      else if(c.id==="proj") content=`<span class="badge ${r.Project==="MPPT"?"mppt":"fft"}">${r.Project}</span>`;
-      else if(c.id==="summary") content=`<div class="summary-cell"><div class="summary-text" title="${(r.Summary||"").replace(/"/g,"&quot;")}">${r.Summary||""}</div></div>`;
-      else if(c.id==="status") content=isClosed?'<span class="closed-tag">[CLOSED]</span>':pill(r.Status);
-      else if(c.id==="labels") content=ltags(r.Labels);
-      else if(c.id==="updated") content=`<span class="date-cell">${r.Updated||"—"}</span>`;
-      else if(c.id==="comments") content=`<span style="font-size:10px;color:var(--text3)">${r["Comment Count"]??""}</span>`;
-      return `<td style="text-align:${c.id==="comments"?"center":"left"}">${content}</td>`;
+      if(c.id==="key")content=`<a class="key-link" href="${r.URL}" target="_blank">${r.Key}</a>${dirty[key]&&Object.keys(dirty[key]).length?'<span class="dirty-dot"></span>':""}`;
+      else if(c.id==="proj")content=`<span class="badge ${r.Project==="MPPT"?"mppt":"fft"}">${r.Project}</span>`;
+      else if(c.id==="summary")content=`<div class="summary-cell"><div class="summary-text" title="${(r.Summary||"").replace(/"/g,"&quot;")}">${r.Summary||""}</div></div>`;
+      else if(c.id==="status")content=isClosed?'<span class="closed-tag">[CLOSED]</span>':pill(r.Status);
+      else if(c.id==="labels")content=ltags(r.Labels);
+      else if(c.id==="updated")content=`<span class="date-cell">${r.Updated||"—"}</span>`;
+      else if(c.id==="comments")content=`<span style="font-size:10px;color:var(--text3)">${r["Comment Count"]??""}</span>`;
+      return`<td style="text-align:${c.id==="comments"?"center":"left"}">${content}</td>`;
     }
-    case "jira-select": return `<td>${makeJiraSelect(c.options, r[c.field]||"", c.field, key)}</td>`;
-    case "jira-notes": {
-      const note=userNotes[key]||"";
-      return `<td class="notes-cell" style="min-width:${c.minW}px"><div class="notes-display ${note?"":"empty"}" data-key="${key}">${note?note.replace(/\n/g,"<br>"):""}</div><textarea class="notes-textarea" data-key="${key}" rows="3" placeholder="Posts as Jira comment on sync">${note}</textarea></td>`;
+    case"static-shared":{
+      const by=getShared(key,"LastEditedBy");const at=getShared(key,"LastEditedAt");
+      const atFmt=at?at.slice(0,10):"";
+      return`<td class="shared-col"><span style="font-size:10px;color:var(--text2)">${by||"—"}</span>${atFmt?`<div class="edited-by">${atFmt}</div>`:""}`;
     }
-    case "avi": return `<td class="avi-cell"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""}></td>`;
-    case "sync": {
-      const isDirty=dirty[key]&&Object.keys(dirty[key]).length>0;
-      return `<td class="sync-cell"><button class="sync-row-btn${isDirty?"":" synced"}" data-key="${key}" onclick="syncRow('${key}',this)">${isDirty?"↑ Sync":"✓"}</button></td>`;
+    case"jira-select":return`<td>${makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
+    case"shared-notes":{
+      const note=getShared(key,"Notes");const by=getShared(key,"LastEditedBy");
+      return`<td class="shared-col" style="min-width:${c.minW}px"><textarea class="shared-input${note?" has-val":""}" data-key="${key}" data-sfield="Notes" rows="2" onblur="onSharedBlur(this)" placeholder="Posts as Jira comment on sync…">${note}</textarea>${by?`<div class="edited-by">Last: ${by}</div>`:""}</td>`;
     }
-    case "local-select": return `<td${localClass}>${makeLocalSelect(c.options, key, c.lfield)}</td>`;
-    case "local-text":   return `<td${localClass}>${makeLocalText(key, c.lfield, false)}</td>`;
-    case "local-textarea": return `<td${localClass}>${makeLocalText(key, c.lfield, true)}</td>`;
-    case "local-date":   return `<td${localClass}>${makeLocalDate(key, c.lfield)}</td>`;
-    default: return `<td>—</td>`;
+    case"avi":return`<td class="avi-cell"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} onchange="onAviChange(this)"></td>`;
+    case"sync":{
+      const has=dirty[key]&&Object.keys(dirty[key]).length;
+      return`<td class="sync-cell"><button class="sync-row-btn${has?"":" synced"}" data-key="${key}" onclick="syncRow('${key}',this)">${has?"↑ Sync":"✓"}</button></td>`;
+    }
+    case"shared-select":return`<td${tdCls}>${makeSharedSelect(c.options,key,c.sfield)}</td>`;
+    case"shared-text":return`<td${tdCls}>${makeSharedText(key,c.sfield,false)}</td>`;
+    case"shared-textarea":return`<td${tdCls}>${makeSharedText(key,c.sfield,true)}</td>`;
+    case"shared-date":return`<td${tdCls}>${makeSharedDate(key,c.sfield)}</td>`;
+    default:return`<td>—</td>`;
   }
 }
 
-// ── EVENT HANDLERS ──
 function onJiraChange(sel){
-  const key=sel.dataset.key, field=sel.dataset.field;
-  const row=DR_DATA.find(r=>r.Key===key); const orig=(row?row[field]||"":"");
-  if(!dirty[key]) dirty[key]={};
-  if(sel.value===orig){ delete dirty[key][field]; if(!Object.keys(dirty[key]).length) delete dirty[key]; }
+  const key=sel.dataset.key,field=sel.dataset.field;
+  const row=DR_DATA.find(r=>r.Key===key);const orig=row?row[field]||"":"";
+  if(!dirty[key])dirty[key]={};
+  if(sel.value===orig){delete dirty[key][field];if(!Object.keys(dirty[key]).length)delete dirty[key];}
   else dirty[key][field]=sel.value;
-  sel.classList.toggle("changed", field in (dirty[key]||{}));
-  saveDirty(); updateStats();
+  sel.classList.toggle("changed",field in(dirty[key]||{}));
+  saveDirty();updateStats();
   const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
-  if(btn){ const has=dirty[key]&&Object.keys(dirty[key]).length; btn.textContent=has?"↑ Sync":"✓"; btn.className="sync-row-btn"+(has?"":" synced"); }
-  const dotEl=document.querySelector(`tr[data-key="${key}"] .dirty-dot`);
-  const keyCell=document.querySelector(`tr[data-key="${key}"] td:first-child`);
-  const has=dirty[key]&&Object.keys(dirty[key]).length;
-  if(dotEl&&!has) dotEl.remove();
-  if(!dotEl&&has&&keyCell) keyCell.insertAdjacentHTML("beforeend",'<span class="dirty-dot"></span>');
+  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
 }
 
-function onLocalChange(sel){ setLocal(sel.dataset.key, sel.dataset.lfield, sel.value); sel.classList.toggle("has-value",!!sel.value); }
-function onLocalTextChange(el){ setLocal(el.dataset.key, el.dataset.lfield, el.value); el.classList.toggle("has-value",!!el.value); }
-function localKeydown(e,el){ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); el.blur(); } }
+function onSharedChange(sel){ onSharedBlur(sel); }
 
-// ── RENDER ──
+function onSharedBlur(el){
+  const key=el.dataset.key,sfield=el.dataset.sfield;
+  const val=el.value;
+  if(!sharedData[key])sharedData[key]={Key:key};
+  const old=sharedData[key][sfield]||"";
+  if(val===old)return; // no change
+  sharedData[key][sfield]=val;
+  el.classList.toggle("has-val",!!val);
+  saveToSheet(key,{[sfield]:val});
+}
+
+function onAviChange(cb){
+  const key=cb.dataset.key;
+  saveToSheet(key,{Avidyne:String(cb.checked)});
+}
+
 function render(){
-  const search   =document.getElementById("search").value.toLowerCase();
-  const proj     =document.getElementById("projFilter").value;
-  const status   =document.getElementById("statusFilter").value;
-  const type     =document.getElementById("typeFilter").value;
-  const assign   =document.getElementById("assigneeFilter").value;
-  const where    =document.getElementById("whereFilter").value;
-  const campaign =document.getElementById("campaignFilter").value;
+  if(!sheetLoaded)return;
+  const search=document.getElementById("search").value.toLowerCase();
+  const proj=document.getElementById("projFilter").value;
+  const status=document.getElementById("statusFilter").value;
+  const type=document.getElementById("typeFilter").value;
+  const assign=document.getElementById("assigneeFilter").value;
+  const where=document.getElementById("whereFilter").value;
+  const campaign=document.getElementById("campaignFilter").value;
 
   filtered=DR_DATA.filter(r=>{
-    if(proj   &&r.Project!==proj) return false;
-    if(status &&r.Status!==status) return false;
-    if(type   &&r["DR Type"]!==type) return false;
-    if(assign &&r.Assignee!==assign) return false;
-    if(where  &&getLocal(r.Key,"whereObserved")!==where) return false;
-    if(campaign&&getLocal(r.Key,"campaign")!==campaign) return false;
-    if(search){
-      const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,userNotes[r.Key]||"",
-               getLocal(r.Key,"observedBehavior"),getLocal(r.Key,"reqAffected")].join(" ").toLowerCase();
-      if(!h.includes(search)) return false;
-    }
+    if(proj&&r.Project!==proj)return false;
+    if(status&&r.Status!==status)return false;
+    if(type&&r["DR Type"]!==type)return false;
+    if(assign&&r.Assignee!==assign)return false;
+    if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
+    if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
+    if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
-
-  filtered.sort((a,b)=>{ let av=a[sortCol]??"",bv=b[sortCol]??""; if(sortCol==="Comment Count"){av=+av;bv=+bv;} return av<bv?-sortDir:av>bv?sortDir:0; });
+  filtered.sort((a,b)=>{let av=a[sortCol]??"",bv=b[sortCol]??"";if(sortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-sortDir:av>bv?sortDir:0;});
 
   const vc=visibleCols();
   const tbody=document.getElementById("tbody");
-  if(!filtered.length){ tbody.innerHTML=""; document.getElementById("noResults").style.display="block"; updateStats(); document.getElementById("footerCount").textContent=""; return; }
+  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";updateStats();document.getElementById("footerCount").textContent="";return;}
   document.getElementById("noResults").style.display="none";
-
-  tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
-
-  // Notes events
-  tbody.querySelectorAll(".notes-display").forEach(el=>{
-    el.addEventListener("click",()=>{ const ta=el.nextElementSibling; el.style.display="none"; ta.style.display="block"; ta.focus(); });
-  });
-  tbody.querySelectorAll(".notes-textarea").forEach(ta=>{
-    ta.addEventListener("blur",()=>{
-      const key=ta.dataset.key; const val=ta.value.trim();
-      userNotes[key]=val; saveNotes();
-      const disp=ta.previousElementSibling;
-      disp.innerHTML=val?val.replace(/\n/g,"<br>"):""; disp.className="notes-display"+(val?"":" empty");
-      ta.style.display="none"; disp.style.display="block";
-      if(val){ if(!dirty[key])dirty[key]={}; dirty[key].note=val; saveDirty(); updateStats(); }
-    });
-    ta.addEventListener("keydown",e=>{ if(e.key==="Escape")ta.blur(); if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))ta.blur(); });
-  });
-
-  tbody.querySelectorAll(".avi-check").forEach(cb=>{ cb.addEventListener("change",()=>{ userAvi[cb.dataset.key]=cb.checked; saveAvi(); updateStats(); }); });
-
+  tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
   updateStats();
   document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
 }
@@ -446,84 +438,67 @@ function updateStats(){
   `;
 }
 
-// ── SYNC TO JIRA ──
-async function syncRow(key, btn){
-  const changes=dirty[key]; const note=userNotes[key];
-  if(!changes&&!note){ showToast("Nothing to sync for "+key,false); return; }
-  if(!WORKER_URL||WORKER_URL==="__WORKER_URL_PLACEHOLDER__"){ showToast("⚠ Worker URL not configured yet",false); return; }
-  btn.disabled=true; btn.textContent="…"; btn.className="sync-row-btn syncing";
-  const payload={issueKey:key, updates:{}, note:note||""};
+async function syncRow(key,btn){
+  const changes=dirty[key];const note=getShared(key,"Notes");
+  if(!changes&&!note){showToast("Nothing to sync for "+key,false);return;}
+  if(!WORKER_URL||WORKER_URL==="__WORKER_URL_PLACEHOLDER__"){showToast("⚠ Worker URL not set",false);return;}
+  btn.disabled=true;btn.textContent="…";btn.className="sync-row-btn syncing";
+  const payload={issueKey:key,updates:{},note:note||""};
   if(changes){
-    if(changes["DR Type"]!==undefined)                payload.updates.drType   =changes["DR Type"];
-    if(changes["Functional Team (System)"]!==undefined) payload.updates.system =changes["Functional Team (System)"];
-    if(changes["Priority"]!==undefined)               payload.updates.priority =changes["Priority"];
-    if(changes["Assignee"]!==undefined)               payload.updates.assignee =changes["Assignee"];
-    if(changes.note!==undefined)                      payload.note             =changes.note;
+    if(changes["DR Type"]!==undefined)payload.updates.drType=changes["DR Type"];
+    if(changes["Functional Team (System)"]!==undefined)payload.updates.system=changes["Functional Team (System)"];
+    if(changes["Priority"]!==undefined)payload.updates.priority=changes["Priority"];
+    if(changes["Assignee"]!==undefined)payload.updates.assignee=changes["Assignee"];
   }
   try{
     const res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     const hasErr=data.results&&data.results.some(r=>r.error);
     if(!hasErr){
-      delete dirty[key]; saveDirty();
-      btn.textContent="✓"; btn.className="sync-row-btn synced"; btn.disabled=false;
+      delete dirty[key];saveDirty();
+      btn.textContent="✓";btn.className="sync-row-btn synced";btn.disabled=false;
       document.querySelector(`tr[data-key="${key}"] .dirty-dot`)?.remove();
       document.querySelectorAll(`tr[data-key="${key}"] .edit-select.changed`).forEach(s=>s.classList.remove("changed"));
-      showToast(`✓ ${key} synced`,true); updateStats();
-    } else {
+      showToast(`✓ ${key} synced to Jira`,true);updateStats();
+    }else{
       const msg=data.results.filter(r=>r.error).map(r=>r.error).join("; ");
-      btn.textContent="✗"; btn.className="sync-row-btn error"; btn.disabled=false;
+      btn.textContent="✗";btn.className="sync-row-btn error";btn.disabled=false;
       showToast(`Error: ${msg}`,false);
     }
-  } catch(e){ btn.textContent="✗"; btn.className="sync-row-btn error"; btn.disabled=false; showToast(`Network error: ${e.message}`,false); }
+  }catch(e){btn.textContent="✗";btn.className="sync-row-btn error";btn.disabled=false;showToast(`Network error: ${e.message}`,false);}
 }
 
 async function syncAllDirty(){
-  const keys=Object.keys(dirty); if(!keys.length){ showToast("No pending Jira changes",false); return; }
-  const btn=document.getElementById("syncAllBtn"); btn.disabled=true; btn.textContent=`Syncing ${keys.length}…`;
-  for(const key of keys){ const rb=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`); if(rb) await syncRow(key,rb); }
-  btn.disabled=false; btn.textContent="⬆ Sync All to Jira";
+  const keys=Object.keys(dirty);if(!keys.length){showToast("No pending Jira changes",false);return;}
+  const btn=document.getElementById("syncAllBtn");btn.disabled=true;btn.textContent=`Syncing ${keys.length}…`;
+  for(const key of keys){const rb=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);if(rb)await syncRow(key,rb);}
+  btn.disabled=false;btn.textContent="⬆ Sync All to Jira";
 }
 
-function showToast(msg,ok){ const t=document.getElementById("toast"); t.textContent=msg; t.className="show "+(ok?"ok":"err"); clearTimeout(t._t); t._t=setTimeout(()=>t.className="",3500); }
+function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
-// ── COLUMN GROUP TOGGLE ──
-document.querySelectorAll(".col-pill").forEach(pill=>{
-  pill.addEventListener("click",()=>{
-    const g=pill.dataset.group; visGroups[g]=!visGroups[g];
-    pill.classList.toggle("active",visGroups[g]);
-    renderHeader(); render();
-  });
+document.querySelectorAll(".col-pill").forEach(p=>{
+  p.addEventListener("click",()=>{const g=p.dataset.group;visGroups[g]=!visGroups[g];p.classList.toggle("active",visGroups[g]);renderHeader();render();});
 });
 
-// ── FILTERS ──
-function clearFilters(){ ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{ document.getElementById(id).value=""; }); render(); }
-["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{ const el=document.getElementById(id); el.addEventListener("input",render); el.addEventListener("change",render); });
+function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>document.getElementById(id).value="");render();}
+["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
-// ── EXPORT ──
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Notes","Avidyne",
-    "Where Observed","When Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected",
-    "FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion"];
-  const rows=[headers];
+  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Notes","Avidyne","Where Observed","When Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
+  const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
+  const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
-    const k=r.Key; const lc=local[k]||{};
-    rows.push([k,r.Project,`"${(r.Summary||"").replace(/"/g,'""')}"`,r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,
-      `"${(userNotes[k]||"").replace(/"/g,'""')}"`,getAvi(k,r)?"Yes":"No",
-      lc.whereObserved||"",lc.whenObserved||"",lc.campaign||"",
-      `"${(lc.observedBehavior||"").replace(/"/g,'""')}"`,`"${(lc.expectedBehavior||"").replace(/"/g,'""')}"`,
-      `"${(lc.effectCrew||"").replace(/"/g,'""')}"`,`"${(lc.effectOccupants||"").replace(/"/g,'""')}"`,`"${(lc.effectAircraft||"").replace(/"/g,'""')}"`,
-      `"${(lc.reqAffected||"").replace(/"/g,'""')}"`,
-      lc.fccBuildFound||"",lc.accBuildFound||"",lc.avidineBuildFound||"",
-      lc.fccBuildFix||"",lc.accBuildFix||"",lc.avidineBuildFix||"",lc.plannedCompletion||""]);
+    const k=r.Key;const s=sharedData[k]||{};
+    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.WhereObserved||"",s.WhenObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
-  const blob=new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="DR_tracker_export.csv"; a.click();
+  const blob=new Blob([rows.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
 }
 
-// Show sync all if pending
-if(Object.keys(dirty).length>0) document.getElementById("syncAllBtn").style.display="block";
-renderHeader(); render();
+if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.display="block";
+renderHeader();
+loadSharedData(); // loads sheet then calls render()
 </script>
 </body>
 </html>
