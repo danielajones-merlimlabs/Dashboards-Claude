@@ -35,7 +35,7 @@ QUERIES = {
 
 def jira_search(jql, fields, start=0, max_results=100):
     # POST avoids URL encoding issues with special characters in JQL
-    url = f"{JIRA_BASE}/rest/api/3/search"
+    url = f"{JIRA_BASE}/rest/api/3/search/jql"
     r = requests.post(
         url,
         auth=(JIRA_EMAIL, JIRA_TOKEN),
