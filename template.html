@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FFT + MPPT DR Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
   :root{--bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f9;--border:#e2e5f0;--border2:#cdd2e8;--text:#1a1d2e;--text2:#4a5068;--text3:#8891b0;--accent:#1f3864;--accent2:#2952a3;--mppt-bg:#dbeafe;--mppt-fg:#1d4ed8;--fft-bg:#ffedd5;--fft-fg:#c2410c;--sc-bg:#fee2e2;--sc-fg:#991b1b;--cert-bg:#dcfce7;--cert-fg:#166534;--row-hover:#eef1fb;--closed-bg:#fff0f0;--dirty-bg:#fffbeb;}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -82,6 +83,14 @@
   .legend{font-size:10px;display:flex;gap:14px;align-items:center;padding:4px 20px;background:#f8f9fe;border-bottom:1px solid var(--border)}
   .legend-item{display:flex;align-items:center;gap:4px;color:var(--text3)}
   .legend-dot{width:9px;height:9px;border-radius:2px}
+  .tab-nav{display:flex;padding:0 20px;background:var(--surface);border-bottom:2px solid var(--border)}
+  .tab-btn{padding:9px 18px;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-btn:hover:not(.active){color:var(--text2)}
+  #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:20px}
+  .chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .chart-sub{font-size:11px;color:var(--text3);margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -101,9 +110,15 @@
   <span id="sheetStatus" style="margin-left:8px;color:rgba(255,255,255,.5)">Loading shared data…</span>
 </div>
 
-<div class="loading-bar" id="loadingBar">Loading shared data from Google Sheets…</div>
+<div class="loading-bar" id="loadingBar">Loading shared data…</div>
 <div class="stats" id="stats"></div>
 
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
+  <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
+</div>
+
+<div id="tab-table">
 <div class="legend">
   <strong style="color:var(--text2)">Columns:</strong>
   <div class="legend-item"><div class="legend-dot" style="background:#1f3864"></div>Jira (syncs back to Jira)</div>
@@ -136,7 +151,17 @@
   <table id="mainTable"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
   <div class="no-results" id="noResults" style="display:none">No DRs match.</div>
 </div>
-<div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared with your whole team via Google Sheets · Changes auto-save on blur</span></div>
+</div><!-- #tab-table -->
+
+<div id="tab-metrics">
+  <div class="chart-card">
+    <div class="chart-title">DR Count by Status — stacked by DR Type</div>
+    <div class="chart-sub">All projects · open DRs only</div>
+    <canvas id="chartStatusType"></canvas>
+  </div>
+</div>
+
+<div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
 <div id="toast"></div>
 
 <script>
@@ -495,6 +520,69 @@ function exportCSV(){
 if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.display="block";
 renderHeader();
 loadSharedData(); // loads sheet then calls render()
+
+// ── TABS ──
+function switchTab(tab){
+  document.getElementById("tab-table").style.display = tab==="table" ? "" : "none";
+  document.getElementById("tab-metrics").style.display = tab==="metrics" ? "" : "none";
+  document.getElementById("tabBtnTable").classList.toggle("active", tab==="table");
+  document.getElementById("tabBtnMetrics").classList.toggle("active", tab==="metrics");
+  if(tab==="metrics") renderMetrics();
+}
+
+// ── METRICS ──
+const TYPE_COLORS = {
+  "1 - Safety Critical":              "#dc2626",
+  "2 - Required for Certification":   "#1d4ed8",
+  "3 - Performance Issue":            "#ea580c",
+  "4 - Product Improvement":          "#16a34a",
+  "5 - Test Infrastructure":          "#7c3aed",
+  "6 - SII":                          "#0891b2",
+  "(none)":                           "#94a3b8",
+};
+
+let _metricsChart = null;
+
+function renderMetrics(){
+  // Collect statuses in a preferred order, then any remaining
+  const STATUS_ORDER = ["To Do","In Progress","In Review","Watch","Investigating","Blocked","On Hold","Done","Closed","Won't Fix"];
+  const allStatuses = [...new Set(DR_DATA.map(r=>r.Status).filter(Boolean))];
+  const statuses = [...STATUS_ORDER.filter(s=>allStatuses.includes(s)), ...allStatuses.filter(s=>!STATUS_ORDER.includes(s))];
+
+  const types = Object.keys(TYPE_COLORS);
+
+  const datasets = types.map(type=>{
+    const data = statuses.map(status=>
+      DR_DATA.filter(r=>r.Status===status && (type==="(none)" ? !r["DR Type"] : r["DR Type"]===type)).length
+    );
+    return { label: type, data, backgroundColor: TYPE_COLORS[type], borderRadius: 3, borderSkipped: false };
+  }).filter(ds=>ds.data.some(v=>v>0));
+
+  const ctx = document.getElementById("chartStatusType").getContext("2d");
+
+  if(_metricsChart){ _metricsChart.destroy(); }
+
+  _metricsChart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: statuses, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { font:{size:11}, padding:16, boxWidth:12 } },
+        tooltip: {
+          mode: "index", intersect: false,
+          callbacks: {
+            footer: items => "Total: " + items.reduce((s,i)=>s+i.parsed.y, 0)
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font:{size:11} }, grid: { display:false } },
+        y: { stacked: true, beginAtZero: true, ticks: { stepSize:1, font:{size:11} }, grid: { color:"#e2e5f0" } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
