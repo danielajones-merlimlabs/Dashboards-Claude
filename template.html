@@ -92,6 +92,14 @@
   .tab-btn{padding:9px 18px;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
   .tab-btn:hover:not(.active){color:var(--text2)}
+  .burndown-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f8f9fe;border:1px solid var(--border);border-radius:6px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)}
+  .burndown-controls label{font-weight:600;white-space:nowrap}
+  .burndown-controls input[type=range]{width:180px;accent-color:var(--accent2);cursor:pointer}
+  .bd-rate-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);min-width:28px;text-align:center}
+  .bd-badge{margin-left:auto;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .bd-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+  .bd-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+  .bd-bad{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
   #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
   .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
@@ -179,6 +187,18 @@
     <div class="chart-title">New vs Closed DRs by Week</div>
     <div class="chart-sub">Since March 2026 · bars = weekly counts</div>
     <canvas id="chartNewVsClosed" style="max-height:220px"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">SC + Cert Required — Burndown to Sept 30, 2026</div>
+    <div class="chart-sub" id="burndownSub">Safety Critical + Required for Certification · target: all closed by Sept 30</div>
+    <div class="burndown-controls">
+      <label>Closures / week:</label>
+      <input type="range" id="bdSlider" min="0.5" max="15" step="0.5" value="2">
+      <span class="bd-rate-val" id="bdRateVal">2.0</span>
+      <span style="color:var(--text3);font-size:11px" id="bdPaceHint"></span>
+      <span class="bd-badge" id="bdBadge"></span>
+    </div>
+    <canvas id="chartBurndown" style="max-height:260px"></canvas>
   </div>
 </div>
 
@@ -592,6 +612,7 @@ const TYPE_COLORS = {
 
 let _metricsChart = null;
 let _pieChart = null;
+let _burndownChart = null;
 
 const TEAM_COLORS = [
   "#1d4ed8","#dc2626","#16a34a","#7c3aed","#ea580c",
@@ -710,6 +731,125 @@ function renderMetrics(){
         }
       }
     });
+  }
+
+  // ── Burndown projection: SC + Cert Required → Sept 30 2026 (interactive) ──
+  if (typeof CLOSED_DATA !== "undefined") {
+    const SC_CERT  = new Set(["1 - Safety Critical", "2 - Required for Certification"]);
+    const sundayOf = d => { const dt = new Date(d+"T00:00:00Z"); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay()); return dt.toISOString().slice(0,10); };
+    const addWk    = (w,n) => { const d = new Date(w+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n*7); return d.toISOString().slice(0,10); };
+    const fmtDate  = s => new Date(s+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
+
+    const todayStr  = new Date().toISOString().slice(0,10);
+    const todayWk   = sundayOf(todayStr);
+    const targetWk  = "2026-09-28";
+
+    const allSC    = [...DR_DATA.filter(r=>SC_CERT.has(r["DR Type"])), ...CLOSED_DATA.filter(r=>SC_CERT.has(r["DR Type"]))];
+    const closedSC = CLOSED_DATA.filter(r=>SC_CERT.has(r["DR Type"]));
+
+    const bdWeeks = [];
+    let bc = sundayOf("2026-03-01");
+    while(bc <= addWk(targetWk,1)){ bdWeeks.push(bc); bc = addWk(bc,1); }
+
+    const histWeeks   = bdWeeks.filter(w=>w<=todayWk);
+    const futureWeeks = bdWeeks.filter(w=>w>todayWk);
+    const todayIdx    = histWeeks.length - 1;
+    const weeksLeft   = futureWeeks.length;
+
+    const histOpen = histWeeks.map(w => {
+      const created = allSC.filter(r=>r.Created && r.Created<=w).length;
+      const closed  = closedSC.filter(r=>r.ResolutionDate && r.ResolutionDate<=w).length;
+      return created - closed;
+    });
+
+    const currentOpen = DR_DATA.filter(r=>SC_CERT.has(r["DR Type"])).length;
+    const v4start     = addWk(todayWk,-4);
+    const actualVel   = +(closedSC.filter(r=>r.ResolutionDate && r.ResolutionDate>v4start && r.ResolutionDate<=todayStr).length / 4).toFixed(1);
+    const neededRate  = weeksLeft > 0 ? +(currentOpen/weeksLeft).toFixed(1) : 0;
+
+    document.getElementById("burndownSub").textContent =
+      `SC + Cert Required · ${currentOpen} open · ${weeksLeft} weeks to Sept 30 · need ${neededRate}/wk · current pace ${actualVel}/wk`;
+    document.getElementById("bdPaceHint").textContent =
+      `current pace: ${actualVel}/wk · needed: ${neededRate}/wk`;
+
+    const allWks     = [...histWeeks, ...futureWeeks];
+    const wkLabels   = allWks.map(w=>{ const d=new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+    const histDs     = allWks.map((_,i) => i < histWeeks.length ? histOpen[i] : null);
+    const reqDs      = allWks.map((_,i) => {
+      if(i < todayIdx) return null;
+      return Math.max(0, +(currentOpen - neededRate*(i-todayIdx)).toFixed(1));
+    });
+
+    const buildProj = rate => allWks.map((_,i) => {
+      if(i < todayIdx) return null;
+      return Math.max(0, +(currentOpen - rate*(i-todayIdx)).toFixed(1));
+    });
+
+    const projEndDate = rate => {
+      if(rate <= 0) return null;
+      return addWk(todayWk, Math.ceil(currentOpen/rate));
+    };
+
+    const todayMarkerPlugin = {
+      id:"bdTodayMarker",
+      afterDraw(chart){
+        const meta = chart.getDatasetMeta(0);
+        if(!meta.data[todayIdx]) return;
+        const x = meta.data[todayIdx].x;
+        const {ctx, chartArea:{top,bottom}} = chart;
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom);
+        ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke();
+        ctx.fillStyle="#94a3b8"; ctx.font="bold 9px sans-serif"; ctx.setLineDash([]);
+        ctx.fillText("today", x+4, top+12);
+        ctx.restore();
+      }
+    };
+
+    if(_burndownChart) _burndownChart.destroy();
+    _burndownChart = new Chart(document.getElementById("chartBurndown").getContext("2d"), {
+      type:"line", plugins:[todayMarkerPlugin],
+      data:{ labels:wkLabels, datasets:[
+        { label:"Actual open",              data:histDs,            borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)", fill:true,  tension:0.3, pointRadius:2, borderWidth:2 },
+        { label:"Required pace",            data:reqDs,             borderColor:"#dc2626", backgroundColor:"transparent",          fill:false, tension:0,   pointRadius:0, borderWidth:2, borderDash:[6,3] },
+        { label:"Projected (adjust slider)",data:buildProj(actualVel), borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,0.05)", fill:true, tension:0, pointRadius:0, borderWidth:2.5, borderDash:[4,4] },
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:"index", intersect:false },
+        plugins:{ legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } },
+          tooltip:{ callbacks:{ footer: items => items[0].dataIndex===todayIdx ? "◀ today" : "" } }
+        },
+        scales:{
+          x:{ ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:30 }, grid:{ display:false } },
+          y:{ beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" } }
+        }
+      }
+    });
+
+    const slider  = document.getElementById("bdSlider");
+    const rateEl  = document.getElementById("bdRateVal");
+    const badgeEl = document.getElementById("bdBadge");
+    slider.value  = actualVel;
+    rateEl.textContent = actualVel.toFixed(1);
+
+    const updateBd = rate => {
+      _burndownChart.data.datasets[2].data = buildProj(rate);
+      _burndownChart.update("none");
+      rateEl.textContent = rate.toFixed(1);
+      const end = projEndDate(rate);
+      if(!end){ badgeEl.textContent="No progress"; badgeEl.className="bd-badge bd-bad"; return; }
+      const endFmt = fmtDate(end);
+      if(end <= targetWk){
+        badgeEl.textContent=`✓ Done by ${endFmt}`; badgeEl.className="bd-badge bd-ok";
+      } else {
+        const daysLate = Math.round((new Date(end+"T00:00:00Z")-new Date("2026-09-30T00:00:00Z"))/(86400000));
+        badgeEl.textContent=`⚠ ${endFmt} (${daysLate}d late)`;
+        badgeEl.className = daysLate<=28 ? "bd-badge bd-warn" : "bd-badge bd-bad";
+      }
+    };
+    slider.addEventListener("input", () => updateBd(parseFloat(slider.value)));
+    updateBd(actualVel);
   }
 }
 let _newClosedChart = null;
