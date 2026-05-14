@@ -693,8 +693,6 @@ function renderMetrics(){
         { type:"bar",  label:"Closed",       data: closedPerWeek, backgroundColor:"#86efac", order:2 },
         { type:"line", label:"Net Open",     data: netOpen,       borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)",
           fill:true, tension:0.3, pointRadius:2, borderWidth:2, order:1 },
-        { type:"line", label:"In Progress",  data: weeks.map(()=>DR_DATA.filter(r=>["In progress","In Review","Ready to Test Fix"].includes(r.Status)).length),
-          borderColor:"#ea580c", borderDash:[5,4], pointRadius:0, borderWidth:1.5, order:1 },
       ]},
       options: {
         responsive: true,
