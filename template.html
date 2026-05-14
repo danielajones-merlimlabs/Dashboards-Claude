@@ -478,7 +478,7 @@ function updateTypeBar(){
 }
 
 function updateStatusBar(){
-  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"];
+  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Needs Testing","Blocked","Watch","Product Backlog- Future"];
   const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
   const counts = {};
   filtered.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
