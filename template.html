@@ -470,7 +470,7 @@ function render(){
 function updateTypeBar(){
   const TYPE_ORDER = ["1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
   const counts = {};
-  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
+  filtered.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
   document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
     const color = TYPE_COLORS[t] || "#94a3b8";
     return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
@@ -481,7 +481,7 @@ function updateStatusBar(){
   const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"];
   const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
   const counts = {};
-  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
+  filtered.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
   const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
   document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
     const cls = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
