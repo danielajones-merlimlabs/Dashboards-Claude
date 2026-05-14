@@ -146,7 +146,7 @@ const SYNC_TIMESTAMP = "2026-05-13 22:21 UTC";
 // SYNC_DATA_END
 
 // ── CONFIG ──
-const WORKER_URL     = "__WORKER_URL_PLACEHOLDER__";
+const WORKER_URL     = "https://dr-sync-worker.daniela-jones.workers.dev";
 const APPS_SCRIPT_URL = "https://script.google.com/a/macros/merlinlabs.com/s/AKfycbzexVM3tu-OSPuDVtxKxITuRaPBotNvh_TsoJh1s66q_ECAycy6qeRt6ubyl-5Phpsb/exec";
 
 // ── USER NAME ──
@@ -438,7 +438,7 @@ function updateStats(){
 async function syncRow(key,btn){
   const changes=dirty[key];const note=getShared(key,"Notes");
   if(!changes&&!note){showToast("Nothing to sync for "+key,false);return;}
-  if(!WORKER_URL||WORKER_URL==="__WORKER_URL_PLACEHOLDER__"){showToast("⚠ Worker URL not configured yet — Jira sync disabled",false);return;}
+  if(!WORKER_URL||WORKER_URL==="https://dr-sync-worker.daniela-jones.workers.dev"){showToast("⚠ Worker URL not configured yet — Jira sync disabled",false);return;}
   btn.disabled=true;btn.textContent="…";btn.className="sync-row-btn syncing";
   const payload={issueKey:key,updates:{},note:note||""};
   if(changes){
