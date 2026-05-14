@@ -170,8 +170,8 @@
       <canvas id="chartStatusType"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Open DRs by Functional Team</div>
-      <div class="chart-sub">All projects · in-work tickets</div>
+      <div class="chart-title">Safety Critical &amp; Cert Required by Functional Team</div>
+      <div class="chart-sub">Safety Critical + Required for Certification only</div>
       <canvas id="chartFuncTeam" style="max-height:320px"></canvas>
     </div>
   </div>
@@ -645,9 +645,9 @@ function renderMetrics(){
     }
   });
 
-  // ── Pie: open DRs by Functional Team ──
+  // ── Pie: Safety Critical + Cert Required by Functional Team ──
   const teamCounts = {};
-  DR_DATA.forEach(r => {
+  DR_DATA.filter(r => r["DR Type"] === "1 - Safety Critical" || r["DR Type"] === "2 - Required for Certification").forEach(r => {
     const team = r["Functional Team (System)"] || "(none)";
     teamCounts[team] = (teamCounts[team] || 0) + 1;
   });
