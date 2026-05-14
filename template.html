@@ -468,7 +468,7 @@ function render(){
 }
 
 function updateTypeBar(){
-  const TYPE_ORDER = ["2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
+  const TYPE_ORDER = ["3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
   const counts = {};
   filtered.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
   document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
