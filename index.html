@@ -285,6 +285,7 @@ const COLS=[
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-select",   minW:145, sortField:"Assignee",                 field:"Assignee",                   options:ASSIGNEES},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
+  {id:"affAircraft",label:"Affected Aircraft",group:"core",    type:"static",        minW:130, sortField:"Affected Aircraft"},
   {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
   {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, sfield:"Notes"},
   {id:"avidyne",  label:"Avidyne",         group:"core",        type:"avi",           minW:58},
@@ -376,6 +377,7 @@ function cellForCol(c,r){
       else if(c.id==="status")content=isClosed?'<span class="closed-tag">[CLOSED]</span>':pill(r.Status);
       else if(c.id==="labels")content=ltags(r.Labels);
       else if(c.id==="updated")content=`<span class="date-cell">${r.Updated||"—"}</span>`;
+      else if(c.id==="affAircraft")content=r.Project==="FFT"?`<span style="font-size:10px;color:var(--text2)">${r["Affected Aircraft"]||"—"}</span>`:"";
       else if(c.id==="comments")content=`<span style="font-size:10px;color:var(--text3)">${r["Comment Count"]??""}</span>`;
       return`<td style="text-align:${c.id==="comments"?"center":"left"}">${content}</td>`;
     }
