@@ -1,0 +1,11 @@
+name = "dr-sync-worker"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# JIRA_BASE is non-sensitive — stored as a plain var
+[vars]
+JIRA_BASE = "https://merlinlabs.atlassian.net"
+
+# JIRA_EMAIL and JIRA_TOKEN are injected as secrets by the GitHub Action
+# (wrangler secret put JIRA_EMAIL / JIRA_TOKEN)
+# Do NOT put credentials here.
