@@ -18,23 +18,35 @@ FIELDS = [
     "created","updated","resolutiondate","comment"
 ]
 
-FFT_FILTER = ('summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
-              'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208" '
-              'OR cf[10123] ~ "MLN" OR cf[10123] ~ "208"')
+AIRCRAFT_TERMS = ["n208", "208b", "mln", "zkmln", "zk-mln", "208"]
+
+def is_fft_aircraft(issue):
+    """Return True if this FFT issue is for our tracked aircraft."""
+    f = issue["fields"]
+    summary = (f.get("summary") or "").lower()
+    if any(t in summary for t in AIRCRAFT_TERMS):
+        return True
+    affected = f.get("customfield_10123") or []
+    if isinstance(affected, list):
+        for opt in affected:
+            val = (opt.get("value") or "").lower() if isinstance(opt, dict) else str(opt).lower()
+            if any(t in val for t in AIRCRAFT_TERMS):
+                return True
+    return False
 
 # Note: "Won't Fix" removed to avoid quote escaping issues - excluded via statusCategory below
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
-FFT_JQL  = f'project = FFT AND issuetype = DR AND statusCategory != Done AND ({FFT_FILTER}) ORDER BY created DESC'
+FFT_JQL  = 'project = FFT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
 
 QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
 
 # Closed DRs — minimal fields only, last 18 months, for burndown chart
 CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "issuetype",
-                 "customfield_11935", "customfield_12068"]
+                 "customfield_10123", "customfield_11935", "customfield_12068"]
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
-FFT_CLOSED_JQL  = (f'project = FFT AND issuetype = DR AND statusCategory = Done '
-                   f'AND ({FFT_FILTER}) AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
+FFT_CLOSED_JQL  = ('project = FFT AND issuetype = DR AND statusCategory = Done '
+                   'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):
@@ -152,6 +164,10 @@ def main():
     for project, jql in QUERIES.items():
         print(f"\nFetching {project}...")
         issues = fetch_all(jql, FIELDS)
+        if project == "FFT":
+            before = len(issues)
+            issues = [i for i in issues if is_fft_aircraft(i)]
+            print(f"  Aircraft filter: {before} -> {len(issues)}")
         rows = [parse_issue(i) for i in issues]
         rows.sort(key=lambda r: -int(r["Key"].split("-")[1]))
         all_rows.extend(rows)
@@ -163,6 +179,8 @@ def main():
     for project, jql in QUERIES_CLOSED.items():
         print(f"\nFetching closed {project}...")
         issues = fetch_all(jql, CLOSED_FIELDS)
+        if project == "FFT":
+            issues = [i for i in issues if is_fft_aircraft(i)]
         rows = [parse_closed(i) for i in issues]
         closed_rows.extend(rows)
         print(f"  -> {len(rows)} closed {project} DRs")
