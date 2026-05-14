@@ -155,6 +155,7 @@
 </div>
 
 <div id="statusBar" class="status-bar"></div>
+<div id="typeBar" class="status-bar" style="padding-top:4px;padding-bottom:6px;border-top:none"></div>
 
 <div class="table-wrap">
   <table id="mainTable"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -461,7 +462,18 @@ function render(){
   tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
   updateStats();
   updateStatusBar();
+  updateTypeBar();
   document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
+}
+
+function updateTypeBar(){
+  const TYPE_ORDER = ["1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
+  const counts = {};
+  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
+  document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
+    const color = TYPE_COLORS[t] || "#94a3b8";
+    return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t}</div>`;
+  }).join('');
 }
 
 function updateStatusBar(){
