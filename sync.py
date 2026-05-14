@@ -31,9 +31,9 @@ QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
 CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "issuetype",
                  "customfield_11935", "customfield_12068"]
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
-                   'AND resolutiondate >= -548d ORDER BY resolutiondate DESC')
+                   'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 FFT_CLOSED_JQL  = (f'project = FFT AND issuetype = DR AND statusCategory = Done '
-                   f'AND ({FFT_FILTER}) AND resolutiondate >= -548d ORDER BY resolutiondate DESC')
+                   f'AND ({FFT_FILTER}) AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):

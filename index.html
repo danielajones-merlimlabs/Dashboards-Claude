@@ -649,7 +649,7 @@ function renderMetrics(){
     // Build range: earliest week → today
     const allDates = [...DR_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.ResolutionDate)]
       .filter(Boolean).map(d => weekKey(d));
-    const minWeek = allDates.reduce((a,b) => a<b?a:b);
+    const minWeek = "2026-03-01"; // Sunday on/before 2025-03-01
     const weeks = [];
     let cur = new Date(minWeek);
     const today = new Date();
