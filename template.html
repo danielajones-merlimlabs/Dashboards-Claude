@@ -168,6 +168,11 @@
       <canvas id="chartFuncTeam"></canvas>
     </div>
   </div>
+  <div class="chart-card">
+    <div class="chart-title">DR Burndown — Opened vs Closed per Week</div>
+    <div class="chart-sub">Last 18 months · bars = weekly counts · line = net open backlog</div>
+    <canvas id="chartBurndown"></canvas>
+  </div>
 </div>
 
 <div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
@@ -176,6 +181,7 @@
 <script>
 // SYNC_DATA_START
 const DR_DATA = __DR_DATA_PLACEHOLDER__;
+const CLOSED_DATA = __CLOSED_DATA_PLACEHOLDER__;
 const SYNC_TIMESTAMP = "__SYNC_TIMESTAMP_PLACEHOLDER__";
 // SYNC_DATA_END
 
@@ -632,7 +638,60 @@ function renderMetrics(){
       }
     }
   });
+
+  // ── Burndown: opened vs closed per week ──
+  if (typeof CLOSED_DATA !== "undefined" && CLOSED_DATA.length > 0) {
+    const weekKey = d => { const dt = new Date(d); dt.setDate(dt.getDate() - dt.getDay()); return dt.toISOString().slice(0,10); };
+    const weeksSet = new Set();
+    DR_DATA.forEach(r => { if(r.Created) weeksSet.add(weekKey(r.Created)); });
+    CLOSED_DATA.forEach(r => { if(r.Created) weeksSet.add(weekKey(r.Created)); if(r.ResolutionDate) weeksSet.add(weekKey(r.ResolutionDate)); });
+
+    // Build range: earliest week → today
+    const allDates = [...DR_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.ResolutionDate)]
+      .filter(Boolean).map(d => weekKey(d));
+    const minWeek = allDates.reduce((a,b) => a<b?a:b);
+    const weeks = [];
+    let cur = new Date(minWeek);
+    const today = new Date();
+    while (cur <= today) {
+      weeks.push(cur.toISOString().slice(0,10));
+      cur.setDate(cur.getDate() + 7);
+    }
+
+    const openedPerWeek  = weeks.map(w => DR_DATA.filter(r => r.Created && weekKey(r.Created)===w).length
+      + CLOSED_DATA.filter(r => r.Created && weekKey(r.Created)===w).length);
+    const closedPerWeek  = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
+
+    // Running net open count
+    let running = 0;
+    const netOpen = weeks.map((_,i) => { running += openedPerWeek[i] - closedPerWeek[i]; return running; });
+
+    const weekLabels = weeks.map(w => { const d = new Date(w); return `${d.getMonth()+1}/${d.getDate()}`; });
+
+    if (_burnChart) _burnChart.destroy();
+    _burnChart = new Chart(document.getElementById("chartBurndown").getContext("2d"), {
+      data: {
+        labels: weekLabels,
+        datasets: [
+          { type:"bar",  label:"Opened",   data: openedPerWeek, backgroundColor:"#93c5fd", order:2 },
+          { type:"bar",  label:"Closed",   data: closedPerWeek, backgroundColor:"#86efac", order:2 },
+          { type:"line", label:"Net Open", data: netOpen,       borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)",
+            fill:true, tension:0.3, pointRadius:2, borderWidth:2, order:1 },
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode:"index", intersect:false },
+        plugins: { legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } } },
+        scales: {
+          x: { ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:26 }, grid:{ display:false } },
+          y: { beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" } }
+        }
+      }
+    });
+  }
 }
+let _burnChart = null;
 </script>
 </body>
 </html>

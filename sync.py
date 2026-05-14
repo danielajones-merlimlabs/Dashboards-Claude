@@ -18,14 +18,23 @@ FIELDS = [
     "created","updated","resolutiondate","comment"
 ]
 
+FFT_FILTER = ('summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
+              'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208"')
+
 # Note: "Won't Fix" removed to avoid quote escaping issues - excluded via statusCategory below
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
-FFT_JQL  = ('project = FFT AND issuetype = DR AND statusCategory != Done '
-            'AND (summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
-            'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208") '
-            'ORDER BY created DESC')
+FFT_JQL  = f'project = FFT AND issuetype = DR AND statusCategory != Done AND ({FFT_FILTER}) ORDER BY created DESC'
 
 QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
+
+# Closed DRs — minimal fields only, last 18 months, for burndown chart
+CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "issuetype",
+                 "customfield_11935", "customfield_12068"]
+MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
+                   'AND resolutiondate >= -548d ORDER BY resolutiondate DESC')
+FFT_CLOSED_JQL  = (f'project = FFT AND issuetype = DR AND statusCategory = Done '
+                   f'AND ({FFT_FILTER}) AND resolutiondate >= -548d ORDER BY resolutiondate DESC')
+QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):
     url = f"{JIRA_BASE}/rest/api/3/search/jql"
@@ -126,6 +135,17 @@ def parse_issue(i):
         "URL":                          f"https://merlinlabs.atlassian.net/browse/{i['key']}",
     }
 
+def parse_closed(i):
+    f = i["fields"]
+    return {
+        "Key":             i["key"],
+        "Project":         f.get("project", {}).get("key", ""),
+        "Created":         (f.get("created", "") or "")[:10],
+        "ResolutionDate":  (f.get("resolutiondate", "") or "")[:10],
+        "DR Type":         get_select(f.get("customfield_11935")),
+        "Functional Team": get_select(f.get("customfield_12068")),
+    }
+
 def main():
     all_rows = []
     for project, jql in QUERIES.items():
@@ -136,7 +156,17 @@ def main():
         all_rows.extend(rows)
         print(f"  -> {len(rows)} {project} DRs")
 
-    print(f"\nTotal: {len(all_rows)} DRs")
+    print(f"\nTotal open: {len(all_rows)} DRs")
+
+    closed_rows = []
+    for project, jql in QUERIES_CLOSED.items():
+        print(f"\nFetching closed {project}...")
+        issues = fetch_all(jql, CLOSED_FIELDS)
+        rows = [parse_closed(i) for i in issues]
+        closed_rows.extend(rows)
+        print(f"  -> {len(rows)} closed {project} DRs")
+
+    print(f"Total closed (18 mo): {len(closed_rows)} DRs")
 
     root = os.path.dirname(os.path.abspath(__file__))
     template_path = os.path.join(root, "template.html")
@@ -145,16 +175,18 @@ def main():
     with open(template_path, "r", encoding="utf-8") as f:
         html = f.read()
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    data_json = json.dumps(all_rows, ensure_ascii=False, separators=(",", ":"))
+    timestamp   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    data_json   = json.dumps(all_rows,    ensure_ascii=False, separators=(",", ":"))
+    closed_json = json.dumps(closed_rows, ensure_ascii=False, separators=(",", ":"))
 
-    html = html.replace("__DR_DATA_PLACEHOLDER__", data_json)
+    html = html.replace("__DR_DATA_PLACEHOLDER__",     data_json)
+    html = html.replace("__CLOSED_DATA_PLACEHOLDER__", closed_json)
     html = html.replace("__SYNC_TIMESTAMP_PLACEHOLDER__", timestamp)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"index.html rebuilt - {len(all_rows)} rows, {timestamp}")
+    print(f"index.html rebuilt - {len(all_rows)} open + {len(closed_rows)} closed, {timestamp}")
 
 if __name__ == "__main__":
     main()

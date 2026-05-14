@@ -30,7 +30,7 @@ jobs:
           JIRA_EMAIL:  ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN:  ${{ secrets.JIRA_TOKEN }}
           JIRA_BASE:   https://merlinlabs.atlassian.net
-        run: python scripts/sync.py
+        run: python sync.py
 
       - name: Commit and push updated index.html
         run: |
