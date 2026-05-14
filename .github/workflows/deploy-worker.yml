@@ -38,8 +38,8 @@ jobs:
             exit 1
           fi
           echo "Worker URL: ${WORKER_URL}"
-          sed -i "s|\"__WORKER_URL_PLACEHOLDER__\"|\"${WORKER_URL}\"|g" template.html
-          sed -i "s|\"__WORKER_URL_PLACEHOLDER__\"|\"${WORKER_URL}\"|g" index.html
+          sed -i "s|const WORKER_URL     = \"__WORKER_URL_PLACEHOLDER__\"|const WORKER_URL     = \"${WORKER_URL}\"|" template.html
+          sed -i "s|const WORKER_URL     = \"__WORKER_URL_PLACEHOLDER__\"|const WORKER_URL     = \"${WORKER_URL}\"|" index.html
 
       - name: Commit patched URL
         run: |
