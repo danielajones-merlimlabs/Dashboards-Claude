@@ -12,14 +12,15 @@ JIRA_TOKEN = os.environ["JIRA_TOKEN"]
 
 FIELDS = [
     "summary","issuetype","project","reporter","description","status","assignee",
-    "components","customfield_10376","customfield_10681","customfield_11439",
+    "components","customfield_10123","customfield_10376","customfield_10681","customfield_11439",
     "customfield_11770","customfield_11869","customfield_11935","customfield_12068",
     "fixVersions","issuelinks","labels","parent","priority",
     "created","updated","resolutiondate","comment"
 ]
 
 FFT_FILTER = ('summary ~ "N208" OR summary ~ "208B" OR summary ~ "MLN" '
-              'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208"')
+              'OR summary ~ "ZKMLN" OR text ~ "N208B" OR text ~ "ZKMLN" OR summary ~ "208" '
+              'OR cf[10123] ~ "MLN" OR cf[10123] ~ "208"')
 
 # Note: "Won't Fix" removed to avoid quote escaping issues - excluded via statusCategory below
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
