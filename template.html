@@ -50,6 +50,11 @@
   .mppt{background:var(--mppt-bg);color:var(--mppt-fg)}.fft{background:var(--fft-bg);color:var(--fft-fg)}
   .sc{background:var(--sc-bg);color:var(--sc-fg)}.cert{background:var(--cert-bg);color:var(--cert-fg)}
   .status-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+  .status-bar{display:flex;flex-wrap:wrap;gap:5px;padding:7px 20px;border-bottom:1px solid var(--border);background:#f8f9fe}
+  .sbar-chip{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;font-size:11px;background:var(--surface);border:1px solid var(--border2);color:var(--text2)}
+  .sbar-chip .sval{font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text)}
+  .sbar-chip.active{border-color:#ea580c;color:#c2410c}.sbar-chip.active .sval{color:#c2410c}
+  .sbar-chip.sdanger{border-color:#dc2626;color:#991b1b}.sbar-chip.sdanger .sval{color:#991b1b}
   .summary-cell{max-width:250px}.summary-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;color:var(--text)}
   .pri-highest{color:#dc2626;font-weight:600}.pri-high{color:#ea580c;font-weight:600}.pri-default{color:var(--text3)}
   .date-cell{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap}
@@ -148,6 +153,8 @@
   <div class="fsep"></div>
   <button class="btn" onclick="clearFilters()">Clear</button>
 </div>
+
+<div id="statusBar" class="status-bar"></div>
 
 <div class="table-wrap">
   <table id="mainTable"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -453,7 +460,20 @@ function render(){
   document.getElementById("noResults").style.display="none";
   tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
   updateStats();
+  updateStatusBar();
   document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
+}
+
+function updateStatusBar(){
+  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"];
+  const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
+  const counts = {};
+  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
+  const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
+  document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
+    const cls = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
+    return `<div class="sbar-chip ${cls}"><span class="sval">${counts[s]}</span>${s}</div>`;
+  }).join('');
 }
 
 function updateStats(){
@@ -663,6 +683,8 @@ function renderMetrics(){
         { type:"bar",  label:"Closed",       data: closedPerWeek, backgroundColor:"#86efac", order:2 },
         { type:"line", label:"Net Open",     data: netOpen,       borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)",
           fill:true, tension:0.3, pointRadius:2, borderWidth:2, order:1 },
+        { type:"line", label:"In Progress",  data: weeks.map(()=>DR_DATA.filter(r=>["In progress","In Review","Ready to Test Fix"].includes(r.Status)).length),
+          borderColor:"#ea580c", borderDash:[5,4], pointRadius:0, borderWidth:1.5, order:1 },
       ]},
       options: {
         responsive: true,
