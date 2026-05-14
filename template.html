@@ -559,16 +559,23 @@ const TEAM_COLORS = [
 ];
 
 function renderMetrics(){
-  // Collect statuses in a preferred order, then any remaining
-  const STATUS_ORDER = ["To Do","In Progress","In Review","Watch","Investigating","Blocked","On Hold","Done","Closed","Won't Fix"];
-  const allStatuses = [...new Set(DR_DATA.map(r=>r.Status).filter(Boolean))];
+  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do" };
+  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do" };
+  const STATUS_ORDER = [
+    "New","Need Team Input","To-Do","Triaged","Investigating",
+    "In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"
+  ];
+
+  const rowStatus = r => STATUS_MERGE[r.Status] || r.Status;
+  const allStatuses = [...new Set(DR_DATA.map(r=>rowStatus(r)).filter(Boolean))];
   const statuses = [...STATUS_ORDER.filter(s=>allStatuses.includes(s)), ...allStatuses.filter(s=>!STATUS_ORDER.includes(s))];
+  const statusLabels = statuses.map(s => STATUS_DISPLAY[s] || s);
 
   const types = Object.keys(TYPE_COLORS);
 
   const datasets = types.map(type=>{
     const data = statuses.map(status=>
-      DR_DATA.filter(r=>r.Status===status && (type==="(none)" ? !r["DR Type"] : r["DR Type"]===type)).length
+      DR_DATA.filter(r=>rowStatus(r)===status && (type==="(none)" ? !r["DR Type"] : r["DR Type"]===type)).length
     );
     return { label: type, data, backgroundColor: TYPE_COLORS[type], borderRadius: 3, borderSkipped: false };
   }).filter(ds=>ds.data.some(v=>v>0));
@@ -579,7 +586,7 @@ function renderMetrics(){
 
   _metricsChart = new Chart(ctx, {
     type: "bar",
-    data: { labels: statuses, datasets },
+    data: { labels: statusLabels, datasets },
     options: {
       responsive: true,
       plugins: {
