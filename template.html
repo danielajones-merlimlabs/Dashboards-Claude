@@ -172,7 +172,7 @@
     <div class="chart-card">
       <div class="chart-title">Open DRs by Functional Team</div>
       <div class="chart-sub">All projects · in-work tickets</div>
-      <canvas id="chartFuncTeam"></canvas>
+      <canvas id="chartFuncTeam" style="max-height:320px"></canvas>
     </div>
   </div>
   <div class="chart-card">
@@ -662,6 +662,7 @@ function renderMetrics(){
     data: { labels: teamLabels, datasets: [{ data: teamData, backgroundColor: teamColors, borderWidth: 2, borderColor: "#fff" }] },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: "bottom", labels: { font:{size:11}, padding:12, boxWidth:12 } },
         tooltip: {
