@@ -9,3 +9,7 @@ JIRA_BASE = "https://merlinlabs.atlassian.net"
 # JIRA_EMAIL and JIRA_TOKEN are injected as secrets by the GitHub Action
 # (wrangler secret put JIRA_EMAIL / JIRA_TOKEN)
 # Do NOT put credentials here.
+
+[[kv_namespaces]]
+binding = "SHARED_NOTES"
+id      = "346a80b61cb548a682bc7c05e50053f0"

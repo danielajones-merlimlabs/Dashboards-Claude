@@ -4,10 +4,25 @@ export default {
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
         },
       });
+    }
+
+    const url = new URL(request.url);
+    const action = url.searchParams.get("action");
+
+    // ── GET ?action=getAll — load all shared notes from KV ──
+    if (request.method === "GET" && action === "getAll") {
+      const list = await env.SHARED_NOTES.list();
+      const rows = await Promise.all(
+        list.keys.map(async ({ name }) => {
+          const val = await env.SHARED_NOTES.get(name, { type: "json" });
+          return val ? { Key: name, ...val } : null;
+        })
+      );
+      return jsonResp({ rows: rows.filter(Boolean) });
     }
 
     if (request.method !== "POST") {
@@ -18,9 +33,26 @@ export default {
     try {
       body = await request.json();
     } catch {
-      return jsonResp({ results: [{ error: "Invalid JSON body" }] }, 400);
+      return jsonResp({ error: "Invalid JSON body" }, 400);
     }
 
+    // ── POST {action:"save"} — save shared note to KV ──
+    if (body.action === "save") {
+      const { key, fields, user } = body;
+      if (!key) return jsonResp({ error: "Missing key" }, 400);
+
+      const existing = (await env.SHARED_NOTES.get(key, { type: "json" })) || {};
+      const updated = {
+        ...existing,
+        ...fields,
+        LastEditedBy: user || existing.LastEditedBy || "",
+        LastEditedAt: new Date().toISOString(),
+      };
+      await env.SHARED_NOTES.put(key, JSON.stringify(updated));
+      return jsonResp({ success: true, timestamp: updated.LastEditedAt });
+    }
+
+    // ── POST {issueKey, updates, note} — Jira field sync ──
     const { issueKey, updates = {}, note = "" } = body;
     if (!issueKey) return jsonResp({ results: [{ error: "Missing issueKey" }] }, 400);
 
@@ -34,10 +66,9 @@ export default {
 
     const results = [];
 
-    // Build Jira field payload
     const fields = {};
-    if (updates.drType)  fields.customfield_11935 = { value: updates.drType };
-    if (updates.system)  fields.customfield_12068 = { value: updates.system };
+    if (updates.drType)   fields.customfield_11935 = { value: updates.drType };
+    if (updates.system)   fields.customfield_12068 = { value: updates.system };
     if (updates.priority) fields.priority = { name: updates.priority };
 
     if (updates.assignee) {
@@ -47,10 +78,9 @@ export default {
       );
       if (userRes.ok) {
         const users = await userRes.json();
-        // Match by displayName (case-insensitive)
-        const match = users.find(
-          (u) => u.displayName?.toLowerCase() === updates.assignee.toLowerCase()
-        ) || users[0];
+        const match =
+          users.find((u) => u.displayName?.toLowerCase() === updates.assignee.toLowerCase()) ||
+          users[0];
         if (match) {
           fields.assignee = { accountId: match.accountId };
         } else {
@@ -61,7 +91,6 @@ export default {
       }
     }
 
-    // Update issue fields
     if (Object.keys(fields).length > 0) {
       const r = await fetch(`${base}/rest/api/3/issue/${issueKey}`, {
         method: "PUT",
@@ -76,7 +105,6 @@ export default {
       }
     }
 
-    // Add comment (posted as Jira ADF)
     if (note.trim()) {
       const r = await fetch(`${base}/rest/api/3/issue/${issueKey}/comment`, {
         method: "POST",
@@ -98,7 +126,6 @@ export default {
     }
 
     if (results.length === 0) results.push({ ok: true, action: "no_changes" });
-
     return jsonResp({ results });
   },
 };

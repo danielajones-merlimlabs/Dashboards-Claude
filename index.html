@@ -147,7 +147,6 @@ const SYNC_TIMESTAMP = "2026-05-14 15:53 UTC";
 
 // ── CONFIG ──
 const WORKER_URL     = "https://dr-sync-worker.daniela-jones.workers.dev";
-const APPS_SCRIPT_URL = "https://script.google.com/a/macros/merlinlabs.com/s/AKfycbzexVM3tu-OSPuDVtxKxITuRaPBotNvh_TsoJh1s66q_ECAycy6qeRt6ubyl-5Phpsb/exec";
 
 // ── USER NAME ──
 let currentUser = localStorage.getItem("dr_username") || "";
@@ -160,10 +159,10 @@ let sharedData = {};
 let sheetLoaded = false;
 
 async function loadSharedData() {
-  if (!APPS_SCRIPT_URL) { document.getElementById("sheetStatus").textContent = "⚠ Google Sheet not connected"; sheetLoaded=true; render(); return; }
+  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) { document.getElementById("sheetStatus").textContent = "⚠ Worker not configured"; sheetLoaded=true; render(); return; }
   document.getElementById("loadingBar").style.display = "block";
   try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=getAll`);
+    const res = await fetch(`${WORKER_URL}?action=getAll`);
     const data = await res.json();
     sharedData = {};
     (data.rows || []).forEach(row => { if(row.Key) sharedData[row.Key] = row; });
@@ -178,10 +177,10 @@ async function loadSharedData() {
 }
 
 async function saveToSheet(key, fields) {
-  if (!APPS_SCRIPT_URL) return;
+  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) return;
   if (!currentUser) { showToast("Please enter your name at the top first", false); return; }
   try {
-    const res = await fetch(APPS_SCRIPT_URL, {
+    const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ action:"save", key, fields, user: currentUser })
