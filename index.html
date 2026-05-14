@@ -523,8 +523,8 @@ loadSharedData(); // loads sheet then calls render()
 
 // ── TABS ──
 function switchTab(tab){
-  document.getElementById("tab-table").style.display = tab==="table" ? "" : "none";
-  document.getElementById("tab-metrics").style.display = tab==="metrics" ? "" : "none";
+  document.getElementById("tab-table").style.display = tab==="table" ? "block" : "none";
+  document.getElementById("tab-metrics").style.display = tab==="metrics" ? "block" : "none";
   document.getElementById("tabBtnTable").classList.toggle("active", tab==="table");
   document.getElementById("tabBtnMetrics").classList.toggle("active", tab==="metrics");
   if(tab==="metrics") renderMetrics();
