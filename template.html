@@ -178,7 +178,7 @@
   <div class="chart-card">
     <div class="chart-title">New vs Closed DRs by Week</div>
     <div class="chart-sub">Since March 2026 · bars = weekly counts</div>
-    <canvas id="chartNewVsClosed"></canvas>
+    <canvas id="chartNewVsClosed" style="max-height:220px"></canvas>
   </div>
 </div>
 
@@ -701,6 +701,7 @@ function renderMetrics(){
       ]},
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         interaction: { mode:"index", intersect:false },
         plugins: { legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } } },
         scales: {
