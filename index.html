@@ -169,9 +169,9 @@
     </div>
   </div>
   <div class="chart-card">
-    <div class="chart-title">DR Burndown — Opened vs Closed per Week</div>
-    <div class="chart-sub">Last 18 months · bars = weekly counts · line = net open backlog</div>
-    <canvas id="chartBurndown"></canvas>
+    <div class="chart-title">New vs Closed DRs by Week</div>
+    <div class="chart-sub">Since March 2026 · bars = weekly counts</div>
+    <canvas id="chartNewVsClosed"></canvas>
   </div>
 </div>
 
@@ -639,46 +639,26 @@ function renderMetrics(){
     }
   });
 
-  // ── Burndown: opened vs closed per week ──
-  if (typeof CLOSED_DATA !== "undefined" && CLOSED_DATA.length > 0) {
-    const weekKey = d => { const dt = new Date(d); dt.setDate(dt.getDate() - dt.getDay()); return dt.toISOString().slice(0,10); };
-    const weeksSet = new Set();
-    DR_DATA.forEach(r => { if(r.Created) weeksSet.add(weekKey(r.Created)); });
-    CLOSED_DATA.forEach(r => { if(r.Created) weeksSet.add(weekKey(r.Created)); if(r.ResolutionDate) weeksSet.add(weekKey(r.ResolutionDate)); });
 
-    // Build range: earliest week → today
-    const allDates = [...DR_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.Created), ...CLOSED_DATA.map(r=>r.ResolutionDate)]
-      .filter(Boolean).map(d => weekKey(d));
-    const minWeek = "2026-03-01"; // Sunday on/before 2025-03-01
+  // ── New vs Closed per week ──
+  if (typeof CLOSED_DATA !== "undefined") {
+    const weekKey = d => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay()); return dt.toISOString().slice(0,10); };
+    const minWeek = "2026-03-01";
     const weeks = [];
     let cur = new Date(minWeek);
     const today = new Date();
-    while (cur <= today) {
-      weeks.push(cur.toISOString().slice(0,10));
-      cur.setDate(cur.getDate() + 7);
-    }
-
-    const openedPerWeek  = weeks.map(w => DR_DATA.filter(r => r.Created && weekKey(r.Created)===w).length
-      + CLOSED_DATA.filter(r => r.Created && weekKey(r.Created)===w).length);
-    const closedPerWeek  = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
-
-    // Running net open count
-    let running = 0;
-    const netOpen = weeks.map((_,i) => { running += openedPerWeek[i] - closedPerWeek[i]; return running; });
-
-    const weekLabels = weeks.map(w => { const d = new Date(w); return `${d.getMonth()+1}/${d.getDate()}`; });
-
-    if (_burnChart) _burnChart.destroy();
-    _burnChart = new Chart(document.getElementById("chartBurndown").getContext("2d"), {
-      data: {
-        labels: weekLabels,
-        datasets: [
-          { type:"bar",  label:"Opened",   data: openedPerWeek, backgroundColor:"#93c5fd", order:2 },
-          { type:"bar",  label:"Closed",   data: closedPerWeek, backgroundColor:"#86efac", order:2 },
-          { type:"line", label:"Net Open", data: netOpen,       borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)",
-            fill:true, tension:0.3, pointRadius:2, borderWidth:2, order:1 },
-        ]
-      },
+    while (cur <= today) { weeks.push(cur.toISOString().slice(0,10)); cur.setUTCDate(cur.getUTCDate() + 7); }
+    const allDR = [...DR_DATA, ...CLOSED_DATA];
+    const newPerWeek    = weeks.map(w => allDR.filter(r => r.Created && weekKey(r.Created)===w).length);
+    const closedPerWeek = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
+    const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+    if (_newClosedChart) _newClosedChart.destroy();
+    _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
+      type: "bar",
+      data: { labels: weekLabels, datasets: [
+        { label:"New",    data: newPerWeek,    backgroundColor:"#93c5fd" },
+        { label:"Closed", data: closedPerWeek, backgroundColor:"#86efac" }
+      ]},
       options: {
         responsive: true,
         interaction: { mode:"index", intersect:false },
@@ -691,7 +671,7 @@ function renderMetrics(){
     });
   }
 }
-let _burnChart = null;
+let _newClosedChart = null;
 </script>
 </body>
 </html>
