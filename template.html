@@ -599,8 +599,8 @@ const TEAM_COLORS = [
 ];
 
 function renderMetrics(){
-  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do" };
-  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do" };
+  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do", "Needs Testing": "Ready to Test Fix" };
+  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do", "Ready to Test Fix": "Ready to Test / Needs Testing" };
   const STATUS_ORDER = [
     "New","Need Team Input","To-Do","Triaged","Investigating",
     "In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"
