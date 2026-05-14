@@ -471,7 +471,7 @@ function updateTypeBar(){
   DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
   document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
     const color = TYPE_COLORS[t] || "#94a3b8";
-    return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t}</div>`;
+    return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
   }).join('');
 }
 
