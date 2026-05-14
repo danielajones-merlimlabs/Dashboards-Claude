@@ -88,6 +88,8 @@
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
   .tab-btn:hover:not(.active){color:var(--text2)}
   #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
   .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:20px}
   .chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
   .chart-sub{font-size:11px;color:var(--text3);margin-bottom:16px}
@@ -154,10 +156,17 @@
 </div><!-- #tab-table -->
 
 <div id="tab-metrics">
-  <div class="chart-card">
-    <div class="chart-title">DR Count by Status — stacked by DR Type</div>
-    <div class="chart-sub">All projects · open DRs only</div>
-    <canvas id="chartStatusType"></canvas>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">DR Count by Status — stacked by DR Type</div>
+      <div class="chart-sub">All projects · open DRs only</div>
+      <canvas id="chartStatusType"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Open DRs by Functional Team</div>
+      <div class="chart-sub">All projects · in-work tickets</div>
+      <canvas id="chartFuncTeam"></canvas>
+    </div>
   </div>
 </div>
 
@@ -542,6 +551,12 @@ const TYPE_COLORS = {
 };
 
 let _metricsChart = null;
+let _pieChart = null;
+
+const TEAM_COLORS = [
+  "#1d4ed8","#dc2626","#16a34a","#7c3aed","#ea580c",
+  "#0891b2","#d97706","#db2777","#65a30d","#0f766e"
+];
 
 function renderMetrics(){
   // Collect statuses in a preferred order, then any remaining
@@ -579,6 +594,34 @@ function renderMetrics(){
       scales: {
         x: { stacked: true, ticks: { font:{size:11} }, grid: { display:false } },
         y: { stacked: true, beginAtZero: true, ticks: { stepSize:1, font:{size:11} }, grid: { color:"#e2e5f0" } }
+      }
+    }
+  });
+
+  // ── Pie: open DRs by Functional Team ──
+  const teamCounts = {};
+  DR_DATA.forEach(r => {
+    const team = r["Functional Team (System)"] || "(none)";
+    teamCounts[team] = (teamCounts[team] || 0) + 1;
+  });
+  const teamEntries = Object.entries(teamCounts).sort((a,b) => b[1]-a[1]);
+  const teamLabels = teamEntries.map(([t])=>t);
+  const teamData   = teamEntries.map(([,c])=>c);
+  const teamColors = teamLabels.map((_,i) => TEAM_COLORS[i % TEAM_COLORS.length]);
+
+  if(_pieChart){ _pieChart.destroy(); }
+  _pieChart = new Chart(document.getElementById("chartFuncTeam").getContext("2d"), {
+    type: "pie",
+    data: { labels: teamLabels, datasets: [{ data: teamData, backgroundColor: teamColors, borderWidth: 2, borderColor: "#fff" }] },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { font:{size:11}, padding:12, boxWidth:12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/teamData.reduce((a,b)=>a+b,0)*100)}%)`
+          }
+        }
       }
     }
   });
