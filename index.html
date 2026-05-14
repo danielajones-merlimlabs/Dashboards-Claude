@@ -651,13 +651,18 @@ function renderMetrics(){
     const allDR = [...DR_DATA, ...CLOSED_DATA];
     const newPerWeek    = weeks.map(w => allDR.filter(r => r.Created && weekKey(r.Created)===w).length);
     const closedPerWeek = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
+    const preOpen   = allDR.filter(r => r.Created && r.Created < minWeek).length;
+    const preClosed = CLOSED_DATA.filter(r => r.ResolutionDate && r.ResolutionDate < minWeek).length;
+    let running = preOpen - preClosed;
+    const netOpen = weeks.map((_,i) => { running += newPerWeek[i] - closedPerWeek[i]; return running; });
     const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
     if (_newClosedChart) _newClosedChart.destroy();
     _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
-      type: "bar",
       data: { labels: weekLabels, datasets: [
-        { label:"New",    data: newPerWeek,    backgroundColor:"#93c5fd" },
-        { label:"Closed", data: closedPerWeek, backgroundColor:"#86efac" }
+        { type:"bar",  label:"New",          data: newPerWeek,    backgroundColor:"#93c5fd", order:2 },
+        { type:"bar",  label:"Closed",       data: closedPerWeek, backgroundColor:"#86efac", order:2 },
+        { type:"line", label:"Net Open",     data: netOpen,       borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)",
+          fill:true, tension:0.3, pointRadius:2, borderWidth:2, order:1 },
       ]},
       options: {
         responsive: true,
