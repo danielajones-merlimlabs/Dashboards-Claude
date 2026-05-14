@@ -468,9 +468,9 @@ function render(){
 }
 
 function updateTypeBar(){
-  const TYPE_ORDER = ["1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
+  const TYPE_ORDER = ["2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
   const counts = {};
-  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
+  filtered.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
   document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
     const color = TYPE_COLORS[t] || "#94a3b8";
     return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
@@ -478,10 +478,10 @@ function updateTypeBar(){
 }
 
 function updateStatusBar(){
-  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"];
+  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Needs Testing","Blocked","Watch","Product Backlog- Future"];
   const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
   const counts = {};
-  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
+  filtered.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
   const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
   document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
     const cls = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
@@ -493,6 +493,7 @@ function updateStats(){
   const mppt=filtered.filter(r=>r.Project==="MPPT").length;
   const fft=filtered.filter(r=>r.Project==="FFT").length;
   const sc=filtered.filter(r=>r["DR Type"]==="1 - Safety Critical").length;
+  const cert=filtered.filter(r=>r["DR Type"]==="2 - Required for Certification").length;
   const blk=filtered.filter(r=>r.Status==="Blocked").length;
   const dirtyN=Object.keys(dirty).length;
   const closed=filtered.filter(r=>r.Status==="[CLOSED]").length;
@@ -501,6 +502,7 @@ function updateStats(){
     <div class="chip"><span class="label">MPPT</span><span class="val">${mppt}</span></div>
     <div class="chip"><span class="label">FFT</span><span class="val">${fft}</span></div>
     <div class="chip danger"><span class="label">Safety Critical</span><span class="val">${sc}</span></div>
+    <div class="chip info"><span class="label">Cert Required</span><span class="val">${cert}</span></div>
     ${dirtyN?`<div class="chip dirty"><span class="label">Unsaved Jira</span><span class="val">${dirtyN}</span></div>`:""}
     ${closed?`<div class="chip danger"><span class="label">⚠ Closed</span><span class="val">${closed}</span></div>`:""}
   `;
@@ -597,8 +599,8 @@ const TEAM_COLORS = [
 ];
 
 function renderMetrics(){
-  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do" };
-  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do" };
+  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do", "Needs Testing": "Ready to Test Fix" };
+  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do", "Ready to Test Fix": "Ready to Test / Needs Testing" };
   const STATUS_ORDER = [
     "New","Need Team Input","To-Do","Triaged","Investigating",
     "In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"
