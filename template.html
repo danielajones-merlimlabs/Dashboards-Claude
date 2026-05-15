@@ -486,7 +486,7 @@ function render(){
     if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
     if(chipFilters.projects.size>0&&!chipFilters.projects.has(r.Project))return false;
-    if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]))return false;
+    if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
     if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
