@@ -303,6 +303,7 @@ const PRIORITIES = ["","Highest","High","Medium","Low"];
 const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalashian","Brad Heath","Bryce Hill","Ellis Ahn","Gabriel Heredia Acevedo","Harlan Waldrop","Jared Basile","Karen Linda","Katelyn Schroll","Larry Friese Jr","Matt Rendos","Molly Connolly","Patrick Shine","Patrick Van Wie","Reed Bimson","Ryan McMahon","Shawn Bonneau","Shirley Shah","Tas Marshall","Ted Sieffert","Thao Trinh","Victoria Gilroy","Vincent Nhieu"];
 const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
 const CAMPAIGNS  = ["","Takeoff (TO)","Landing","LPV","ACC","Human Factors (HF)","Multiple","Other"];
+const FUNC_SYS   = ["","FCC","ACS","EFIS/IFD"];
 
 const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
 
@@ -324,6 +325,7 @@ const COLS=[
   {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
   {id:"whereObs", label:"Where Observed 🟢",     group:"observation", type:"shared-select",   minW:145, sfield:"WhereObserved",    options:WHERE_OBS},
   {id:"whenObs",  label:"When Observed 🟢",      group:"observation", type:"shared-date",     minW:115, sfield:"WhenObserved"},
+  {id:"funcsys",  label:"Functional System 🟢",    group:"core",       type:"shared-select",   minW:130, sfield:"FuncSys",          options:FUNC_SYS},
   {id:"campaign", label:"FT Campaign Blocking 🟢",group:"observation",type:"shared-select",   minW:175, sfield:"Campaign",         options:CAMPAIGNS},
   {id:"obsBeh",   label:"Observed Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ObservedBehavior"},
   {id:"expBeh",   label:"Expected Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ExpectedBehavior"},
@@ -597,12 +599,12 @@ function clearFilters(){["search","projFilter","statusFilter","typeFilter","assi
 ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Notes","Avidyne","Where Observed","When Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
+  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","Notes","Avidyne","Where Observed","When Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
   const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.WhereObserved||"",s.WhenObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.WhereObserved||"",s.WhenObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
