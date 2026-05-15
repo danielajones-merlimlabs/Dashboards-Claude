@@ -111,6 +111,28 @@
   .bd-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
   .bd-bad{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
   #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  #tab-history{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  .hist-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .hist-controls input{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text1);outline:none;width:200px}
+  .hist-controls input:focus{border-color:var(--accent)}
+  .hist-controls select{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text1);outline:none}
+  .hist-day{margin-bottom:22px}
+  .hist-day-header{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;padding:6px 0;border-bottom:2px solid var(--border);margin-bottom:8px}
+  .hist-table{width:100%;border-collapse:collapse;font-size:12px}
+  .hist-table th{background:var(--accent);color:rgba(255,255,255,.85);padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .hist-table td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text1)}
+  .hist-table tr:hover td{background:var(--surface)}
+  .hist-dr{font-weight:700;color:var(--accent);white-space:nowrap}
+  .hist-dr a{color:inherit;text-decoration:none}
+  .hist-dr a:hover{text-decoration:underline}
+  .hist-field{color:var(--text2);white-space:nowrap}
+  .hist-val{color:#64748b;font-style:italic;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-arrow{color:#94a3b8;padding:0 4px}
+  .hist-newval{color:var(--text1);font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-user{color:#059669;font-weight:600;white-space:nowrap}
+  .hist-time{color:#94a3b8;font-size:10px;white-space:nowrap}
+  .hist-empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+  .hist-count{font-size:11px;color:var(--text3);margin-left:auto}
   .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
   .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:20px}
@@ -143,6 +165,7 @@
 <div class="tab-nav">
   <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
   <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
+  <button class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">Revision History</button>
 </div>
 
 <div id="tab-table">
@@ -207,6 +230,17 @@
     </div>
     <canvas id="chartBurndown" style="max-height:260px"></canvas>
   </div>
+</div>
+
+<div id="tab-history">
+  <div class="hist-controls">
+    <input type="text" id="histSearch" placeholder="🔍  Filter by DR key or field…" oninput="filterHistory()">
+    <select id="histUserFilter" onchange="filterHistory()"><option value="">All Users</option></select>
+    <select id="histFieldFilter" onchange="filterHistory()"><option value="">All Fields</option></select>
+    <button class="btn" onclick="loadHistory(true)">↻ Refresh</button>
+    <span class="hist-count" id="histCount"></span>
+  </div>
+  <div id="histBody"></div>
 </div>
 
 <div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
@@ -558,7 +592,7 @@ async function syncRow(key,btn){
   if(!changes&&!note){showToast("Nothing to sync for "+key,false);return;}
   if(!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")){showToast("⚠ Worker URL not configured yet — Jira sync disabled",false);return;}
   btn.disabled=true;btn.textContent="…";btn.className="sync-row-btn syncing";
-  const payload={issueKey:key,updates:{},note:note||""};
+  const payload={issueKey:key,updates:{},note:note||"",user:currentUser};
   if(changes){
     if(changes["DR Type"]!==undefined)payload.updates.drType=changes["DR Type"];
     if(changes["Functional Team (System)"]!==undefined)payload.updates.system=changes["Functional Team (System)"];
@@ -614,11 +648,91 @@ loadSharedData(); // loads sheet then calls render()
 
 // ── TABS ──
 function switchTab(tab){
-  document.getElementById("tab-table").style.display = tab==="table" ? "block" : "none";
+  document.getElementById("tab-table").style.display   = tab==="table"   ? "block" : "none";
   document.getElementById("tab-metrics").style.display = tab==="metrics" ? "block" : "none";
-  document.getElementById("tabBtnTable").classList.toggle("active", tab==="table");
+  document.getElementById("tab-history").style.display = tab==="history" ? "block" : "none";
+  document.getElementById("tabBtnTable").classList.toggle("active",   tab==="table");
   document.getElementById("tabBtnMetrics").classList.toggle("active", tab==="metrics");
+  document.getElementById("tabBtnHistory").classList.toggle("active", tab==="history");
   if(tab==="metrics") renderMetrics();
+  if(tab==="history") loadHistory();
+}
+
+// ── REVISION HISTORY ──
+let historyLog = null; // null = not yet loaded
+
+async function loadHistory(force=false){
+  if(historyLog !== null && !force) { renderHistory(); return; }
+  document.getElementById("histBody").innerHTML = '<div class="hist-empty">Loading history…</div>';
+  try{
+    const res = await fetch(`${WORKER_URL}?action=getChangelog`);
+    const data = await res.json();
+    historyLog = data.log || [];
+    // Populate user + field filter dropdowns
+    const users  = [...new Set(historyLog.map(e=>e.user).filter(Boolean))].sort();
+    const fields = [...new Set(historyLog.map(e=>e.field).filter(Boolean))].sort();
+    const uSel = document.getElementById("histUserFilter");
+    const fSel = document.getElementById("histFieldFilter");
+    uSel.innerHTML = '<option value="">All Users</option>' + users.map(u=>`<option value="${u}">${u}</option>`).join("");
+    fSel.innerHTML = '<option value="">All Fields</option>' + fields.map(f=>`<option value="${f}">${f}</option>`).join("");
+    renderHistory();
+  }catch(e){
+    document.getElementById("histBody").innerHTML = `<div class="hist-empty">Error loading history: ${e.message}</div>`;
+  }
+}
+
+function filterHistory(){ renderHistory(); }
+
+function renderHistory(){
+  if(!historyLog){ loadHistory(); return; }
+  const search   = (document.getElementById("histSearch").value||"").toLowerCase();
+  const userF    = document.getElementById("histUserFilter").value;
+  const fieldF   = document.getElementById("histFieldFilter").value;
+
+  let entries = historyLog;
+  if(search)  entries = entries.filter(e=>(e.drKey||"").toLowerCase().includes(search)||(e.field||"").toLowerCase().includes(search)||(e.user||"").toLowerCase().includes(search)||(e.newVal||"").toLowerCase().includes(search));
+  if(userF)   entries = entries.filter(e=>e.user===userF);
+  if(fieldF)  entries = entries.filter(e=>e.field===fieldF);
+
+  document.getElementById("histCount").textContent = `${entries.length} change${entries.length===1?"":"s"}`;
+
+  if(!entries.length){
+    document.getElementById("histBody").innerHTML = '<div class="hist-empty">No changes recorded yet — edits made from this point forward will appear here.</div>';
+    return;
+  }
+
+  // Group by date (UTC day)
+  const byDay = {};
+  entries.forEach(e=>{
+    const day = (e.ts||"").slice(0,10) || "Unknown";
+    (byDay[day] = byDay[day]||[]).push(e);
+  });
+
+  const html = Object.entries(byDay).map(([day,rows])=>{
+    const label = day==="Unknown" ? "Unknown Date" : new Date(day+"T12:00:00Z").toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric",timeZone:"UTC"});
+    const trs = rows.map(e=>{
+      const time = e.ts ? new Date(e.ts).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC" : "";
+      const jiraUrl = `https://merlinlabs.atlassian.net/browse/${e.drKey}`;
+      const oldTrunc = (e.oldVal||"").length>80 ? e.oldVal.slice(0,80)+"…" : (e.oldVal||"");
+      const newTrunc = (e.newVal||"").length>80 ? e.newVal.slice(0,80)+"…" : (e.newVal||"");
+      return `<tr>
+        <td class="hist-dr"><a href="${jiraUrl}" target="_blank">${e.drKey||""}</a></td>
+        <td class="hist-field">${e.field||""}</td>
+        <td><span class="hist-val" title="${(e.oldVal||"").replace(/"/g,"&quot;")}">${oldTrunc||"<em style='color:#cbd5e1'>empty</em>"}</span><span class="hist-arrow">→</span><span class="hist-newval" title="${(e.newVal||"").replace(/"/g,"&quot;")}">${newTrunc||"<em style='color:#cbd5e1'>empty</em>"}</span></td>
+        <td class="hist-user">${e.user||"<em style='color:#94a3b8'>unknown</em>"}</td>
+        <td class="hist-time">${time}</td>
+      </tr>`;
+    }).join("");
+    return `<div class="hist-day">
+      <div class="hist-day-header">${label} <span style="font-weight:400;color:var(--text3)">(${rows.length} change${rows.length===1?"":"s"})</span></div>
+      <table class="hist-table">
+        <thead><tr><th>DR Key</th><th>Field</th><th>Change</th><th>Changed By</th><th>Time (UTC)</th></tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+
+  document.getElementById("histBody").innerHTML = html;
 }
 
 // ── METRICS ──

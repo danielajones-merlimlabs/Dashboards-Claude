@@ -1,3 +1,29 @@
+const CHANGELOG_KEY = "__changelog__";
+const CHANGELOG_MAX = 2000;
+
+const FIELD_LABELS = {
+  FuncSys: "Functional System", SfhaFunc: "SFHA Function",
+  ProgApplic: "Additional Program Applicability", Campaign: "FT Campaign Blocking",
+  WhereObserved: "Where Observed", ObservedBehavior: "Observed Behavior",
+  ExpectedBehavior: "Expected Behavior", EffectCrew: "Effect on Crew",
+  EffectOccupants: "Effect on Occupants", EffectAircraft: "Effect on Aircraft",
+  ReqAffected: "Requirement Affected", FccBuildFound: "FCC Build Found",
+  AccBuildFound: "ACC Build Found", AvidineBuildFound: "Avidyne Build Found",
+  FccBuildFix: "FCC Fix Build", AccBuildFix: "ACC Fix Build",
+  AvidineBuildFix: "Avidyne Fix Build", PlannedCompletion: "Planned Completion",
+  Notes: "Notes", Avidyne: "Avidyne",
+  "jira:drType": "DR Type (Jira)", "jira:priority": "Priority (Jira)",
+  "jira:assignee": "Assignee (Jira)", "jira:system": "System (Jira)",
+  "jira:comment": "Comment Added",
+};
+
+async function appendChangelog(env, entries) {
+  const log = (await env.SHARED_NOTES.get(CHANGELOG_KEY, { type: "json" })) || [];
+  for (const e of entries) log.unshift(e);
+  if (log.length > CHANGELOG_MAX) log.splice(CHANGELOG_MAX);
+  await env.SHARED_NOTES.put(CHANGELOG_KEY, JSON.stringify(log));
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -17,12 +43,20 @@ export default {
     if (request.method === "GET" && action === "getAll") {
       const list = await env.SHARED_NOTES.list();
       const rows = await Promise.all(
-        list.keys.map(async ({ name }) => {
-          const val = await env.SHARED_NOTES.get(name, { type: "json" });
-          return val ? { Key: name, ...val } : null;
-        })
+        list.keys
+          .filter(({ name }) => name !== CHANGELOG_KEY)
+          .map(async ({ name }) => {
+            const val = await env.SHARED_NOTES.get(name, { type: "json" });
+            return val ? { Key: name, ...val } : null;
+          })
       );
       return jsonResp({ rows: rows.filter(Boolean) });
+    }
+
+    // ── GET ?action=getChangelog — return full changelog ──
+    if (request.method === "GET" && action === "getChangelog") {
+      const log = (await env.SHARED_NOTES.get(CHANGELOG_KEY, { type: "json" })) || [];
+      return jsonResp({ log });
     }
 
     if (request.method !== "POST") {
@@ -49,11 +83,31 @@ export default {
         LastEditedAt: new Date().toISOString(),
       };
       await env.SHARED_NOTES.put(key, JSON.stringify(updated));
+
+      // Compute diffs and append to changelog
+      const ts = updated.LastEditedAt;
+      const changed = [];
+      for (const [f, newV] of Object.entries(fields)) {
+        const oldV = existing[f] !== undefined ? String(existing[f]) : "";
+        const nV   = newV   !== undefined && newV !== null ? String(newV) : "";
+        if (oldV !== nV) {
+          changed.push({
+            ts,
+            drKey: key,
+            field: FIELD_LABELS[f] || f,
+            oldVal: oldV,
+            newVal: nV,
+            user: user || "",
+          });
+        }
+      }
+      if (changed.length > 0) await appendChangelog(env, changed);
+
       return jsonResp({ success: true, timestamp: updated.LastEditedAt });
     }
 
-    // ── POST {issueKey, updates, note} — Jira field sync ──
-    const { issueKey, updates = {}, note = "" } = body;
+    // ── POST {issueKey, updates, note, user} — Jira field sync ──
+    const { issueKey, updates = {}, note = "", user: jiraUser = "" } = body;
     if (!issueKey) return jsonResp({ results: [{ error: "Missing issueKey" }] }, 400);
 
     const base = env.JIRA_BASE.replace(/\/$/, "");
@@ -65,6 +119,8 @@ export default {
     };
 
     const results = [];
+    const changelogEntries = [];
+    const ts = new Date().toISOString();
 
     const fields = {};
     if (updates.drType)   fields.customfield_11935 = { value: updates.drType };
@@ -99,6 +155,14 @@ export default {
       });
       if (r.ok || r.status === 204) {
         results.push({ ok: true, action: "fields_updated" });
+        // Log each updated Jira field
+        for (const [k, v] of Object.entries(updates)) {
+          changelogEntries.push({
+            ts, drKey: issueKey,
+            field: FIELD_LABELS[`jira:${k}`] || `Jira: ${k}`,
+            oldVal: "", newVal: String(v), user: jiraUser,
+          });
+        }
       } else {
         const text = await r.text();
         results.push({ error: `Field update failed (${r.status}): ${text.slice(0, 300)}` });
@@ -119,12 +183,19 @@ export default {
       });
       if (r.ok) {
         results.push({ ok: true, action: "comment_added" });
+        changelogEntries.push({
+          ts, drKey: issueKey,
+          field: "Comment Added",
+          oldVal: "", newVal: note.trim().slice(0, 120) + (note.trim().length > 120 ? "…" : ""),
+          user: jiraUser,
+        });
       } else {
         const text = await r.text();
         results.push({ error: `Comment failed (${r.status}): ${text.slice(0, 300)}` });
       }
     }
 
+    if (changelogEntries.length > 0) await appendChangelog(env, changelogEntries);
     if (results.length === 0) results.push({ ok: true, action: "no_changes" });
     return jsonResp({ results });
   },
