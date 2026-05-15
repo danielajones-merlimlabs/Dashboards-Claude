@@ -55,6 +55,9 @@
   .sbar-chip .sval{font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text)}
   .sbar-chip.active{background:#fff7ed;border-color:#ea580c;color:#c2410c}.sbar-chip.active .sval{color:#c2410c}
   .sbar-chip.sdanger{background:#fef2f2;border-color:#dc2626;color:#991b1b}.sbar-chip.sdanger .sval{color:#991b1b}
+  .sbar-chip.chip-on{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}.sbar-chip.chip-on .sval{color:#fff!important}
+  .sbar-chip.sdanger.chip-on{background:#991b1b!important;border-color:#991b1b!important}
+  .sbar-chip:hover{opacity:.8}
   .summary-cell{max-width:250px}.summary-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;color:var(--text)}
   .pri-highest{color:#dc2626;font-weight:600}.pri-high{color:#ea580c;font-weight:600}.pri-default{color:var(--text3)}
   .date-cell{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap}
@@ -149,8 +152,6 @@
   <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Shared (saves to Google Sheet, visible to everyone)</div>
   <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Unsaved Jira change</div>
 </div>
-
-<div class="col-toggle-bar" id="colToggleBar"><span>Columns:</span></div>
 
 <div class="filters">
   <input type="text" id="search" placeholder="🔍  Search…">
@@ -338,19 +339,9 @@ const COLS=[
   {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
 ];
 
-let visCol=Object.fromEntries(COLS.map(c=>[c.id,true]));
-let visibleCols=()=>COLS.filter(c=>visCol[c.id]);
-function renderColPills(){
-  const bar=document.getElementById("colToggleBar");
-  bar.innerHTML='<span>Columns:</span>'+COLS.map(c=>{
-    const label=c.label.replace(/[✏️🟢]/g,"").trim();
-    const cls=`col-pill${c.shared?" shared":""}${visCol[c.id]?" active":""}`;
-    return `<span class="${cls}" onclick="toggleCol('${c.id}')">${label}</span>`;
-  }).join("");
-}
-function toggleCol(id){visCol[id]=!visCol[id];renderColPills();renderHeader();render();}
+let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
-const chipFilters = { projects: new Set(), types: new Set() };
+const chipFilters = { projects: new Set(), types: new Set(), statuses: new Set() };
 function toggleChip(group, value) {
   chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
   render();
@@ -496,6 +487,7 @@ function render(){
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
     if(chipFilters.projects.size>0&&!chipFilters.projects.has(r.Project))return false;
     if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]))return false;
+    if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -515,10 +507,12 @@ function render(){
 function updateTypeBar(){
   const TYPE_ORDER = ["3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
   const counts = {};
-  filtered.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
+  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
   document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
     const color = TYPE_COLORS[t] || "#94a3b8";
-    return `<div class="sbar-chip" style="border-color:${color}20;color:${color}"><span class="sval" style="color:${color}">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
+    const on = chipFilters.types.has(t);
+    const onStyle = on ? `background:${color};color:#fff;border-color:${color}` : `border-color:${color}20;color:${color}`;
+    return `<div class="sbar-chip" style="${onStyle};cursor:pointer" onclick="toggleChip('types','${t.replace(/'/g,"\\'")}')"><span class="sval" style="color:inherit">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
   }).join('');
 }
 
@@ -526,11 +520,13 @@ function updateStatusBar(){
   const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Needs Testing","Blocked","Watch","Product Backlog- Future"];
   const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
   const counts = {};
-  filtered.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
+  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
   const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
   document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
-    const cls = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
-    return `<div class="sbar-chip ${cls}"><span class="sval">${counts[s]}</span>${s}</div>`;
+    const on = chipFilters.statuses.has(s);
+    const base = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
+    const cls = `sbar-chip ${base}${on?" chip-on":""}`;
+    return `<div class="${cls}" style="cursor:pointer" onclick="toggleChip('statuses','${s.replace(/'/g,"\\'")}')"><span class="sval">${counts[s]}</span>${s}</div>`;
   }).join('');
 }
 
@@ -595,7 +591,6 @@ async function syncAllDirty(){
 
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
-renderColPills();
 
 function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>document.getElementById(id).value="");render();}
 ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
