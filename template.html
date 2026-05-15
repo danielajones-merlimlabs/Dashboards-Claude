@@ -150,13 +150,7 @@
   <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Unsaved Jira change</div>
 </div>
 
-<div class="col-toggle-bar">
-  <span>Columns:</span>
-  <span class="col-pill active" data-group="core">Core</span>
-  <span class="col-pill active shared" data-group="observation">Observation</span>
-  <span class="col-pill active shared" data-group="builds">Builds</span>
-  <span class="col-pill active shared" data-group="planning">Planning</span>
-</div>
+<div class="col-toggle-bar" id="colToggleBar"><span>Columns:</span></div>
 
 <div class="filters">
   <input type="text" id="search" placeholder="🔍  Search…">
@@ -314,17 +308,17 @@ const COLS=[
   {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
   {id:"status",   label:"Status",          group:"core",        type:"static",        minW:120, sortField:"Status"},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
-  {id:"funcsys",  label:"Functional System 🟢", group:"core",   type:"shared-select", minW:130, sfield:"FuncSys",          options:FUNC_SYS},
-  {id:"sfhafunc", label:"SFHA Function 🟢",     group:"core",   type:"shared-select", minW:200, sfield:"SfhaFunc",         options:SFHA_FUNCS},
-  {id:"campaign", label:"FT Campaign Blocking 🟢", group:"core",type:"shared-select", minW:175, sfield:"Campaign",         options:CAMPAIGNS},
+  {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
+  {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
+  {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
+  {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
+  {id:"avidyne",  label:"Avidyne",           group:"core",      type:"avi",           minW:58},
   {id:"priority", label:"Priority ✏️",     group:"core",        type:"jira-select",   minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-select",   minW:145, sortField:"Assignee",                 field:"Assignee",                   options:ASSIGNEES},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
-  {id:"affAircraft",label:"Affected Aircraft",group:"core",    type:"static",        minW:130, sortField:"Affected Aircraft"},
   {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
-  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, sfield:"Notes"},
-  {id:"avidyne",  label:"Avidyne",         group:"core",        type:"avi",           minW:58},
+  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, shared:true, sfield:"Notes"},
   {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
   {id:"whereObs", label:"Where Observed 🟢",     group:"observation", type:"shared-select",   minW:145, sfield:"WhereObserved",    options:WHERE_OBS},
   {id:"whenObs",  label:"When Observed 🟢",      group:"observation", type:"shared-date",     minW:115, sfield:"WhenObserved"},
@@ -344,8 +338,17 @@ const COLS=[
   {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
 ];
 
-let visGroups={core:true,observation:true,builds:true,planning:true};
-let visibleCols=()=>COLS.filter(c=>visGroups[c.group]);
+let visCol=Object.fromEntries(COLS.map(c=>[c.id,true]));
+let visibleCols=()=>COLS.filter(c=>visCol[c.id]);
+function renderColPills(){
+  const bar=document.getElementById("colToggleBar");
+  bar.innerHTML='<span>Columns:</span>'+COLS.map(c=>{
+    const label=c.label.replace(/[✏️🟢]/g,"").trim();
+    const cls=`col-pill${c.shared?" shared":""}${visCol[c.id]?" active":""}`;
+    return `<span class="${cls}" onclick="toggleCol('${c.id}')">${label}</span>`;
+  }).join("");
+}
+function toggleCol(id){visCol[id]=!visCol[id];renderColPills();renderHeader();render();}
 let sortCol="Key", sortDir=1, filtered=[];
 const chipFilters = { projects: new Set(), types: new Set() };
 function toggleChip(group, value) {
@@ -592,9 +595,7 @@ async function syncAllDirty(){
 
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
-document.querySelectorAll(".col-pill").forEach(p=>{
-  p.addEventListener("click",()=>{const g=p.dataset.group;visGroups[g]=!visGroups[g];p.classList.toggle("active",visGroups[g]);renderHeader();render();});
-});
+renderColPills();
 
 function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>document.getElementById(id).value="");render();}
 ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
