@@ -141,22 +141,16 @@ const SNAPSHOT = {
   total: { name:'Total', total:275, flown:131, accepted:81, notNeeded:37, reflies:33, pending:1, blocked:45, leftToFly:157, pct:34.03 },
 };
 
-// ── Try live fetch via gviz/tq (works if browser is signed into Google) ───
-async function fetchLive() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}&t=${Date.now()}`;
-  const res  = await fetch(url, { credentials: 'include', cache: 'no-store' });
-  const text = await res.text();
-  // gviz wraps JSON in a callback: google.visualization.Query.setResponse({...})
-  if (!text.includes('google.visualization')) throw new Error('not-authed');
-  const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/)?.[1]);
-  return json;
-}
+// ── Paste your Apps Script web app URL here after deploying ──────────────
+const APPS_SCRIPT_URL = '';   // e.g. 'https://script.google.com/macros/s/ABC.../exec'
 
-// ── Parse gviz response into our data format ──────────────────────────────
-function parseGviz(gviz) {
-  const cols = gviz.table.cols.map(c => c.label);
-  const rows = gviz.table.rows.map(r => r.c.map(c => (c && c.v != null) ? c.v : ''));
-  return { cols, rows };
+// ── Fetch live data from Apps Script proxy ────────────────────────────────
+async function fetchLive() {
+  if (!APPS_SCRIPT_URL) throw new Error('no-url');
+  const res  = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), { cache: 'no-store' });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
@@ -374,18 +368,20 @@ async function fetchAndRender() {
   document.getElementById('loading-msg').textContent = 'Connecting to Google Sheets…';
 
   try {
-    const gviz = await fetchLive();
-    // We have live data — try to re-parse into our schema
-    // For now, use snapshot schema but mark as live-verified
-    render(SNAPSHOT, 'live');
+    const liveData = await fetchLive();
+    // Merge live data with SNAPSHOT structure (n208b/zkmln not in script)
+    const merged = { ...SNAPSHOT, ...liveData };
+    render(merged, 'live');
     dot.className = 'sync-dot live';
-    msg.textContent = 'Live · auto-refreshes every 60s · gviz session authenticated';
+    msg.textContent = 'Live · auto-refreshes every 60s · data from Google Sheets';
     document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
   } catch(e) {
-    // Fall back to snapshot
+    const isNoUrl = e.message === 'no-url';
     render(SNAPSHOT, 'snapshot');
     dot.className = 'sync-dot stale';
-    msg.textContent = 'Showing snapshot from 2026-05-15 · open in signed-in browser tab for live sync';
+    msg.textContent = isNoUrl
+      ? 'Showing snapshot · paste Apps Script URL in progress-metrics.html to go live'
+      : 'Showing snapshot from 2026-05-15 · Apps Script error: ' + e.message;
     document.getElementById('last-sync').textContent = SNAPSHOT.lastUpdated;
   }
   document.getElementById('loading').style.display = 'none';
