@@ -45,6 +45,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
 .chart-card h3{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
 .chart-wrap{position:relative;height:320px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:8px}
+.chart-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.chart-legend-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 .chart-card.wide{grid-column:1/-1}
 .chart-card.wide .chart-wrap{height:240px}
 
@@ -103,6 +106,7 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
     <div class="charts-grid">
       <div class="chart-card">
         <h3>Points Breakdown — LPV · TO · TD · ACS</h3>
+        <div class="chart-legend" id="breakdown-legend"></div>
         <div class="chart-wrap"><canvas id="chart-breakdown"></canvas></div>
       </div>
       <div class="chart-card">
@@ -314,7 +318,7 @@ function buildCharts(data) {
       responsive:true, maintainAspectRatio:false,
       layout:{padding:{top:55}},
       plugins:{
-        legend:{labels:{font:{family:"'IBM Plex Sans'",size:11},boxWidth:12,padding:14}},
+        legend:{display:false},
         tooltip:{
           callbacks:{label(c){return ` ${c.dataset.label}: ${c.raw}`}},
           bodyFont:{family:"'IBM Plex Mono'",size:11},titleFont:{family:"'IBM Plex Sans'",size:11}
@@ -327,6 +331,17 @@ function buildCharts(data) {
     },
     plugins:[annotPlugin]
   });
+
+  // Render HTML legend beneath the title
+  const legendItems = [
+    {label:'Accepted', color:'#22c55e'},
+    {label:'Pending review', color:'#fbbf24'},
+    {label:'Blocked', color:'#fca5a5'},
+    {label:'Left to fly (unblocked)', color:'#e5e7eb'},
+  ];
+  document.getElementById('breakdown-legend').innerHTML = legendItems.map(l=>
+    `<div class="chart-legend-item"><div class="chart-legend-swatch" style="background:${l.color};border:1px solid #ccc"></div>${l.label}</div>`
+  ).join('');
 
   // ── % Completion bar ──────────────────────────────────────────────────
   charts.pct = new Chart(document.getElementById('chart-pct'), {
