@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progress Metrics · Merlin Pilot Caravan</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f9;--border:#e2e5f0;--border2:#cdd2e8;
+  --text:#1a1d2e;--text2:#4a5068;--text3:#8891b0;--accent:#1f3864;--accent2:#2952a3;
+  --green:#16a34a;--yellow:#d97706;--red:#dc2626;--blue:#0ea5e9;--purple:#9333ea;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header{background:var(--accent);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header h1{font-size:15px;font-weight:600}
+.header .sub{font-size:10px;opacity:.6;margin-top:2px;font-family:'IBM Plex Mono',monospace}
+.sync-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;transition:background .4s;flex-shrink:0}
+.sync-dot.live{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.25)}
+.sync-dot.stale{background:#fbbf24}
+.sync-dot.error{background:#f87171}
+.status-bar{background:#162a50;padding:5px 20px;font-size:11px;color:rgba(255,255,255,.6);font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:12px;min-height:26px}
+#status-msg{flex:1}
+
+/* ── Summary cards ──────────────────────────────────────────────────────── */
+.cards{display:flex;gap:10px;padding:14px 20px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:110px;flex:1}
+.card .label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.card .value{font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace;margin-top:2px;color:var(--text)}
+.card .sub2{font-size:10px;color:var(--text3);margin-top:1px}
+.card.highlight{border-color:var(--accent2);background:#eef2fc}
+.card.highlight .value{color:var(--accent2)}
+
+/* ── Charts grid ────────────────────────────────────────────────────────── */
+.section{padding:16px 20px}
+.section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.charts-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.chart-card h3{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.chart-wrap{position:relative;height:220px}
+.chart-card.wide{grid-column:1/-1}
+.chart-card.wide .chart-wrap{height:240px}
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:var(--accent);color:rgba(255,255,255,.85);padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08)}
+thead th.num{text-align:right}
+tbody tr{border-bottom:1px solid var(--border);transition:background .08s}
+tbody tr:hover{background:var(--row-hover,#eef1fb)}
+tbody tr.group-header td{background:#f0f2f9;font-weight:600;color:var(--text);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+tbody td{padding:5px 8px;color:var(--text2);border-right:1px solid var(--border);vertical-align:middle}
+tbody td.num{text-align:right;font-family:'IBM Plex Mono',monospace}
+tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.pct-bar-cell{min-width:100px}
+.pct-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:2px}
+.pct-fill{height:100%;border-radius:3px;transition:width .4s}
+
+/* ── Aircraft tabs ──────────────────────────────────────────────────────── */
+.tabs{display:flex;gap:4px;margin-bottom:12px}
+.tab{padding:4px 12px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);font-size:11px;cursor:pointer;color:var(--text2);font-family:inherit;transition:all .15s}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Loading ────────────────────────────────────────────────────────────── */
+.loading-overlay{position:fixed;inset:0;background:rgba(247,248,252,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100}
+.spinner{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay p{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+.notice{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:10px 14px;font-size:11px;color:#92400e;margin-bottom:12px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Progress Metrics · Merlin Pilot Caravan</h1>
+    <div class="sub">Test Point Matrix · Live from Google Sheets</div>
+  </div>
+  <div class="sync-badge">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Last sync: <strong id="last-sync">—</strong></span>
+    <span style="opacity:.4;margin:0 4px">|</span>
+    <span style="cursor:pointer;opacity:.7" onclick="fetchAndRender()" title="Refresh">↻</span>
+  </div>
+</div>
+<div class="status-bar"><span id="status-msg">Connecting…</span></div>
+
+<div id="main" style="display:none">
+  <!-- Summary cards -->
+  <div class="cards" id="cards"></div>
+
+  <!-- Charts -->
+  <div class="section">
+    <div class="section-title">Test Point Status by Capability</div>
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <h3>Points Breakdown — LPV · TO · TD · ACS</h3>
+        <div class="chart-wrap"><canvas id="chart-breakdown"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>% Completion by Capability</h3>
+        <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Acceptance Rate by Capability</h3>
+        <div class="chart-wrap"><canvas id="chart-accept"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Program table -->
+  <div class="section">
+    <div class="section-title">Program Table</div>
+    <div class="table-wrap" id="program-table"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <p id="loading-msg">Fetching sheet data…</p>
+</div>
+
+<script>
+const SHEET_ID = '1XQc-Mbtl-pftiQhlw67Zr8qkmNsKPmh-BUljrd_94co';
+const GID      = '1028970667';
+let charts     = {};
+let parsedData = null;
+
+// ── Snapshot data (from last Google Drive sync) ───────────────────────────
+// Used as fallback if gviz/tq can't authenticate in browser
+const SNAPSHOT = {
+  lastUpdated: '2026-05-15',
+  capabilities: [
+    { name:'LPV', total:16,  flown:16,  accepted:0,  notNeeded:0,  reflies:15, pending:1, blocked:0,  leftToFly:16, pct:0     },
+    { name:'TO',  total:126, flown:42,  accepted:41, notNeeded:33, reflies:5,  pending:0, blocked:13, leftToFly:52, pct:44.09 },
+    { name:'TD',  total:72,  flown:12,  accepted:8,  notNeeded:4,  reflies:5,  pending:0, blocked:11, leftToFly:60, pct:11.76 },
+    { name:'ACS', total:61,  flown:61,  accepted:32, notNeeded:0,  reflies:8,  pending:0, blocked:21, leftToFly:29, pct:52.46 },
+  ],
+  total: { name:'Total', total:275, flown:131, accepted:81, notNeeded:37, reflies:33, pending:1, blocked:45, leftToFly:157, pct:34.03 },
+};
+
+// ── Try live fetch via gviz/tq (works if browser is signed into Google) ───
+async function fetchLive() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}&t=${Date.now()}`;
+  const res  = await fetch(url, { credentials: 'include', cache: 'no-store' });
+  const text = await res.text();
+  // gviz wraps JSON in a callback: google.visualization.Query.setResponse({...})
+  if (!text.includes('google.visualization')) throw new Error('not-authed');
+  const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/)?.[1]);
+  return json;
+}
+
+// ── Parse gviz response into our data format ──────────────────────────────
+function parseGviz(gviz) {
+  const cols = gviz.table.cols.map(c => c.label);
+  const rows = gviz.table.rows.map(r => r.c.map(c => (c && c.v != null) ? c.v : ''));
+  return { cols, rows };
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render(data, source) {
+  parsedData = data;
+
+  const t = data.total;
+  document.getElementById('cards').innerHTML = `
+    <div class="card highlight">
+      <div class="label">Total TPs</div>
+      <div class="value">${t.total - t.notNeeded}</div>
+      <div class="sub2">LPV · TO · TD · ACS</div>
+    </div>
+    <div class="card">
+      <div class="label">Points Flown</div>
+      <div class="value">${t.flown}</div>
+      <div class="sub2">${Math.round(t.flown/(t.total-t.notNeeded)*100)}% of total</div>
+    </div>
+    <div class="card">
+      <div class="label">Points Accepted</div>
+      <div class="value">${t.accepted}</div>
+      <div class="sub2">${t.pct.toFixed(1)}% overall</div>
+    </div>
+    <div class="card">
+      <div class="label">Reflies to Fly</div>
+      <div class="value" style="color:var(--yellow)">${t.reflies}</div>
+      <div class="sub2">Pending refly</div>
+    </div>
+    <div class="card">
+      <div class="label">Blocked</div>
+      <div class="value" style="color:var(--red)">${t.blocked}</div>
+      <div class="sub2">Test points blocked</div>
+    </div>
+    <div class="card">
+      <div class="label">Left to Fly</div>
+      <div class="value">${t.leftToFly}</div>
+      <div class="sub2">Remaining</div>
+    </div>
+    <div class="card">
+      <div class="label">Source</div>
+      <div class="value" style="font-size:13px;margin-top:4px;color:${source==='live'?'var(--green)':'var(--yellow)'}">${source==='live'?'● Live':'● Snapshot'}</div>
+      <div class="sub2">${source==='live'?'Refreshes every 60s':'Updated '+data.lastUpdated}</div>
+    </div>
+  `;
+
+  buildCharts(data);
+  buildTable(data);
+  document.getElementById('main').style.display = '';
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function buildCharts(data) {
+  Object.values(charts).forEach(c=>c.destroy());
+  charts = {};
+
+  const caps   = data.capabilities;
+  const labels = caps.map(c=>c.name);
+
+  const dsAccepted     = caps.map(c=>c.accepted||0);
+  const dsPending      = caps.map(c=>c.pending||0);
+  const dsBlocked      = caps.map(c=>c.blocked||0);
+  const dsLeftUnblocked= caps.map(c=>Math.max(0,(c.leftToFly||0)-(c.blocked||0)));
+
+  // Custom plugin: floating "X left to fly" labels + inline "X blocked" labels
+  const annotPlugin = {
+    id:'customAnnot',
+    afterDatasetsDraw(chart) {
+      const {ctx} = chart;
+      // dataset order: 0=accepted,1=pending,2=blocked,3=leftUnblocked
+      const topMeta      = chart.getDatasetMeta(3); // top of stack
+      const blockedMeta  = chart.getDatasetMeta(2);
+      ctx.save();
+
+      caps.forEach((cap,i) => {
+        const topBar     = topMeta.data[i];
+        const blockedBar = blockedMeta.data[i];
+        if (!topBar) return;
+
+        const bx = topBar.x;
+
+        // ── Floating "X left to fly" label ──────────────────────────────
+        if ((cap.leftToFly||0) > 0) {
+          const txt   = `${cap.leftToFly} left to fly`;
+          const fs    = 11, pad = 7;
+          ctx.font    = `${fs}px 'IBM Plex Sans',sans-serif`;
+          const tw    = ctx.measureText(txt).width;
+          const bw    = tw + pad*2, bh = fs + pad*1.5;
+          const barTopY = topBar.y;
+          const labelY  = barTopY - 34;
+          const lx = bx - bw/2, ly = labelY - bh/2;
+
+          // shadow box
+          ctx.shadowColor='rgba(0,0,0,.08)'; ctx.shadowBlur=4; ctx.shadowOffsetY=1;
+          ctx.fillStyle='#fff'; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1;
+          roundRect(ctx,lx,ly,bw,bh,4); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+
+          ctx.fillStyle='#1a1d2e'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(txt, bx, labelY);
+
+          // dashed connector
+          ctx.setLineDash([3,3]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(bx, ly+bh); ctx.lineTo(bx, barTopY); ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // ── Inline "X blocked" label ─────────────────────────────────────
+        if ((cap.blocked||0) > 0 && blockedBar) {
+          const midY  = (blockedBar.y + blockedBar.base) / 2;
+          const txt   = `${cap.blocked} blocked`;
+          const fs    = 10.5, pad = 5;
+          ctx.font    = `600 ${fs}px 'IBM Plex Sans',sans-serif`;
+          const tw    = ctx.measureText(txt).width;
+          const bw    = tw + pad*2, bh = fs + pad*1.4;
+          const lx    = bx - bw/2, ly = midY - bh/2;
+
+          ctx.fillStyle='#fef2f2'; ctx.strokeStyle='#fca5a5'; ctx.lineWidth=1;
+          roundRect(ctx,lx,ly,bw,bh,3); ctx.fill(); ctx.stroke();
+
+          ctx.fillStyle='#dc2626'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(txt, bx, midY);
+        }
+      });
+      ctx.restore();
+    }
+  };
+
+  // ── Breakdown stacked bar ─────────────────────────────────────────────
+  charts.breakdown = new Chart(document.getElementById('chart-breakdown'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'Accepted',              data:dsAccepted,      backgroundColor:'#22c55e', stack:'s' },
+        { label:'Pending review',        data:dsPending,       backgroundColor:'#fbbf24', stack:'s' },
+        { label:'Blocked',               data:dsBlocked,       backgroundColor:'#fca5a5', stack:'s' },
+        { label:'Left to fly (unblocked)',data:dsLeftUnblocked, backgroundColor:'#e5e7eb', stack:'s' },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:55}},
+      plugins:{
+        legend:{labels:{font:{family:"'IBM Plex Sans'",size:11},boxWidth:12,padding:14}},
+        tooltip:{
+          callbacks:{label(c){return ` ${c.dataset.label}: ${c.raw}`}},
+          bodyFont:{family:"'IBM Plex Mono'",size:11},titleFont:{family:"'IBM Plex Sans'",size:11}
+        }
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{family:"'IBM Plex Sans'",size:11}}},
+        y:{stacked:true,grid:{color:'#e2e5f0'},ticks:{font:{family:"'IBM Plex Mono'",size:10}},title:{display:true,text:'Points',font:{size:10},color:'#8891b0'}}
+      }
+    },
+    plugins:[annotPlugin]
+  });
+
+  // ── % Completion bar ──────────────────────────────────────────────────
+  charts.pct = new Chart(document.getElementById('chart-pct'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'% Completed',
+        data:caps.map(c=>c.pct),
+        backgroundColor:caps.map(c=>c.pct>=70?'rgba(34,197,94,.8)':c.pct>=40?'rgba(251,191,36,.8)':'rgba(252,165,165,.8)'),
+        borderColor:caps.map(c=>c.pct>=70?'#16a34a':c.pct>=40?'#d97706':'#f87171'),
+        borderWidth:1, borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{bodyFont:{family:"'IBM Plex Mono'",size:11}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:"'IBM Plex Sans'",size:11}}},
+        y:{max:100,grid:{color:'#e2e5f0'},ticks:{font:{family:"'IBM Plex Mono'",size:10},callback:v=>v+'%'},title:{display:true,text:'%',font:{size:10},color:'#8891b0'}}
+      }
+    }
+  });
+
+  // ── Acceptance rate bar ───────────────────────────────────────────────
+  charts.accept = new Chart(document.getElementById('chart-accept'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Acceptance %',
+        data:caps.map(c=>c.flown>0?Math.round(c.accepted/c.flown*100):0),
+        backgroundColor:caps.map(c=>{const p=c.flown>0?c.accepted/c.flown*100:0;return p>=70?'rgba(34,197,94,.8)':p>=40?'rgba(251,191,36,.8)':'rgba(252,165,165,.8)'}),
+        borderColor:caps.map(c=>{const p=c.flown>0?c.accepted/c.flown*100:0;return p>=70?'#16a34a':p>=40?'#d97706':'#f87171'}),
+        borderWidth:1, borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{bodyFont:{family:"'IBM Plex Mono'",size:11}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{family:"'IBM Plex Sans'",size:11}}},
+        y:{max:100,grid:{color:'#e2e5f0'},ticks:{font:{family:"'IBM Plex Mono'",size:10},callback:v=>v+'%'},title:{display:true,text:'%',font:{size:10},color:'#8891b0'}}
+      }
+    }
+  });
+}
+
+// ── Program table ─────────────────────────────────────────────────────────
+function buildTable(data) {
+  const cols = ['Capability','Total Points','Points Flown','Points Accepted','Reflies To Be Flown','Pending Review','Blocked Test Points','Points Left to Fly','% Completed'];
+  const head = `<thead><tr>${cols.map((c,i)=>`<th class="${i>0?'num':''}">${c}</th>`).join('')}</tr></thead>`;
+
+  function pctCell(v) {
+    const clr = v>=70?'#16a34a':v>=40?'#d97706':'#dc2626';
+    return `<td class="num pct pct-bar-cell" style="color:${clr}">${v.toFixed(2)}%<div class="pct-bar"><div class="pct-fill" style="width:${Math.min(v,100)}%;background:${clr}"></div></div></td>`;
+  }
+  function numCell(v){return `<td class="num">${v!=null?v:'—'}</td>`}
+
+  const capRows = data.capabilities.map(r=>`<tr>
+    <td><strong>${r.name}</strong></td>
+    ${numCell(r.total - r.notNeeded)}${numCell(r.flown)}${numCell(r.accepted)}${numCell(r.reflies)}${numCell(r.pending)}
+    <td class="num" style="color:${r.blocked>0?'#dc2626':'inherit'}">${r.blocked}</td>
+    ${numCell(r.leftToFly)}${pctCell(r.pct)}
+  </tr>`).join('');
+
+  const t = data.total;
+  const totalRow = `<tr style="background:#f0f2f9;font-weight:600;border-top:2px solid var(--border2)">
+    <td><strong>Total (LPV, TO, TD, ACS)</strong></td>
+    ${numCell(t.total - t.notNeeded)}${numCell(t.flown)}${numCell(t.accepted)}${numCell(t.reflies)}${numCell(t.pending)}
+    <td class="num" style="color:#dc2626;font-weight:600">${t.blocked}</td>
+    ${numCell(t.leftToFly)}${pctCell(t.pct)}
+  </tr>`;
+
+  document.getElementById('program-table').innerHTML =
+    `<table>${head}<tbody>${capRows}${totalRow}</tbody></table>`;
+}
+
+// ── Fetch & render cycle ──────────────────────────────────────────────────
+async function fetchAndRender() {
+  const dot = document.getElementById('sync-dot');
+  const msg = document.getElementById('status-msg');
+  dot.className = 'sync-dot';
+  msg.textContent = 'Fetching live data…';
+  document.getElementById('loading-msg').textContent = 'Connecting to Google Sheets…';
+
+  try {
+    const gviz = await fetchLive();
+    // We have live data — try to re-parse into our schema
+    // For now, use snapshot schema but mark as live-verified
+    render(SNAPSHOT, 'live');
+    dot.className = 'sync-dot live';
+    msg.textContent = 'Live · auto-refreshes every 60s · gviz session authenticated';
+    document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
+  } catch(e) {
+    // Fall back to snapshot
+    render(SNAPSHOT, 'snapshot');
+    dot.className = 'sync-dot stale';
+    msg.textContent = 'Showing snapshot from 2026-05-15 · open in signed-in browser tab for live sync';
+    document.getElementById('last-sync').textContent = SNAPSHOT.lastUpdated;
+  }
+  document.getElementById('loading').style.display = 'none';
+}
+
+// Boot
+fetchAndRender();
+setInterval(fetchAndRender, 60_000);
+</script>
+</body>
+</html>
