@@ -146,6 +146,7 @@ def parse_issue(i):
         "Updated":                      (f.get("updated", "") or "")[:10],
         "Resolution Date":              (f.get("resolutiondate", "") or "")[:10],
         "URL":                          f"https://merlinlabs.atlassian.net/browse/{i['key']}",
+        "Affected Aircraft":            ", ".join(opt.get("value","") for opt in (f.get("customfield_10123") or []) if isinstance(opt, dict)),
     }
 
 def parse_closed(i):
