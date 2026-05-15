@@ -40,7 +40,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .section{padding:16px 20px}
 .section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.charts-grid{display:grid;gap:16px;grid-template-columns:1fr 1fr 1fr}
+.charts-grid{display:grid;gap:16px;grid-template-columns:1fr 2fr}
 @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
 .chart-card h3{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
@@ -100,7 +100,7 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
   <!-- Summary cards -->
   <div class="cards" id="cards"></div>
 
-  <!-- Charts -->
+  <!-- Charts + Table -->
   <div class="section">
     <div class="section-title">Test Point Status by Capability</div>
     <div class="charts-grid">
@@ -109,21 +109,11 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
         <div class="chart-legend" id="breakdown-legend"></div>
         <div class="chart-wrap"><canvas id="chart-breakdown"></canvas></div>
       </div>
-      <div class="chart-card">
-        <h3>% Completion by Capability</h3>
-        <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>Acceptance Rate by Capability</h3>
-        <div class="chart-wrap"><canvas id="chart-accept"></canvas></div>
+      <div class="chart-card" style="grid-column:2/-1">
+        <h3>Program Table</h3>
+        <div class="table-wrap" id="program-table"></div>
       </div>
     </div>
-  </div>
-
-  <!-- Program table -->
-  <div class="section">
-    <div class="section-title">Program Table</div>
-    <div class="table-wrap" id="program-table"></div>
   </div>
 </div>
 
@@ -343,51 +333,6 @@ function buildCharts(data) {
     `<div class="chart-legend-item"><div class="chart-legend-swatch" style="background:${l.color};border:1px solid #ccc"></div>${l.label}</div>`
   ).join('');
 
-  // ── % Completion bar ──────────────────────────────────────────────────
-  charts.pct = new Chart(document.getElementById('chart-pct'), {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'% Completed',
-        data:caps.map(c=>c.pct),
-        backgroundColor:caps.map(c=>c.pct>=70?'rgba(34,197,94,.8)':c.pct>=40?'rgba(251,191,36,.8)':'rgba(252,165,165,.8)'),
-        borderColor:caps.map(c=>c.pct>=70?'#16a34a':c.pct>=40?'#d97706':'#f87171'),
-        borderWidth:1, borderRadius:4,
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{bodyFont:{family:"'IBM Plex Mono'",size:11}}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{family:"'IBM Plex Sans'",size:11}}},
-        y:{max:100,grid:{color:'#e2e5f0'},ticks:{font:{family:"'IBM Plex Mono'",size:10},callback:v=>v+'%'},title:{display:true,text:'%',font:{size:10},color:'#8891b0'}}
-      }
-    }
-  });
-
-  // ── Acceptance rate bar ───────────────────────────────────────────────
-  charts.accept = new Chart(document.getElementById('chart-accept'), {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Acceptance %',
-        data:caps.map(c=>c.flown>0?Math.round(c.accepted/c.flown*100):0),
-        backgroundColor:caps.map(c=>{const p=c.flown>0?c.accepted/c.flown*100:0;return p>=70?'rgba(34,197,94,.8)':p>=40?'rgba(251,191,36,.8)':'rgba(252,165,165,.8)'}),
-        borderColor:caps.map(c=>{const p=c.flown>0?c.accepted/c.flown*100:0;return p>=70?'#16a34a':p>=40?'#d97706':'#f87171'}),
-        borderWidth:1, borderRadius:4,
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{bodyFont:{family:"'IBM Plex Mono'",size:11}}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{family:"'IBM Plex Sans'",size:11}}},
-        y:{max:100,grid:{color:'#e2e5f0'},ticks:{font:{family:"'IBM Plex Mono'",size:10},callback:v=>v+'%'},title:{display:true,text:'%',font:{size:10},color:'#8891b0'}}
-      }
-    }
-  });
 }
 
 // ── Program table ─────────────────────────────────────────────────────────
