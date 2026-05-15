@@ -2,9 +2,7 @@ name: Daily DR Sync
 
 on:
   schedule:
-    # 6am Eastern = 10am UTC (EST) / 11am UTC (EDT)
-    # Using 11:00 UTC to cover EDT (summer). Adjust to 10:00 in winter if needed.
-    - cron: '0 11 * * *'
+    - cron: '0 10 * * *'  # 6:00 AM EDT (UTC-4, Mar–Nov). Runs 5 AM EST in winter — adjust to '0 11 * * *' Nov–Mar if needed.
   workflow_dispatch:   # allows manual trigger from GitHub Actions tab
 
 jobs:
@@ -16,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so rebase works cleanly
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,17 +25,23 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Pull latest template changes
+        run: git pull --rebase   # pick up any template.html commits pushed since checkout
+
       - name: Run DR sync
         env:
           JIRA_EMAIL:  ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN:  ${{ secrets.JIRA_TOKEN }}
           JIRA_BASE:   https://merlinlabs.atlassian.net
-        run: python sync.py
+        run: python sync.py   # always runs against the latest template.html
 
       - name: Commit and push updated index.html
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet || git commit -m "chore: daily DR sync $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
