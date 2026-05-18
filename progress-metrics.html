@@ -416,8 +416,8 @@ setInterval(fetchAndRender, 60_000);
 function switchPageTab(tab) {
   document.querySelectorAll('.page-tab').forEach(t =>
     t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('panel-metrics').style.display   = tab === 'metrics'    ? '' : 'none';
-  document.getElementById('panel-forecaster').style.display = tab === 'forecaster' ? '' : 'none';
+  document.getElementById('panel-metrics').style.display   = tab === 'metrics'    ? 'block' : 'none';
+  document.getElementById('panel-forecaster').style.display = tab === 'forecaster' ? 'block' : 'none';
 }
 </script>
 </body>
