@@ -87,7 +87,73 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
 
 /* ── Forecaster panel ───────────────────────────────────────────────────── */
 #panel-forecaster{display:none}
-#panel-forecaster iframe{width:100%;border:none;height:calc(100vh - 88px);min-height:700px;display:block}
+.fc-wrap{background:#f8fafc;color:#1e293b;font-family:'Courier New',monospace;font-size:13px;padding:16px;min-height:calc(100vh - 88px)}
+.fc-wrap h1{font-size:22px;font-weight:900;letter-spacing:-0.01em;line-height:1.1;color:#0f172a}
+.fc-wrap .lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+.fc-wrap .cyan{color:#0891b2}.fc-wrap .amber{color:#b45309}.fc-wrap .green{color:#16a34a}.fc-wrap .red{color:#dc2626}
+.fc-wrap .hdr{border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px}
+.fc-wrap .layout{display:flex;gap:16px;flex-wrap:wrap}
+.fc-wrap .left{width:260px;flex-shrink:0}
+.fc-wrap .right{flex:1;min-width:300px}
+.fc-wrap .card{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:12px 14px;margin-bottom:10px}
+.fc-wrap .ir{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.fc-wrap .ir:last-child{margin-bottom:0}
+.fc-wrap .ir-left{flex:1;min-width:0}
+.fc-wrap .ir-label{font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px;font-weight:bold}
+.fc-wrap .ir-hint{font-size:11px;color:#94a3b8;margin-top:3px}
+.fc-wrap input[type=number]{background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;padding:6px 10px;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;border-radius:3px;outline:none;width:90px;text-align:right;transition:border-color .15s}
+.fc-wrap input[type=number]:focus{border-color:#3b82f6;background:#ffffff}
+.fc-wrap input[type=number]:hover{border-color:#94a3b8}
+.fc-wrap input[type=number].wide{width:110px}
+.fc-wrap input[type=number].narrow{width:72px}
+.fc-wrap input[type=number]::-webkit-inner-spin-button,.fc-wrap input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.fc-wrap input[type=number]{-moz-appearance:textfield}
+.fc-wrap input[type=date]{background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;padding:6px 10px;font-family:'Courier New',monospace;font-size:12px;border-radius:3px;outline:none;width:100%;transition:border-color .15s}
+.fc-wrap input[type=date]:focus{border-color:#3b82f6}
+.fc-wrap .unit{font-size:12px;color:#94a3b8;white-space:nowrap}
+.fc-wrap .input-group{display:flex;align-items:center;gap:6px}
+.fc-wrap #fc-run-btn{width:100%;padding:13px 0;background:#f59e0b;color:#000;border:none;border-radius:4px;font-family:'Courier New',monospace;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:background .15s;margin-top:2px}
+.fc-wrap #fc-run-btn:hover{background:#fbbf24}
+.fc-wrap #fc-run-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:wait}
+.fc-wrap .warn{background:rgba(254,242,242,1);border:1px solid rgba(248,113,113,.4);border-radius:4px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:#dc2626;display:none}
+.fc-wrap .warn-ttl{color:#dc2626;font-size:11px;font-weight:bold;margin-bottom:4px}
+.fc-wrap .fc-empty{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#cbd5e1}
+.fc-wrap .stat-row{display:flex;gap:8px;margin-bottom:10px}
+.fc-wrap .stat{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:10px 12px;flex:1;text-align:center;min-width:0}
+.fc-wrap .sv{font-size:24px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.fc-wrap .sd{font-size:11px;color:#64748b;margin-top:4px}
+.fc-wrap .meta{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:8px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px 20px;font-size:11px}
+.fc-wrap .ml-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fc-wrap .ml-field{display:flex;flex-direction:column;gap:4px}
+.fc-wrap .ml-field label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+.fc-wrap .ml-prob{text-align:center;min-width:80px}
+.fc-wrap .pv{font-size:28px;font-weight:900;line-height:1}
+.fc-wrap .fc-tabs{display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:12px}
+.fc-wrap .fc-tab{padding:7px 14px;background:none;border:none;border-bottom:2px solid transparent;color:#94a3b8;font-family:'Courier New',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;margin-bottom:-1px;transition:color .15s;white-space:nowrap}
+.fc-wrap .fc-tab:hover{color:#475569}
+.fc-wrap .fc-tab.on{border-bottom-color:#f59e0b;color:#b45309}
+.fc-wrap .banners{display:flex;gap:8px;margin-bottom:12px}
+.fc-wrap .banner{flex:1;border-radius:4px;padding:8px 10px;text-align:center}
+.fc-wrap .bn-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;opacity:.65}
+.fc-wrap .bn-date{font-size:13px;font-weight:bold;margin-top:2px}
+.fc-wrap .bn-wk{font-size:10px;color:#6b7280;margin-top:2px}
+.fc-wrap .bp50{border:1px solid #bbf7d0;background:rgba(240,253,244,1);color:#16a34a}
+.fc-wrap .bp80{border:1px solid #fde68a;background:rgba(255,251,235,1);color:#b45309}
+.fc-wrap .bp90{border:1px solid #fecaca;background:rgba(254,242,242,1);color:#dc2626}
+.fc-wrap .cdesc{font-size:11px;color:#64748b;margin-bottom:8px}
+.fc-wrap .cwrap{position:relative;width:100%;height:260px}
+.fc-wrap .cleg{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:#475569;font-weight:500}
+.fc-wrap .asmp{margin-top:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;color:#64748b;line-height:1.6}
+.fc-wrap #fc-results{display:none}
+.fc-wrap input[type=number].err{border-color:#f87171;background:rgba(248,113,113,.05)}
+.fc-wrap .model-toggle{display:flex;gap:0;margin-bottom:12px;border:1px solid #e2e8f0;border-radius:4px;overflow:hidden}
+.fc-wrap .mt-btn{flex:1;padding:9px 6px;background:none;border:none;color:#94a3b8;font-family:'Courier New',monospace;font-size:10px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .15s;text-align:center;line-height:1.3}
+.fc-wrap .mt-btn:first-child{border-right:1px solid #e2e8f0}
+.fc-wrap .mt-btn:hover{color:#334155;background:#f8fafc}
+.fc-wrap .mt-btn.on{background:#fefce8;color:#b45309;border-bottom:2px solid #f59e0b}
+.fc-wrap .model-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:3px;margin-bottom:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:bold}
+.fc-wrap .badge-gross{background:rgba(34,211,238,.1);color:#0891b2;border:1px solid rgba(34,211,238,.2)}
+.fc-wrap .badge-net{background:rgba(240,253,244,1);color:#16a34a;border:1px solid #bbf7d0}
 </style>
 </head>
 <body>
@@ -111,12 +177,10 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
   <button class="page-tab" data-tab="forecaster" onclick="switchPageTab('forecaster')">MC Forecaster</button>
 </div>
 
+<!-- ── Test Point Status panel ─────────────────────────────────────────── -->
 <div id="panel-metrics">
 <div id="main" style="display:none">
-  <!-- Summary cards -->
   <div class="cards" id="cards"></div>
-
-  <!-- Charts + Table -->
   <div class="section">
     <div class="section-title">Test Point Status by Capability</div>
     <div class="charts-grid">
@@ -132,25 +196,254 @@ tbody td.pct{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:
     </div>
   </div>
 </div>
-
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
   <p id="loading-msg">Fetching sheet data…</p>
 </div>
 </div><!-- end panel-metrics -->
 
+<!-- ── MC Forecaster panel ─────────────────────────────────────────────── -->
 <div id="panel-forecaster">
-  <iframe src="mc-forecaster.html" title="MC Forecaster" allowfullscreen></iframe>
+<div class="fc-wrap">
+
+<div class="hdr">
+  <p class="lbl cyan">Flight Test Program Forecaster</p>
+  <h1>Monte Carlo Completion Model</h1>
+  <p class="lbl" style="margin-top:4px">Stochastic simulation · FPY variance · refly queue dynamics · capacity noise</p>
 </div>
 
+<div class="layout">
+<div class="left">
+
+  <div class="model-toggle">
+    <button class="mt-btn on" id="fc-mt-gross" onclick="fc_setModel('gross')">Gross Attempts<br>+ FPY</button>
+    <button class="mt-btn" id="fc-mt-net" onclick="fc_setModel('net')">Net Accepted<br>/ Week</button>
+  </div>
+
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Program Parameters</p>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Program Start Date</span>
+        <p class="ir-hint">Used to project calendar dates</p>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <input type="date" id="fc-startDate">
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Test Points Remaining</span>
+        <p class="ir-hint" id="fc-h-tp">—</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-totalPoints" value="200" min="1" max="5000" step="1" oninput="fc_upd()">
+        <span class="unit">pts</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Weekly Capacity μ</span>
+        <p class="ir-hint">Mean gross attempts per week</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-capMean" value="30" min="1" max="500" step="1" oninput="fc_upd()">
+        <span class="unit">pts/wk</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Weekly Capacity σ</span>
+        <p class="ir-hint">Variability (weather, mx, range)</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-capSd" value="5" min="0" max="100" step="0.5" oninput="fc_upd()">
+        <span class="unit">pts</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="fc-gross-inputs">
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Acceptance Parameters</p>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Mean</span>
+        <p class="ir-hint">First Pass Yield — accepted on first attempt</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-fpyMean" value="67" min="1" max="99" step="1" oninput="fc_upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Sigma</span>
+        <p class="ir-hint">Week-to-week FPY variability</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-fpySd" value="5" min="0" max="30" step="0.5" oninput="fc_upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Trend / Week</span>
+        <p class="ir-hint">Neg = harder points remain later</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-fpyTrend" value="0" min="-5" max="5" step="0.1" oninput="fc_upd()">
+        <span class="unit">%/wk</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Model Settings</p>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Refly Priority</span>
+        <p class="ir-hint">% of capacity reserved for reflights</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-reflyPri" value="50" min="10" max="100" step="5" oninput="fc_upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Max Weeks (cutoff)</span>
+        <p class="ir-hint">Simulation hard stop</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-maxWeeks" value="60" min="10" max="520" step="1" oninput="fc_upd()">
+        <span class="unit">wks</span>
+      </div>
+    </div>
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Simulations</span>
+        <p class="ir-hint">More = more accurate, slower</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fc-numSims" value="5000" min="500" max="50000" step="500" oninput="fc_upd()">
+      </div>
+    </div>
+  </div>
+  </div><!-- end fc-gross-inputs -->
+
+  <div id="fc-net-inputs" style="display:none">
+    <div class="card">
+      <p class="lbl cyan" style="margin-bottom:8px">Net Clearance Model</p>
+      <p class="model-badge badge-net">Accepted pts / week</p>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Accepted Pts / Week μ</span>
+          <p class="ir-hint">Mean points accepted and cleared per week</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="fc-netMean" value="20" min="1" max="500" step="1" oninput="fc_upd()">
+          <span class="unit">pts/wk</span>
+        </div>
+      </div>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Accepted Pts / Week σ</span>
+          <p class="ir-hint">Week-to-week variability in clearance rate</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="fc-netSd" value="4" min="0" max="100" step="0.5" oninput="fc_upd()">
+          <span class="unit">pts</span>
+        </div>
+      </div>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Clearance Trend / Week</span>
+          <p class="ir-hint">Neg = rate slows as harder points remain</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="fc-netTrend" value="0" min="-5" max="5" step="0.1" oninput="fc_upd()">
+          <span class="unit">pts/wk</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn" id="fc-warn"><div class="warn-ttl">⚠ DEBT SPIRAL RISK</div><div id="fc-warn-msg"></div></div>
+  <button id="fc-run-btn" onclick="fc_go()">▶ Run Simulation</button>
+</div>
+
+<div class="right">
+  <div class="fc-empty" id="fc-empty">
+    <div style="font-size:48px;opacity:.15">◈</div>
+    <p class="lbl">Configure parameters and run simulation</p>
+  </div>
+
+  <div id="fc-results">
+    <div class="stat-row">
+      <div class="stat"><div class="lbl">P50 Median</div><div class="sv green" id="fc-s-p50">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="fc-d-p50"></div></div>
+      <div class="stat"><div class="lbl">P80 Schedule</div><div class="sv amber" id="fc-s-p80">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="fc-d-p80"></div></div>
+      <div class="stat"><div class="lbl">P90 Risk</div><div class="sv red" id="fc-s-p90">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="fc-d-p90"></div></div>
+      <div class="stat"><div class="lbl">Mean</div><div class="sv cyan" id="fc-s-mn">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="fc-d-mn"></div></div>
+    </div>
+
+    <div class="meta" id="fc-meta"></div>
+
+    <div class="card" style="margin-bottom:10px">
+      <p class="lbl cyan" style="margin-bottom:8px">Milestone Risk Calculator</p>
+      <div class="ml-row">
+        <div class="ml-field">
+          <label>Target week</label>
+          <input type="number" id="fc-ml-wk" min="1" max="1000" placeholder="Wk #" style="width:72px" oninput="fc_syncMl('wk')">
+        </div>
+        <p style="font-size:11px;color:#94a3b8;padding-bottom:8px">or</p>
+        <div class="ml-field">
+          <label>Target date</label>
+          <input type="date" id="fc-ml-dt" style="width:148px" oninput="fc_syncMl('dt')">
+        </div>
+        <div class="ml-prob" id="fc-ml-prob" style="display:none;padding-bottom:4px">
+          <div class="lbl">Prob. Complete</div>
+          <div class="pv" id="fc-ml-pv">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="fc-tabs">
+        <button class="fc-tab on" id="fc-tab-tl" onclick="fc_sw('tl')">Projected Burndown</button>
+        <button class="fc-tab" id="fc-tab-hs" onclick="fc_sw('hs')">Completion Distribution</button>
+        <button class="fc-tab" id="fc-tab-bd" onclick="fc_sw('bd')">Bands (weeks)</button>
+      </div>
+      <div class="banners" id="fc-banners" style="display:none">
+        <div class="banner bp50"><div class="bn-lbl">P50 Completion</div><div class="bn-date" id="fc-bn-p50">—</div><div class="bn-wk" id="fc-bw-p50"></div></div>
+        <div class="banner bp80"><div class="bn-lbl">P80 Completion</div><div class="bn-date" id="fc-bn-p80">—</div><div class="bn-wk" id="fc-bw-p80"></div></div>
+        <div class="banner bp90"><div class="bn-lbl">P90 Completion</div><div class="bn-date" id="fc-bn-p90">—</div><div class="bn-wk" id="fc-bw-p90"></div></div>
+      </div>
+      <p class="cdesc" id="fc-cdesc"></p>
+      <div class="cwrap"><canvas id="fc-chart" role="img" aria-label="Monte Carlo simulation results chart"></canvas></div>
+      <div class="cleg" id="fc-cleg"></div>
+    </div>
+
+    <div class="asmp" id="fc-asmp"></div>
+  </div>
+</div>
+</div><!-- end layout -->
+</div><!-- end fc-wrap -->
+</div><!-- end panel-forecaster -->
+
 <script>
+// ════════════════════════════════════════════════════════════════════
+// Test Point Status
+// ════════════════════════════════════════════════════════════════════
 const SHEET_ID = '1XQc-Mbtl-pftiQhlw67Zr8qkmNsKPmh-BUljrd_94co';
 const GID      = '1028970667';
 let charts     = {};
 let parsedData = null;
 
-// ── Snapshot data (from last Google Drive sync) ───────────────────────────
-// Used as fallback if gviz/tq can't authenticate in browser
 const SNAPSHOT = {
   lastUpdated: '2026-05-15',
   capabilities: [
@@ -162,10 +455,8 @@ const SNAPSHOT = {
   total: { name:'Total', total:275, flown:131, accepted:81, notNeeded:37, reflies:33, pending:1, blocked:45, leftToFly:157, pct:34.03 },
 };
 
-// ── Paste your Apps Script web app URL here after deploying ──────────────
-const APPS_SCRIPT_URL = '';   // e.g. 'https://script.google.com/macros/s/ABC.../exec'
+const APPS_SCRIPT_URL = '';
 
-// ── Fetch live data from Apps Script proxy ────────────────────────────────
 async function fetchLive() {
   if (!APPS_SCRIPT_URL) throw new Error('no-url');
   const res  = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), { cache: 'no-store' });
@@ -174,10 +465,8 @@ async function fetchLive() {
   return data;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────
 function render(data, source) {
   parsedData = data;
-
   const t = data.total;
   document.getElementById('cards').innerHTML = `
     <div class="card highlight">
@@ -216,13 +505,11 @@ function render(data, source) {
       <div class="sub2">${source==='live'?'Refreshes every 60s':'Updated '+data.lastUpdated}</div>
     </div>
   `;
-
   buildCharts(data);
   buildTable(data);
   document.getElementById('main').style.display = '';
 }
 
-// ── Charts ────────────────────────────────────────────────────────────────
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -234,33 +521,25 @@ function roundRect(ctx,x,y,w,h,r){
 function buildCharts(data) {
   Object.values(charts).forEach(c=>c.destroy());
   charts = {};
-
   const caps   = data.capabilities;
   const labels = caps.map(c=>c.name);
-
   const dsAccepted     = caps.map(c=>c.accepted||0);
   const dsPending      = caps.map(c=>c.pending||0);
   const dsBlocked      = caps.map(c=>c.blocked||0);
   const dsLeftUnblocked= caps.map(c=>Math.max(0,(c.leftToFly||0)-(c.blocked||0)));
 
-  // Custom plugin: floating "X left to fly" labels + inline "X blocked" labels
   const annotPlugin = {
     id:'customAnnot',
     afterDatasetsDraw(chart) {
       const {ctx} = chart;
-      // dataset order: 0=accepted,1=pending,2=blocked,3=leftUnblocked
-      const topMeta      = chart.getDatasetMeta(3); // top of stack
+      const topMeta      = chart.getDatasetMeta(3);
       const blockedMeta  = chart.getDatasetMeta(2);
       ctx.save();
-
       caps.forEach((cap,i) => {
         const topBar     = topMeta.data[i];
         const blockedBar = blockedMeta.data[i];
         if (!topBar) return;
-
         const bx = topBar.x;
-
-        // ── Floating "X left to fly" label ──────────────────────────────
         if ((cap.leftToFly||0) > 0) {
           const txt   = `${cap.leftToFly} left to fly`;
           const fs    = 11, pad = 7;
@@ -270,23 +549,16 @@ function buildCharts(data) {
           const barTopY = topBar.y;
           const labelY  = barTopY - 34;
           const lx = bx - bw/2, ly = labelY - bh/2;
-
-          // shadow box
           ctx.shadowColor='rgba(0,0,0,.08)'; ctx.shadowBlur=4; ctx.shadowOffsetY=1;
           ctx.fillStyle='#fff'; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1;
           roundRect(ctx,lx,ly,bw,bh,4); ctx.fill(); ctx.stroke();
           ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-
           ctx.fillStyle='#1a1d2e'; ctx.textAlign='center'; ctx.textBaseline='middle';
           ctx.fillText(txt, bx, labelY);
-
-          // dashed connector
           ctx.setLineDash([3,3]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
           ctx.beginPath(); ctx.moveTo(bx, ly+bh); ctx.lineTo(bx, barTopY); ctx.stroke();
           ctx.setLineDash([]);
         }
-
-        // ── Inline "X blocked" label ─────────────────────────────────────
         if ((cap.blocked||0) > 0 && blockedBar) {
           const midY  = (blockedBar.y + blockedBar.base) / 2;
           const txt   = `${cap.blocked} blocked`;
@@ -295,10 +567,8 @@ function buildCharts(data) {
           const tw    = ctx.measureText(txt).width;
           const bw    = tw + pad*2, bh = fs + pad*1.4;
           const lx    = bx - bw/2, ly = midY - bh/2;
-
           ctx.fillStyle='#fef2f2'; ctx.strokeStyle='#fca5a5'; ctx.lineWidth=1;
           roundRect(ctx,lx,ly,bw,bh,3); ctx.fill(); ctx.stroke();
-
           ctx.fillStyle='#dc2626'; ctx.textAlign='center'; ctx.textBaseline='middle';
           ctx.fillText(txt, bx, midY);
         }
@@ -307,15 +577,14 @@ function buildCharts(data) {
     }
   };
 
-  // ── Breakdown stacked bar ─────────────────────────────────────────────
   charts.breakdown = new Chart(document.getElementById('chart-breakdown'), {
     type:'bar',
     data:{
       labels,
       datasets:[
-        { label:'Accepted',              data:dsAccepted,      backgroundColor:'#22c55e', stack:'s' },
-        { label:'Pending review',        data:dsPending,       backgroundColor:'#fbbf24', stack:'s' },
-        { label:'Blocked',               data:dsBlocked,       backgroundColor:'#fca5a5', stack:'s' },
+        { label:'Accepted',               data:dsAccepted,      backgroundColor:'#22c55e', stack:'s' },
+        { label:'Pending review',         data:dsPending,       backgroundColor:'#fbbf24', stack:'s' },
+        { label:'Blocked',                data:dsBlocked,       backgroundColor:'#fca5a5', stack:'s' },
         { label:'Left to fly (unblocked)',data:dsLeftUnblocked, backgroundColor:'#e5e7eb', stack:'s' },
       ]
     },
@@ -337,7 +606,6 @@ function buildCharts(data) {
     plugins:[annotPlugin]
   });
 
-  // Render HTML legend beneath the title
   const legendItems = [
     {label:'Accepted', color:'#22c55e'},
     {label:'Pending review', color:'#fbbf24'},
@@ -347,27 +615,22 @@ function buildCharts(data) {
   document.getElementById('breakdown-legend').innerHTML = legendItems.map(l=>
     `<div class="chart-legend-item"><div class="chart-legend-swatch" style="background:${l.color};border:1px solid #ccc"></div>${l.label}</div>`
   ).join('');
-
 }
 
-// ── Program table ─────────────────────────────────────────────────────────
 function buildTable(data) {
   const cols = ['Capability','Total Points','Points Flown','Points Accepted','Reflies To Be Flown','Pending Review','Blocked Test Points','Points Left to Fly','% Completed'];
   const head = `<thead><tr>${cols.map((c,i)=>`<th class="${i>0?'num':''}">${c}</th>`).join('')}</tr></thead>`;
-
   function pctCell(v) {
     const clr = v>=70?'#16a34a':v>=40?'#d97706':'#dc2626';
     return `<td class="num pct pct-bar-cell" style="color:${clr}">${v.toFixed(2)}%<div class="pct-bar"><div class="pct-fill" style="width:${Math.min(v,100)}%;background:${clr}"></div></div></td>`;
   }
   function numCell(v){return `<td class="num">${v!=null?v:'—'}</td>`}
-
   const capRows = data.capabilities.map(r=>`<tr>
     <td><strong>${r.name}</strong></td>
     ${numCell(r.total - r.notNeeded)}${numCell(r.flown)}${numCell(r.accepted)}${numCell(r.reflies)}${numCell(r.pending)}
     <td class="num" style="color:${r.blocked>0?'#dc2626':'inherit'}">${r.blocked}</td>
     ${numCell(r.leftToFly)}${pctCell(r.pct)}
   </tr>`).join('');
-
   const t = data.total;
   const totalRow = `<tr style="background:#f0f2f9;font-weight:600;border-top:2px solid var(--border2)">
     <td><strong>Total (LPV, TO, TD, ACS)</strong></td>
@@ -375,22 +638,18 @@ function buildTable(data) {
     <td class="num" style="color:#dc2626;font-weight:600">${t.blocked}</td>
     ${numCell(t.leftToFly)}${pctCell(t.pct)}
   </tr>`;
-
   document.getElementById('program-table').innerHTML =
     `<table>${head}<tbody>${capRows}${totalRow}</tbody></table>`;
 }
 
-// ── Fetch & render cycle ──────────────────────────────────────────────────
 async function fetchAndRender() {
   const dot = document.getElementById('sync-dot');
   const msg = document.getElementById('status-msg');
   dot.className = 'sync-dot';
   msg.textContent = 'Fetching live data…';
   document.getElementById('loading-msg').textContent = 'Connecting to Google Sheets…';
-
   try {
     const liveData = await fetchLive();
-    // Merge live data with SNAPSHOT structure (n208b/zkmln not in script)
     const merged = { ...SNAPSHOT, ...liveData };
     render(merged, 'live');
     dot.className = 'sync-dot live';
@@ -408,7 +667,6 @@ async function fetchAndRender() {
   document.getElementById('loading').style.display = 'none';
 }
 
-// Boot
 fetchAndRender();
 setInterval(fetchAndRender, 60_000);
 
@@ -416,9 +674,357 @@ setInterval(fetchAndRender, 60_000);
 function switchPageTab(tab) {
   document.querySelectorAll('.page-tab').forEach(t =>
     t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('panel-metrics').style.display   = tab === 'metrics'    ? 'block' : 'none';
+  document.getElementById('panel-metrics').style.display    = tab === 'metrics'    ? 'block' : 'none';
   document.getElementById('panel-forecaster').style.display = tab === 'forecaster' ? 'block' : 'none';
 }
+
+// ════════════════════════════════════════════════════════════════════
+// MC Forecaster (namespaced with fc_ prefix on public functions)
+// ════════════════════════════════════════════════════════════════════
+(function(){
+  // ── Math ──────────────────────────────────────────────────────────
+  function bm(){let u;do{u=Math.random();}while(u===0);return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());}
+  const rN=(mu,sd)=>sd>0?mu+sd*bm():mu;
+  function rB(n,p){if(n<=0||p<=0)return 0;if(p>=1)return n;if(n>40)return Math.min(n,Math.max(0,Math.round(rN(n*p,Math.sqrt(n*p*(1-p))))));let k=0;for(let i=0;i<n;i++)if(Math.random()<p)k++;return k;}
+  const pctile=(s,p)=>s[Math.max(0,Math.min(s.length-1,Math.floor((s.length-1)*p/100)))];
+  function bsc(arr,t){let lo=0,hi=arr.length;while(lo<hi){const m=lo+hi>>1;arr[m]<=t?lo=m+1:hi=m;}return lo;}
+
+  // ── Dates ──────────────────────────────────────────────────────────
+  function w2d(s,w){const p=s.split('-');const d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+w*7);return d;}
+  function d2w(s,ds){const p=s.split('-'),p2=ds.split('-');const a=new Date(+p[0],+p[1]-1,+p[2]),b=new Date(+p2[0],+p2[1]-1,+p2[2]);return Math.max(0,Math.round((b-a)/604800000));}
+  const fSh=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const fMd=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const fAx=d=>d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+  function toInp(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+  // ── Simulation ─────────────────────────────────────────────────────
+  function runSim(P){
+    const{tp,capMean,capSd,fpyMean,fpySd,fpyTrend,reflyPri,maxWeeks,numSims}=P;
+    const wks=new Array(numSims);const bd={};
+    for(let s=0;s<numSims;s++){
+      let rem=tp,q=0,fpy=fpyMean,w=0;
+      (bd[0]=bd[0]||[]).push(rem);
+      while((rem>0||q>0)&&w<maxWeeks){
+        w++;
+        const cap=Math.max(0,Math.round(rN(capMean,capSd)));
+        const f=Math.min(.99,Math.max(.01,rN(fpy,fpySd)));
+        fpy=Math.min(.99,Math.max(.05,fpy+fpyTrend));
+        const rS=rem===0?Math.min(q,cap):Math.min(q,Math.floor(cap*reflyPri));
+        const nS=Math.min(rem,cap-rS);
+        const rP=rB(rS,f),nP=rB(nS,f);
+        q=q-rS+(rS-rP)+(nS-nP);rem-=nS;
+        (bd[w]=bd[w]||[]).push(rem+q);
+      }
+      wks[s]=(rem<=0&&q<=0)?w:maxWeeks+1;
+    }
+    wks.sort((a,b)=>a-b);
+    const p10=pctile(wks,10),p25=pctile(wks,25),p50=pctile(wks,50);
+    const p75=pctile(wks,75),p80=pctile(wks,80),p90=pctile(wks,90);
+    const mean=Math.round(wks.reduce((a,b)=>a+b,0)/numSims);
+    const probAll=(bsc(wks,maxWeeks)/numSims*100).toFixed(1);
+    const simple=Math.ceil(tp/(capMean*fpyMean));
+    const range=Math.max(2,p90-p10),binW=Math.max(1,Math.round(range/16));
+    const hm={};wks.forEach(w=>{const b=Math.floor(w/binW)*binW;hm[b]=(hm[b]||0)+1;});
+    const hist=Object.entries(hm).map(([w,c])=>({week:+w,pct:c/numSims*100})).sort((a,b)=>a.week-b.week);
+    const dMax=Math.min(p90+Math.max(3,Math.round(range*.2)),maxWeeks);
+    const burn=[];
+    for(let w=0;w<=dMax;w++){
+      const s=bd[w];if(!s||s.length<numSims*.04)continue;
+      const sv=[...s].sort((a,b)=>a-b);
+      burn.push({week:w,p10:pctile(sv,10),p25:pctile(sv,25),p50:pctile(sv,50),p75:pctile(sv,75),p90:pctile(sv,90)});
+    }
+    return{sortedWks:wks,p10,p25,p50,p75,p80,p90,mean,probAll,simple,hist,burn};
+  }
+
+  function runSimNet(P){
+    const{tp,netMean,netSd,netTrend,maxWeeks,numSims}=P;
+    const wks=new Array(numSims);const bd={};
+    for(let s=0;s<numSims;s++){
+      let rem=tp,rate=netMean,w=0;
+      (bd[0]=bd[0]||[]).push(rem);
+      while(rem>0&&w<maxWeeks){
+        w++;
+        const cleared=Math.max(0,Math.round(rN(rate,netSd)));
+        rate=Math.max(0.5,rate+netTrend);
+        rem=Math.max(0,rem-cleared);
+        (bd[w]=bd[w]||[]).push(rem);
+      }
+      wks[s]=rem<=0?w:maxWeeks+1;
+    }
+    wks.sort((a,b)=>a-b);
+    const p10=pctile(wks,10),p25=pctile(wks,25),p50=pctile(wks,50);
+    const p75=pctile(wks,75),p80=pctile(wks,80),p90=pctile(wks,90);
+    const mean=Math.round(wks.reduce((a,b)=>a+b,0)/numSims);
+    const probAll=(bsc(wks,maxWeeks)/numSims*100).toFixed(1);
+    const simple=Math.ceil(tp/netMean);
+    const range=Math.max(2,p90-p10),binW=Math.max(1,Math.round(range/16));
+    const hm={};wks.forEach(w=>{const b=Math.floor(w/binW)*binW;hm[b]=(hm[b]||0)+1;});
+    const hist=Object.entries(hm).map(([w,c])=>({week:+w,pct:c/numSims*100})).sort((a,b)=>a.week-b.week);
+    const dMax=Math.min(p90+Math.max(3,Math.round(range*.2)),maxWeeks);
+    const burn=[];
+    for(let w=0;w<=dMax;w++){
+      const s=bd[w];if(!s||s.length<numSims*.04)continue;
+      const sv=[...s].sort((a,b)=>a-b);
+      burn.push({week:w,p10:pctile(sv,10),p25:pctile(sv,25),p50:pctile(sv,50),p75:pctile(sv,75),p90:pctile(sv,90)});
+    }
+    return{sortedWks:wks,p10,p25,p50,p75,p80,p90,mean,probAll,simple,hist,burn};
+  }
+
+  // ── State ──────────────────────────────────────────────────────────
+  let ACTIVEMODEL='gross';
+  let RES=null,TAB='tl',CHT=null;
+
+  // ── Vertical line plugin ───────────────────────────────────────────
+  const vlPlugin={
+    id:'fc-vl',
+    afterDraw(chart){
+      const lines=chart.config.options.plugins?.['fc-vl']?.lines||[];
+      if(!lines.length)return;
+      const{ctx,chartArea:{top,bottom,left,right},scales:{x}}=chart;
+      lines.forEach(({xv,color,lbl})=>{
+        const px=x.getPixelForValue(xv);
+        if(px<left||px>right)return;
+        ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.globalAlpha=.75;
+        ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();
+        if(lbl){ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=color;ctx.font="bold 9px 'Courier New'";ctx.textAlign='left';ctx.fillText(lbl,px+3,top+14);}
+        ctx.restore();
+      });
+    }
+  };
+  Chart.register(vlPlugin);
+
+  // ── Read inputs ────────────────────────────────────────────────────
+  function gp(){
+    const v=id=>+document.getElementById(id).value||0;
+    return{
+      tp:       v('fc-totalPoints'),
+      capMean:  v('fc-capMean'),
+      capSd:    v('fc-capSd'),
+      fpyMean:  v('fc-fpyMean')/100,
+      fpySd:    v('fc-fpySd')/100,
+      fpyTrend: v('fc-fpyTrend')/100,
+      reflyPri: v('fc-reflyPri')/100,
+      netMean:  v('fc-netMean'),
+      netSd:    v('fc-netSd'),
+      netTrend: v('fc-netTrend'),
+      maxWeeks: v('fc-maxWeeks'),
+      numSims:  v('fc-numSims'),
+      startDate:document.getElementById('fc-startDate').value,
+    };
+  }
+
+  function setModel(m){
+    ACTIVEMODEL=m;
+    document.getElementById('fc-mt-gross').classList.toggle('on',m==='gross');
+    document.getElementById('fc-mt-net').classList.toggle('on',m==='net');
+    document.getElementById('fc-gross-inputs').style.display=m==='gross'?'block':'none';
+    document.getElementById('fc-net-inputs').style.display=m==='net'?'block':'none';
+    document.getElementById('fc-warn').style.display='none';
+    upd();
+  }
+
+  function upd(){
+    const p=gp();
+    if(ACTIVEMODEL==='gross'){
+      if(p.capMean>0&&p.fpyMean>0){
+        const eff=(p.capMean*p.fpyMean).toFixed(1);
+        const est=Math.ceil(p.tp/(p.capMean*p.fpyMean));
+        document.getElementById('fc-h-tp').textContent=`Gross model: eff. clearance ${eff} pts/wk → simple est. ${est} wks`;
+      }
+      const sp=p.fpyMean<.5||p.fpyTrend<-.005;
+      document.getElementById('fc-warn').style.display=sp?'block':'none';
+      let m='';
+      if(p.fpyMean<.5)m+='<div>FPY below 50% — reflights will consume over half of weekly capacity.</div>';
+      if(p.fpyTrend<-.005)m+='<div>Declining FPY trend — schedule will slip non-linearly.</div>';
+      document.getElementById('fc-warn-msg').innerHTML=m;
+    } else {
+      if(p.netMean>0){
+        const est=Math.ceil(p.tp/p.netMean);
+        document.getElementById('fc-h-tp').textContent=`Net model: ${p.netMean} pts/wk accepted → simple est. ${est} wks`;
+      }
+      document.getElementById('fc-warn').style.display='none';
+    }
+    document.getElementById('fc-run-btn').textContent=`▶ Run ${(p.numSims||0).toLocaleString()} Simulations`;
+  }
+
+  function go(){
+    const p=gp();
+    if(!p.tp||!p.numSims){alert('Please fill in all required fields.');return;}
+    if(ACTIVEMODEL==='gross'&&(!p.capMean||!p.fpyMean)){alert('Please fill in capacity and FPY fields.');return;}
+    if(ACTIVEMODEL==='net'&&!p.netMean){alert('Please fill in the accepted pts/week field.');return;}
+    const btn=document.getElementById('fc-run-btn');
+    btn.disabled=true;btn.textContent='● Simulating…';
+    setTimeout(()=>{
+      RES=ACTIVEMODEL==='gross'?runSim(p):runSimNet(p);
+      RES._model=ACTIVEMODEL;
+      renderResults(p,RES);
+      btn.disabled=false;btn.textContent=`▶ Run ${p.numSims.toLocaleString()} Simulations`;
+    },20);
+  }
+
+  function renderResults(p,R){
+    document.getElementById('fc-empty').style.display='none';
+    document.getElementById('fc-results').style.display='block';
+    const hd=!!p.startDate;
+    const pd=w=>hd?fMd(w2d(p.startDate,w)):'';
+    [['p50',R.p50],['p80',R.p80],['p90',R.p90],['mn',R.mean]].forEach(([k,v])=>{
+      document.getElementById(`fc-s-${k}`).textContent=v;
+      document.getElementById(`fc-d-${k}`).textContent=pd(v);
+    });
+    const bias=R.p50-R.simple,sp=R.p90-R.p10;
+    const modelLabel=RES._model==='net'
+      ?`<span><span style="color:#64748b">Model: </span><span class="model-badge badge-net">Net Accepted</span></span>
+        <span><span style="color:#64748b">Clearance: </span><span style="color:#16a34a">${p.netMean} pts/wk</span></span>`
+      :`<span><span style="color:#64748b">Model: </span><span class="model-badge badge-gross">Gross + FPY</span></span>`;
+    document.getElementById('fc-meta').innerHTML=`
+      ${modelLabel}
+      <span><span style="color:#64748b">Simple est: </span><span style="color:#0891b2">${R.simple}w</span>
+      <span style="color:#64748b"> vs P50: </span><span style="color:#b45309">${R.p50}w</span>
+      <span style="color:${bias>0?'#dc2626':'#16a34a'}"> (${bias>0?'+':''}${bias}w bias)</span></span>
+      <span><span style="color:#64748b">P90–P10 spread: </span>
+      <span style="color:${sp>R.p50*.35?'#dc2626':'#f59e0b'}">${sp} wks${hd?` (${fSh(w2d(p.startDate,R.p10))}–${fSh(w2d(p.startDate,R.p90))})`:''}</span></span>
+      <span><span style="color:#64748b">Within cutoff: </span>
+      <span style="color:${+R.probAll>90?'#16a34a':+R.probAll>70?'#f59e0b':'#dc2626'}">${R.probAll}%</span></span>`;
+    if(hd){
+      document.getElementById('fc-bn-p50').textContent=fMd(w2d(p.startDate,R.p50));document.getElementById('fc-bw-p50').textContent=`week ${R.p50}`;
+      document.getElementById('fc-bn-p80').textContent=fMd(w2d(p.startDate,R.p80));document.getElementById('fc-bw-p80').textContent=`week ${R.p80}`;
+      document.getElementById('fc-bn-p90').textContent=fMd(w2d(p.startDate,R.p90));document.getElementById('fc-bw-p90').textContent=`week ${R.p90}`;
+    }
+    const asmpTxt = RES._model==='net'
+      ? `<span style="color:#64748b">Net clearance model: </span>Accepted pts/wk ~ N(${p.netMean}, ${p.netSd}).${p.netTrend!==0?` Clearance trend ${p.netTrend>0?'+':''}${p.netTrend.toFixed(1)} pts/wk/wk.`:''} No refly queue — net accepted rate is the direct input. Ends when remaining = 0 or week = ${p.maxWeeks}.`
+      : `<span style="color:#64748b">Gross attempts model: </span>Capacity ~ N(${p.capMean}, ${p.capSd}). FPY ~ N(${(p.fpyMean*100).toFixed(1)}%, ${(p.fpySd*100).toFixed(1)}%)${p.fpyTrend!==0?` with ${p.fpyTrend>0?'+':''}${(p.fpyTrend*100).toFixed(2)}%/wk drift.`:'.'} ${Math.round(p.reflyPri*100)}% of capacity to reflights. Ends when remaining + queue = 0 or week = ${p.maxWeeks}.`;
+    document.getElementById('fc-asmp').innerHTML=asmpTxt;
+    drawChart(TAB);
+  }
+
+  function sw(t){
+    TAB=t;
+    document.querySelectorAll('.fc-tab').forEach(b=>b.classList.remove('on'));
+    document.getElementById(`fc-tab-${t}`).classList.add('on');
+    if(RES)drawChart(t);
+  }
+
+  function drawChart(tab){
+    if(!RES)return;
+    const p=gp(),R=RES,hd=!!p.startDate;
+    if(CHT){CHT.destroy();CHT=null;}
+    const ctx=document.getElementById('fc-chart').getContext('2d');
+    const gc='#e5e7eb',tc='#374151';
+
+    if(tab==='tl'){
+      document.getElementById('fc-banners').style.display=hd?'flex':'none';
+      document.getElementById('fc-cdesc').textContent='Test points outstanding vs. calendar date · shading = P10–P90 outer, P25–P75 inner';
+      const mlWk=+document.getElementById('fc-ml-wk').value;
+      const rl=[
+        {xv:R.p50,color:'#16a34a',lbl:(hd?fSh(w2d(p.startDate,R.p50)):'')+' (P50)'},
+        {xv:R.p80,color:'#b45309',lbl:(hd?fSh(w2d(p.startDate,R.p80)):'')+' (P80)'},
+        {xv:R.p90,color:'#dc2626',lbl:(hd?fSh(w2d(p.startDate,R.p90)):'')+' (P90)'},
+      ];
+      if(mlWk>0)rl.push({xv:mlWk,color:'#1d4ed8',lbl:(hd?fSh(w2d(p.startDate,mlWk)):`Wk ${mlWk}`)+' ★'});
+      CHT=new Chart(ctx,{
+        type:'line',
+        data:{datasets:[
+          {data:R.burn.map(d=>({x:d.week,y:d.p10})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p90})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.18)',fill:'-1',pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p25})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p75})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.35)',fill:'-1',pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p50})),borderColor:'#b45309',backgroundColor:'transparent',fill:false,borderWidth:2.5,pointRadius:0,tension:.3},
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+          plugins:{legend:{display:false},'fc-vl':{lines:rl},
+            tooltip:{mode:'index',intersect:false,filter:i=>[0,1,4].includes(i.datasetIndex),callbacks:{
+              title:items=>{const w=items[0].parsed.x;return hd?`${fMd(w2d(p.startDate,w))} (wk ${w})`:`Week ${w}`;},
+              label:i=>{const w=i.parsed.x,bd=R.burn.find(d=>d.week===w);if(!bd)return null;
+                if(i.datasetIndex===0)return `P10: ${Math.round(bd.p10)} pts`;
+                if(i.datasetIndex===1)return `P90: ${Math.round(bd.p90)} pts`;
+                if(i.datasetIndex===4)return `P50: ${Math.round(bd.p50)} pts`;return null;}
+            }}
+          },
+          scales:{
+            x:{type:'linear',grid:{color:gc},ticks:{color:tc,maxTicksLimit:8,callback:v=>hd?fAx(w2d(p.startDate,v)):`Wk ${v}`}},
+            y:{grid:{color:gc},ticks:{color:tc},min:0,max:p.tp,title:{display:true,text:'Test Points Outstanding',color:'#64748b',font:{size:11}}}
+          }
+        }
+      });
+      document.getElementById('fc-cleg').innerHTML=`<span><span style="color:#b45309">──</span> P50 Median</span><span>■ P10–P90 outer</span><span>■ P25–P75 inner</span><span><span style="color:#16a34a">- -</span> P50</span><span><span style="color:#b45309">- -</span> P80</span><span><span style="color:#dc2626">- -</span> P90</span>${mlWk>0?'<span><span style="color:#1d4ed8">- -</span> Milestone ★</span>':''}`;
+
+    }else if(tab==='hs'){
+      document.getElementById('fc-banners').style.display='none';
+      document.getElementById('fc-cdesc').textContent=`Probability density across ${(+document.getElementById('fc-numSims').value||0).toLocaleString()} simulations · bars colored by percentile zone`;
+      CHT=new Chart(ctx,{
+        type:'bar',
+        data:{
+          labels:R.hist.map(h=>hd?fSh(w2d(p.startDate,h.week)):`Wk ${h.week}`),
+          datasets:[{data:R.hist.map(h=>+h.pct.toFixed(1)),backgroundColor:R.hist.map(h=>h.week<=R.p50?'rgba(22,163,74,.75)':h.week<=R.p80?'rgba(180,83,9,.75)':'rgba(220,38,38,.75)'),borderRadius:2}]
+        },
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.raw.toFixed(1)}% of simulations`}}},
+          scales:{
+            x:{grid:{color:gc},ticks:{color:tc,maxTicksLimit:10,autoSkip:true}},
+            y:{grid:{color:gc},ticks:{color:tc,callback:v=>v+'%'}}
+          }
+        }
+      });
+      document.getElementById('fc-cleg').innerHTML=`<span><span style="color:#16a34a">■</span> P10–P50</span><span><span style="color:#b45309">■</span> P50–P80</span><span><span style="color:#dc2626">■</span> P80+</span>`;
+
+    }else{
+      document.getElementById('fc-banners').style.display='none';
+      document.getElementById('fc-cdesc').textContent='Outstanding test points vs. program week · outer band = P10–P90 · inner = P25–P75';
+      CHT=new Chart(ctx,{
+        type:'line',
+        data:{datasets:[
+          {data:R.burn.map(d=>({x:d.week,y:d.p10})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p90})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.18)',fill:'-1',pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p25})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p75})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.35)',fill:'-1',pointRadius:0,tension:.3},
+          {data:R.burn.map(d=>({x:d.week,y:d.p50})),borderColor:'#b45309',backgroundColor:'transparent',fill:false,borderWidth:2.5,pointRadius:0,tension:.3},
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+          plugins:{legend:{display:false},
+            'fc-vl':{lines:[{xv:R.p50,color:'#16a34a',lbl:'P50'},{xv:R.p80,color:'#b45309',lbl:'P80'},{xv:R.p90,color:'#dc2626',lbl:'P90'}]},
+            tooltip:{mode:'index',intersect:false,filter:i=>[0,1,4].includes(i.datasetIndex),callbacks:{
+              title:items=>`Week ${items[0].parsed.x}`,
+              label:i=>{const w=i.parsed.x,bd=R.burn.find(d=>d.week===w);if(!bd)return null;
+                if(i.datasetIndex===0)return `P10: ${Math.round(bd.p10)} pts`;
+                if(i.datasetIndex===1)return `P90: ${Math.round(bd.p90)} pts`;
+                if(i.datasetIndex===4)return `P50: ${Math.round(bd.p50)} pts`;return null;}
+            }}
+          },
+          scales:{
+            x:{type:'linear',grid:{color:gc},ticks:{color:tc,maxTicksLimit:10,callback:v=>`Wk ${v}`},title:{display:true,text:'Program Week',color:'#64748b',font:{size:11}}},
+            y:{grid:{color:gc},ticks:{color:tc},title:{display:true,text:'Test Points Outstanding',color:'#64748b',font:{size:11}}}
+          }
+        }
+      });
+      document.getElementById('fc-cleg').innerHTML=`<span><span style="color:#b45309">──</span> P50 Median</span><span>P10–P90 outer</span><span>P25–P75 inner</span>`;
+    }
+  }
+
+  function syncMl(from){
+    const p=gp();
+    if(from==='wk'&&p.startDate){const w=+document.getElementById('fc-ml-wk').value;if(w>0)document.getElementById('fc-ml-dt').value=toInp(w2d(p.startDate,w));}
+    if(from==='dt'&&p.startDate){const ds=document.getElementById('fc-ml-dt').value;if(ds)document.getElementById('fc-ml-wk').value=d2w(p.startDate,ds);}
+    const wk=+document.getElementById('fc-ml-wk').value;
+    if(wk>0&&RES){
+      const prob=(bsc(RES.sortedWks,wk)/RES.sortedWks.length*100).toFixed(1);
+      const pe=document.getElementById('fc-ml-prob'),pv=document.getElementById('fc-ml-pv');
+      pe.style.display='block';pv.textContent=prob+'%';
+      pv.style.color=+prob>80?'#16a34a':+prob>50?'#f59e0b':'#dc2626';
+      drawChart(TAB);
+    }
+  }
+
+  // expose to HTML event handlers
+  window.fc_setModel = setModel;
+  window.fc_upd      = upd;
+  window.fc_go       = go;
+  window.fc_sw       = sw;
+  window.fc_syncMl   = syncMl;
+
+  // init
+  document.getElementById('fc-startDate').value = toInp(new Date());
+  upd();
+})();
 </script>
 </body>
 </html>
