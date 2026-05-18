@@ -1,8 +1,8 @@
 // Progress Metrics API
 // Deploy as: Web App → Execute as Me → Anyone (within Merlin Labs)
 
-const SPREADSHEET_ID = '1XQc-Mbtl-pftiQhlw67Zr8qkmNsKPmh-BUljrd_94co';
-const SHEET_GID      = 1028970667;
+const SPREADSHEET_ID = '1axaAXoiObpBw150OyQi_iee6_oUMoHnQA3BLXqomdfA';
+const SHEET_GID      = 289464578;
 const TARGET_CAPS    = ['LPV', 'TO', 'TD', 'ACS'];
 
 function doGet(e) {
