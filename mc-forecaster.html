@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Test MC Forecaster</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#f8fafc;color:#1e293b;font-family:'Courier New',monospace;font-size:13px;min-height:100vh;padding:16px}
+h1{font-size:22px;font-weight:900;letter-spacing:-0.01em;line-height:1.1;color:#0f172a}
+.lbl{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+.cyan{color:#0891b2}.amber{color:#b45309}.green{color:#16a34a}.red{color:#dc2626}
+.hdr{border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px}
+.layout{display:flex;gap:16px;flex-wrap:wrap}
+.left{width:260px;flex-shrink:0}
+.right{flex:1;min-width:300px}
+.card{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:12px 14px;margin-bottom:10px}
+
+/* Input rows */
+.ir{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.ir:last-child{margin-bottom:0}
+.ir-left{flex:1;min-width:0}
+.ir-label{font-size:12px;color:#334155;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px;font-weight:bold}
+.ir-hint{font-size:11px;color:#94a3b8;margin-top:3px}
+
+/* Number inputs */
+input[type=number]{
+  background:#f8fafc;
+  border:1px solid #cbd5e1;
+  color:#0f172a;
+  padding:6px 10px;
+  font-family:'Courier New',monospace;
+  font-size:13px;
+  font-weight:bold;
+  border-radius:3px;
+  outline:none;
+  width:90px;
+  text-align:right;
+  transition:border-color .15s;
+}
+input[type=number]:focus{border-color:#3b82f6;background:#ffffff}
+input[type=number]:hover{border-color:#94a3b8}
+input[type=number].wide{width:110px}
+input[type=number].narrow{width:72px}
+
+/* Remove spinner arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+/* Date input */
+input[type=date]{
+  background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;
+  padding:6px 10px;font-family:'Courier New',monospace;font-size:12px;
+  border-radius:3px;outline:none;width:100%;transition:border-color .15s;
+}
+input[type=date]:focus{border-color:#3b82f6}
+
+/* Unit label next to input */
+.unit{font-size:12px;color:#94a3b8;white-space:nowrap}
+
+.input-group{display:flex;align-items:center;gap:6px}
+
+#run-btn{width:100%;padding:13px 0;background:#f59e0b;color:#000;border:none;border-radius:4px;
+  font-family:'Courier New',monospace;font-size:12px;font-weight:900;letter-spacing:.12em;
+  text-transform:uppercase;cursor:pointer;transition:background .15s;margin-top:2px}
+#run-btn:hover{background:#fbbf24}
+#run-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:wait}
+
+.warn{background:rgba(254,242,242,1);border:1px solid rgba(248,113,113,.4);border-radius:4px;
+  padding:10px 12px;margin-bottom:10px;font-size:11px;color:#dc2626;display:none}
+.warn-ttl{color:#dc2626;font-size:11px;font-weight:bold;margin-bottom:4px}
+
+.empty{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;height:420px;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#cbd5e1}
+
+.stat-row{display:flex;gap:8px;margin-bottom:10px}
+.stat{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:10px 12px;flex:1;text-align:center;min-width:0}
+.sv{font-size:24px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.sd{font-size:11px;color:#64748b;margin-top:4px}
+
+.meta{background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;padding:8px 14px;margin-bottom:10px;
+  display:flex;flex-wrap:wrap;gap:6px 20px;font-size:11px}
+
+.ml-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.ml-field{display:flex;flex-direction:column;gap:4px}
+.ml-field label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.1em}
+.ml-prob{text-align:center;min-width:80px}
+.pv{font-size:28px;font-weight:900;line-height:1}
+
+.tabs{display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:12px}
+.tab{padding:7px 14px;background:none;border:none;border-bottom:2px solid transparent;color:#94a3b8;
+  font-family:'Courier New',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;
+  cursor:pointer;margin-bottom:-1px;transition:color .15s;white-space:nowrap}
+.tab:hover{color:#475569}
+.tab.on{border-bottom-color:#f59e0b;color:#b45309}
+
+.banners{display:flex;gap:8px;margin-bottom:12px}
+.banner{flex:1;border-radius:4px;padding:8px 10px;text-align:center}
+.bn-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;opacity:.65}
+.bn-date{font-size:13px;font-weight:bold;margin-top:2px}
+.bn-wk{font-size:10px;color:#6b7280;margin-top:2px}
+.bp50{border:1px solid #bbf7d0;background:rgba(240,253,244,1);color:#16a34a}
+.bp80{border:1px solid #fde68a;background:rgba(255,251,235,1);color:#b45309}
+.bp90{border:1px solid #fecaca;background:rgba(254,242,242,1);color:#dc2626}
+
+.cdesc{font-size:11px;color:#64748b;margin-bottom:8px}
+.cwrap{position:relative;width:100%;height:260px}
+.cleg{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:#475569;font-weight:500}
+.asmp{margin-top:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;color:#64748b;line-height:1.6}
+#results{display:none}
+
+/* Validation highlight */
+input[type=number].err{border-color:#f87171;background:rgba(248,113,113,.05)}
+
+/* Model toggle */
+.model-toggle{display:flex;gap:0;margin-bottom:12px;border:1px solid #e2e8f0;border-radius:4px;overflow:hidden}
+.mt-btn{flex:1;padding:9px 6px;background:none;border:none;color:#94a3b8;font-family:'Courier New',monospace;
+  font-size:10px;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+  transition:all .15s;text-align:center;line-height:1.3}
+.mt-btn:first-child{border-right:1px solid #e2e8f0}
+.mt-btn:hover{color:#334155;background:#f8fafc}
+.mt-btn.on{background:#fefce8;color:#b45309;border-bottom:2px solid #f59e0b}
+.model-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:3px;margin-bottom:8px;
+  letter-spacing:.08em;text-transform:uppercase;font-weight:bold}
+.badge-gross{background:rgba(34,211,238,.1);color:#0891b2;border:1px solid rgba(34,211,238,.2)}
+.badge-net{background:rgba(240,253,244,1);color:#16a34a;border:1px solid #bbf7d0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <p class="lbl cyan">Flight Test Program Forecaster</p>
+  <h1>Monte Carlo Completion Model</h1>
+  <p class="lbl" style="margin-top:4px">Stochastic simulation · FPY variance · refly queue dynamics · capacity noise</p>
+</div>
+
+<div class="layout">
+<div class="left">
+
+  <!-- Model selector -->
+  <div class="model-toggle">
+    <button class="mt-btn on" id="mt-gross" onclick="setModel('gross')">Gross Attempts<br>+ FPY</button>
+    <button class="mt-btn" id="mt-net" onclick="setModel('net')">Net Accepted<br>/ Week</button>
+  </div>
+
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Program Parameters</p>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Program Start Date</span>
+        <p class="ir-hint">Used to project calendar dates</p>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <input type="date" id="startDate">
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Test Points Remaining</span>
+        <p class="ir-hint" id="h-tp">—</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="totalPoints" value="200" min="1" max="5000" step="1" oninput="upd()">
+        <span class="unit">pts</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Weekly Capacity μ</span>
+        <p class="ir-hint">Mean gross attempts per week</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="capMean" value="30" min="1" max="500" step="1" oninput="upd()">
+        <span class="unit">pts/wk</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Weekly Capacity σ</span>
+        <p class="ir-hint">Variability (weather, mx, range)</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="capSd" value="5" min="0" max="100" step="0.5" oninput="upd()">
+        <span class="unit">pts</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="gross-inputs">
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Acceptance Parameters</p>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Mean</span>
+        <p class="ir-hint">First Pass Yield — accepted on first attempt</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fpyMean" value="67" min="1" max="99" step="1" oninput="upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Sigma</span>
+        <p class="ir-hint">Week-to-week FPY variability</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fpySd" value="5" min="0" max="30" step="0.5" oninput="upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">FPY Trend / Week</span>
+        <p class="ir-hint">Neg = harder points remain later</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="fpyTrend" value="0" min="-5" max="5" step="0.1" oninput="upd()">
+        <span class="unit">%/wk</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="lbl cyan" style="margin-bottom:12px">Model Settings</p>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Refly Priority</span>
+        <p class="ir-hint">% of capacity reserved for reflights</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="reflyPri" value="50" min="10" max="100" step="5" oninput="upd()">
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Max Weeks (cutoff)</span>
+        <p class="ir-hint">Simulation hard stop</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="maxWeeks" value="60" min="10" max="520" step="1" oninput="upd()">
+        <span class="unit">wks</span>
+      </div>
+    </div>
+
+    <div class="ir">
+      <div class="ir-left">
+        <span class="ir-label">Simulations</span>
+        <p class="ir-hint">More = more accurate, slower</p>
+      </div>
+      <div class="input-group">
+        <input type="number" id="numSims" value="5000" min="500" max="50000" step="500" oninput="upd()">
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end gross-inputs -->
+
+  <!-- Net Clearance Model inputs (hidden by default) -->
+  <div id="net-inputs" style="display:none">
+    <div class="card">
+      <p class="lbl cyan" style="margin-bottom:8px">Net Clearance Model</p>
+      <p class="model-badge badge-net">Accepted pts / week</p>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Accepted Pts / Week μ</span>
+          <p class="ir-hint">Mean points accepted and cleared per week</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="netMean" value="20" min="1" max="500" step="1" oninput="upd()">
+          <span class="unit">pts/wk</span>
+        </div>
+      </div>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Accepted Pts / Week σ</span>
+          <p class="ir-hint">Week-to-week variability in clearance rate</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="netSd" value="4" min="0" max="100" step="0.5" oninput="upd()">
+          <span class="unit">pts</span>
+        </div>
+      </div>
+      <div class="ir">
+        <div class="ir-left">
+          <span class="ir-label">Clearance Trend / Week</span>
+          <p class="ir-hint">Neg = rate slows as harder points remain</p>
+        </div>
+        <div class="input-group">
+          <input type="number" id="netTrend" value="0" min="-5" max="5" step="0.1" oninput="upd()">
+          <span class="unit">pts/wk</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn" id="warn"><div class="warn-ttl">⚠ DEBT SPIRAL RISK</div><div id="warn-msg"></div></div>
+  <button id="run-btn" onclick="go()">▶ Run Simulation</button>
+</div>
+
+<div class="right">
+  <div class="empty" id="empty">
+    <div style="font-size:48px;opacity:.15">◈</div>
+    <p class="lbl">Configure parameters and run simulation</p>
+  </div>
+
+  <div id="results">
+    <div class="stat-row">
+      <div class="stat"><div class="lbl">P50 Median</div><div class="sv green" id="s-p50">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="d-p50"></div></div>
+      <div class="stat"><div class="lbl">P80 Schedule</div><div class="sv amber" id="s-p80">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="d-p80"></div></div>
+      <div class="stat"><div class="lbl">P90 Risk</div><div class="sv red" id="s-p90">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="d-p90"></div></div>
+      <div class="stat"><div class="lbl">Mean</div><div class="sv cyan" id="s-mn">—</div><div class="lbl" style="margin-top:2px">wks</div><div class="sd" id="d-mn"></div></div>
+    </div>
+
+    <div class="meta" id="meta"></div>
+
+    <div class="card" style="margin-bottom:10px">
+      <p class="lbl cyan" style="margin-bottom:8px">Milestone Risk Calculator</p>
+      <div class="ml-row">
+        <div class="ml-field">
+          <label>Target week</label>
+          <input type="number" id="ml-wk" min="1" max="1000" placeholder="Wk #" style="width:72px" oninput="syncMl('wk')">
+        </div>
+        <p style="font-size:11px;color:#94a3b8;padding-bottom:8px">or</p>
+        <div class="ml-field">
+          <label>Target date</label>
+          <input type="date" id="ml-dt" style="width:148px" oninput="syncMl('dt')">
+        </div>
+        <div class="ml-prob" id="ml-prob" style="display:none;padding-bottom:4px">
+          <div class="lbl">Prob. Complete</div>
+          <div class="pv" id="ml-pv">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab on" id="tab-tl" onclick="sw('tl')">Projected Burndown</button>
+        <button class="tab" id="tab-hs" onclick="sw('hs')">Completion Distribution</button>
+        <button class="tab" id="tab-bd" onclick="sw('bd')">Bands (weeks)</button>
+      </div>
+      <div class="banners" id="banners" style="display:none">
+        <div class="banner bp50"><div class="bn-lbl">P50 Completion</div><div class="bn-date" id="bn-p50">—</div><div class="bn-wk" id="bw-p50"></div></div>
+        <div class="banner bp80"><div class="bn-lbl">P80 Completion</div><div class="bn-date" id="bn-p80">—</div><div class="bn-wk" id="bw-p80"></div></div>
+        <div class="banner bp90"><div class="bn-lbl">P90 Completion</div><div class="bn-date" id="bn-p90">—</div><div class="bn-wk" id="bw-p90"></div></div>
+      </div>
+      <p class="cdesc" id="cdesc"></p>
+      <div class="cwrap"><canvas id="chart" role="img" aria-label="Monte Carlo simulation results chart"></canvas></div>
+      <div class="cleg" id="cleg"></div>
+    </div>
+
+    <div class="asmp" id="asmp"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── Math ──────────────────────────────────────────────────────────────────────
+function bm(){let u;do{u=Math.random();}while(u===0);return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());}
+const rN=(mu,sd)=>sd>0?mu+sd*bm():mu;
+function rB(n,p){if(n<=0||p<=0)return 0;if(p>=1)return n;if(n>40)return Math.min(n,Math.max(0,Math.round(rN(n*p,Math.sqrt(n*p*(1-p))))));let k=0;for(let i=0;i<n;i++)if(Math.random()<p)k++;return k;}
+const pct=(s,p)=>s[Math.max(0,Math.min(s.length-1,Math.floor((s.length-1)*p/100)))];
+function bsc(arr,t){let lo=0,hi=arr.length;while(lo<hi){const m=lo+hi>>1;arr[m]<=t?lo=m+1:hi=m;}return lo;}
+
+// ── Dates ─────────────────────────────────────────────────────────────────────
+function w2d(s,w){const p=s.split('-');const d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+w*7);return d;}
+function d2w(s,ds){const p=s.split('-'),p2=ds.split('-');const a=new Date(+p[0],+p[1]-1,+p[2]),b=new Date(+p2[0],+p2[1]-1,+p2[2]);return Math.max(0,Math.round((b-a)/604800000));}
+const fSh=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const fMd=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const fAx=d=>d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+function toInp(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+// ── Simulation ────────────────────────────────────────────────────────────────
+function runSim(P){
+  const{tp,capMean,capSd,fpyMean,fpySd,fpyTrend,reflyPri,maxWeeks,numSims}=P;
+  const wks=new Array(numSims);const bd={};
+  for(let s=0;s<numSims;s++){
+    let rem=tp,q=0,fpy=fpyMean,w=0;
+    (bd[0]=bd[0]||[]).push(rem);
+    while((rem>0||q>0)&&w<maxWeeks){
+      w++;
+      const cap=Math.max(0,Math.round(rN(capMean,capSd)));
+      const f=Math.min(.99,Math.max(.01,rN(fpy,fpySd)));
+      fpy=Math.min(.99,Math.max(.05,fpy+fpyTrend));
+      const rS=rem===0?Math.min(q,cap):Math.min(q,Math.floor(cap*reflyPri));
+      const nS=Math.min(rem,cap-rS);
+      const rP=rB(rS,f),nP=rB(nS,f);
+      q=q-rS+(rS-rP)+(nS-nP);rem-=nS;
+      (bd[w]=bd[w]||[]).push(rem+q);
+    }
+    wks[s]=(rem<=0&&q<=0)?w:maxWeeks+1;
+  }
+  wks.sort((a,b)=>a-b);
+  const p10=pct(wks,10),p25=pct(wks,25),p50=pct(wks,50);
+  const p75=pct(wks,75),p80=pct(wks,80),p90=pct(wks,90);
+  const mean=Math.round(wks.reduce((a,b)=>a+b,0)/numSims);
+  const probAll=(bsc(wks,maxWeeks)/numSims*100).toFixed(1);
+  const simple=Math.ceil(tp/(capMean*fpyMean));
+  const range=Math.max(2,p90-p10),binW=Math.max(1,Math.round(range/16));
+  const hm={};wks.forEach(w=>{const b=Math.floor(w/binW)*binW;hm[b]=(hm[b]||0)+1;});
+  const hist=Object.entries(hm).map(([w,c])=>({week:+w,pct:c/numSims*100})).sort((a,b)=>a.week-b.week);
+  const dMax=Math.min(p90+Math.max(3,Math.round(range*.2)),maxWeeks);
+  const burn=[];
+  for(let w=0;w<=dMax;w++){
+    const s=bd[w];if(!s||s.length<numSims*.04)continue;
+    const sv=[...s].sort((a,b)=>a-b);
+    burn.push({week:w,p10:pct(sv,10),p25:pct(sv,25),p50:pct(sv,50),p75:pct(sv,75),p90:pct(sv,90)});
+  }
+  return{sortedWks:wks,p10,p25,p50,p75,p80,p90,mean,probAll,simple,hist,burn};
+}
+
+// ── Simple net clearance simulation ──────────────────────────────────────────
+function runSimNet(P){
+  const{tp,netMean,netSd,netTrend,maxWeeks,numSims}=P;
+  const wks=new Array(numSims);const bd={};
+  for(let s=0;s<numSims;s++){
+    let rem=tp,rate=netMean,w=0;
+    (bd[0]=bd[0]||[]).push(rem);
+    while(rem>0&&w<maxWeeks){
+      w++;
+      const cleared=Math.max(0,Math.round(rN(rate,netSd)));
+      rate=Math.max(0.5,rate+netTrend);
+      rem=Math.max(0,rem-cleared);
+      (bd[w]=bd[w]||[]).push(rem);
+    }
+    wks[s]=rem<=0?w:maxWeeks+1;
+  }
+  wks.sort((a,b)=>a-b);
+  const p10=pct(wks,10),p25=pct(wks,25),p50=pct(wks,50);
+  const p75=pct(wks,75),p80=pct(wks,80),p90=pct(wks,90);
+  const mean=Math.round(wks.reduce((a,b)=>a+b,0)/numSims);
+  const probAll=(bsc(wks,maxWeeks)/numSims*100).toFixed(1);
+  const simple=Math.ceil(tp/netMean);
+  const range=Math.max(2,p90-p10),binW=Math.max(1,Math.round(range/16));
+  const hm={};wks.forEach(w=>{const b=Math.floor(w/binW)*binW;hm[b]=(hm[b]||0)+1;});
+  const hist=Object.entries(hm).map(([w,c])=>({week:+w,pct:c/numSims*100})).sort((a,b)=>a.week-b.week);
+  const dMax=Math.min(p90+Math.max(3,Math.round(range*.2)),maxWeeks);
+  const burn=[];
+  for(let w=0;w<=dMax;w++){
+    const s=bd[w];if(!s||s.length<numSims*.04)continue;
+    const sv=[...s].sort((a,b)=>a-b);
+    burn.push({week:w,p10:pct(sv,10),p25:pct(sv,25),p50:pct(sv,50),p75:pct(sv,75),p90:pct(sv,90)});
+  }
+  return{sortedWks:wks,p10,p25,p50,p75,p80,p90,mean,probAll,simple,hist,burn};
+}
+
+// ── Model toggle ──────────────────────────────────────────────────────────────
+let ACTIVEMODEL='gross';
+function setModel(m){
+  ACTIVEMODEL=m;
+  document.getElementById('mt-gross').classList.toggle('on',m==='gross');
+  document.getElementById('mt-net').classList.toggle('on',m==='net');
+  document.getElementById('gross-inputs').style.display=m==='gross'?'block':'none';
+  document.getElementById('net-inputs').style.display=m==='net'?'block':'none';
+  document.getElementById('warn').style.display='none';
+  upd();
+}
+
+// ── Read inputs (with % → decimal conversion) ─────────────────────────────────
+function gp(){
+  const v=id=>+document.getElementById(id).value||0;
+  return{
+    tp:       v('totalPoints'),
+    capMean:  v('capMean'),
+    capSd:    v('capSd'),
+    fpyMean:  v('fpyMean')/100,
+    fpySd:    v('fpySd')/100,
+    fpyTrend: v('fpyTrend')/100,
+    reflyPri: v('reflyPri')/100,
+    netMean:  v('netMean'),
+    netSd:    v('netSd'),
+    netTrend: v('netTrend'),
+    maxWeeks: v('maxWeeks'),
+    numSims:  v('numSims'),
+    startDate:document.getElementById('startDate').value,
+  };
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let RES=null,TAB='tl',CHT=null;
+
+Chart.defaults.color='#374151';
+Chart.defaults.borderColor='#e5e7eb';
+Chart.defaults.font.family="'Courier New',monospace";
+Chart.defaults.font.size=10;
+
+// ── Vertical line plugin ──────────────────────────────────────────────────────
+const vlPlugin={
+  id:'vl',
+  afterDraw(chart){
+    const lines=chart.config.options.plugins?.vl?.lines||[];
+    if(!lines.length)return;
+    const{ctx,chartArea:{top,bottom,left,right},scales:{x}}=chart;
+    lines.forEach(({xv,color,lbl})=>{
+      const px=x.getPixelForValue(xv);
+      if(px<left||px>right)return;
+      ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([5,3]);ctx.globalAlpha=.75;
+      ctx.beginPath();ctx.moveTo(px,top);ctx.lineTo(px,bottom);ctx.stroke();
+      if(lbl){ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=color;ctx.font="bold 9px 'Courier New'";ctx.textAlign='left';ctx.fillText(lbl,px+3,top+14);}
+      ctx.restore();
+    });
+  }
+};
+Chart.register(vlPlugin);
+
+// ── Update hint text & warnings ───────────────────────────────────────────────
+function upd(){
+  const p=gp();
+  if(ACTIVEMODEL==='gross'){
+    if(p.capMean>0&&p.fpyMean>0){
+      const eff=(p.capMean*p.fpyMean).toFixed(1);
+      const est=Math.ceil(p.tp/(p.capMean*p.fpyMean));
+      document.getElementById('h-tp').textContent=`Gross model: eff. clearance ${eff} pts/wk → simple est. ${est} wks`;
+    }
+    const sp=p.fpyMean<.5||p.fpyTrend<-.005;
+    document.getElementById('warn').style.display=sp?'block':'none';
+    let m='';
+    if(p.fpyMean<.5)m+='<div>FPY below 50% — reflights will consume over half of weekly capacity.</div>';
+    if(p.fpyTrend<-.005)m+='<div>Declining FPY trend — schedule will slip non-linearly.</div>';
+    document.getElementById('warn-msg').innerHTML=m;
+  } else {
+    if(p.netMean>0){
+      const est=Math.ceil(p.tp/p.netMean);
+      document.getElementById('h-tp').textContent=`Net model: ${p.netMean} pts/wk accepted → simple est. ${est} wks`;
+    }
+    document.getElementById('warn').style.display='none';
+  }
+  document.getElementById('run-btn').textContent=`▶ Run ${(p.numSims||0).toLocaleString()} Simulations`;
+}
+
+// ── Run simulation ────────────────────────────────────────────────────────────
+function go(){
+  const p=gp();
+  if(!p.tp||!p.numSims){alert('Please fill in all required fields.');return;}
+  if(ACTIVEMODEL==='gross'&&(!p.capMean||!p.fpyMean)){alert('Please fill in capacity and FPY fields.');return;}
+  if(ACTIVEMODEL==='net'&&!p.netMean){alert('Please fill in the accepted pts/week field.');return;}
+  const btn=document.getElementById('run-btn');
+  btn.disabled=true;btn.textContent='● Simulating…';
+  setTimeout(()=>{
+    RES=ACTIVEMODEL==='gross'?runSim(p):runSimNet(p);
+    RES._model=ACTIVEMODEL;
+    renderResults(p,RES);
+    btn.disabled=false;btn.textContent=`▶ Run ${p.numSims.toLocaleString()} Simulations`;
+  },20);
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function renderResults(p,R){
+  document.getElementById('empty').style.display='none';
+  document.getElementById('results').style.display='block';
+  const hd=!!p.startDate;
+  const pd=w=>hd?fMd(w2d(p.startDate,w)):'';
+  [['p50',R.p50],['p80',R.p80],['p90',R.p90],['mn',R.mean]].forEach(([k,v])=>{
+    document.getElementById(`s-${k}`).textContent=v;
+    document.getElementById(`d-${k}`).textContent=pd(v);
+  });
+  const bias=R.p50-R.simple,sp=R.p90-R.p10;
+  const modelLabel=RES._model==='net'
+    ?`<span><span style="color:#64748b">Model: </span><span class="model-badge badge-net">Net Accepted</span></span>
+      <span><span style="color:#64748b">Clearance: </span><span style="color:#16a34a">${p.netMean} pts/wk</span></span>`
+    :`<span><span style="color:#64748b">Model: </span><span class="model-badge badge-gross">Gross + FPY</span></span>`;
+  document.getElementById('meta').innerHTML=`
+    ${modelLabel}
+    <span><span style="color:#64748b">Simple est: </span><span style="color:#0891b2">${R.simple}w</span>
+    <span style="color:#64748b"> vs P50: </span><span style="color:#b45309">${R.p50}w</span>
+    <span style="color:${bias>0?'#dc2626':'#16a34a'}"> (${bias>0?'+':''}${bias}w bias)</span></span>
+    <span><span style="color:#64748b">P90–P10 spread: </span>
+    <span style="color:${sp>R.p50*.35?'#dc2626':'#f59e0b'}">${sp} wks${hd?` (${fSh(w2d(p.startDate,R.p10))}–${fSh(w2d(p.startDate,R.p90))})`:''}</span></span>
+    <span><span style="color:#64748b">Within cutoff: </span>
+    <span style="color:${+R.probAll>90?'#16a34a':+R.probAll>70?'#f59e0b':'#dc2626'}">${R.probAll}%</span></span>`;
+  if(hd){
+    document.getElementById('bn-p50').textContent=fMd(w2d(p.startDate,R.p50));document.getElementById('bw-p50').textContent=`week ${R.p50}`;
+    document.getElementById('bn-p80').textContent=fMd(w2d(p.startDate,R.p80));document.getElementById('bw-p80').textContent=`week ${R.p80}`;
+    document.getElementById('bn-p90').textContent=fMd(w2d(p.startDate,R.p90));document.getElementById('bw-p90').textContent=`week ${R.p90}`;
+  }
+  const asmpTxt = RES._model==='net'
+    ? `<span style="color:#64748b">Net clearance model: </span>Accepted pts/wk ~ N(${p.netMean}, ${p.netSd}).${p.netTrend!==0?` Clearance trend ${p.netTrend>0?'+':''}${p.netTrend.toFixed(1)} pts/wk/wk.`:''} No refly queue — net accepted rate is the direct input. Ends when remaining = 0 or week = ${p.maxWeeks}.`
+    : `<span style="color:#64748b">Gross attempts model: </span>Capacity ~ N(${p.capMean}, ${p.capSd}). FPY ~ N(${(p.fpyMean*100).toFixed(1)}%, ${(p.fpySd*100).toFixed(1)}%)${p.fpyTrend!==0?` with ${p.fpyTrend>0?'+':''}${(p.fpyTrend*100).toFixed(2)}%/wk drift.`:'.'} ${Math.round(p.reflyPri*100)}% of capacity to reflights. Ends when remaining + queue = 0 or week = ${p.maxWeeks}.`;
+  document.getElementById('asmp').innerHTML=asmpTxt;
+  drawChart(TAB);
+}
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+function sw(t){
+  TAB=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById(`tab-${t}`).classList.add('on');
+  if(RES)drawChart(t);
+}
+
+// ── Draw chart ────────────────────────────────────────────────────────────────
+function drawChart(tab){
+  if(!RES)return;
+  const p=gp(),R=RES,hd=!!p.startDate;
+  if(CHT){CHT.destroy();CHT=null;}
+  const ctx=document.getElementById('chart').getContext('2d');
+  const gc='#e5e7eb',tc='#374151';
+
+  if(tab==='tl'){
+    document.getElementById('banners').style.display=hd?'flex':'none';
+    document.getElementById('cdesc').textContent='Test points outstanding vs. calendar date · shading = P10–P90 outer, P25–P75 inner';
+    const mlWk=+document.getElementById('ml-wk').value;
+    const rl=[
+      {xv:R.p50,color:'#16a34a',lbl:(hd?fSh(w2d(p.startDate,R.p50)):'')+' (P50)'},
+      {xv:R.p80,color:'#b45309',lbl:(hd?fSh(w2d(p.startDate,R.p80)):'')+' (P80)'},
+      {xv:R.p90,color:'#dc2626',lbl:(hd?fSh(w2d(p.startDate,R.p90)):'')+' (P90)'},
+    ];
+    if(mlWk>0)rl.push({xv:mlWk,color:'#1d4ed8',lbl:(hd?fSh(w2d(p.startDate,mlWk)):`Wk ${mlWk}`)+' ★'});
+    CHT=new Chart(ctx,{
+      type:'line',
+      data:{datasets:[
+        {data:R.burn.map(d=>({x:d.week,y:d.p10})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p90})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.18)',fill:'-1',pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p25})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p75})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.35)',fill:'-1',pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p50})),borderColor:'#b45309',backgroundColor:'transparent',fill:false,borderWidth:2.5,pointRadius:0,tension:.3},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+        plugins:{legend:{display:false},vl:{lines:rl},
+          tooltip:{mode:'index',intersect:false,filter:i=>[0,1,4].includes(i.datasetIndex),callbacks:{
+            title:items=>{const w=items[0].parsed.x;return hd?`${fMd(w2d(p.startDate,w))} (wk ${w})`:`Week ${w}`;},
+            label:i=>{const w=i.parsed.x,bd=R.burn.find(d=>d.week===w);if(!bd)return null;
+              if(i.datasetIndex===0)return `P10: ${Math.round(bd.p10)} pts`;
+              if(i.datasetIndex===1)return `P90: ${Math.round(bd.p90)} pts`;
+              if(i.datasetIndex===4)return `P50: ${Math.round(bd.p50)} pts`;return null;}
+          }}
+        },
+        scales:{
+          x:{type:'linear',grid:{color:gc},ticks:{color:tc,maxTicksLimit:8,callback:v=>hd?fAx(w2d(p.startDate,v)):`Wk ${v}`}},
+          y:{grid:{color:gc},ticks:{color:tc},min:0,max:p.tp,title:{display:true,text:'Test Points Outstanding',color:'#64748b',font:{size:11}}}
+        }
+      }
+    });
+    document.getElementById('cleg').innerHTML=`<span><span style="color:#b45309">──</span> P50 Median</span><span>■ P10–P90 outer</span><span>■ P25–P75 inner</span><span><span style="color:#16a34a">- -</span> P50</span><span><span style="color:#b45309">- -</span> P80</span><span><span style="color:#dc2626">- -</span> P90</span>${mlWk>0?'<span><span style="color:#1d4ed8">- -</span> Milestone ★</span>':''}`;
+
+  }else if(tab==='hs'){
+    document.getElementById('banners').style.display='none';
+    document.getElementById('cdesc').textContent=`Probability density across ${(+document.getElementById('numSims').value||0).toLocaleString()} simulations · bars colored by percentile zone`;
+    CHT=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:R.hist.map(h=>hd?fSh(w2d(p.startDate,h.week)):`Wk ${h.week}`),
+        datasets:[{data:R.hist.map(h=>+h.pct.toFixed(1)),backgroundColor:R.hist.map(h=>h.week<=R.p50?'rgba(22,163,74,.75)':h.week<=R.p80?'rgba(180,83,9,.75)':'rgba(220,38,38,.75)'),borderRadius:2}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.raw.toFixed(1)}% of simulations`}}},
+        scales:{
+          x:{grid:{color:gc},ticks:{color:tc,maxTicksLimit:10,autoSkip:true}},
+          y:{grid:{color:gc},ticks:{color:tc,callback:v=>v+'%'}}
+        }
+      }
+    });
+    document.getElementById('cleg').innerHTML=`<span><span style="color:#16a34a">■</span> P10–P50</span><span><span style="color:#b45309">■</span> P50–P80</span><span><span style="color:#dc2626">■</span> P80+</span>`;
+
+  }else{
+    document.getElementById('banners').style.display='none';
+    document.getElementById('cdesc').textContent='Outstanding test points vs. program week · outer band = P10–P90 · inner = P25–P75';
+    CHT=new Chart(ctx,{
+      type:'line',
+      data:{datasets:[
+        {data:R.burn.map(d=>({x:d.week,y:d.p10})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p90})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.18)',fill:'-1',pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p25})),borderColor:'transparent',backgroundColor:'transparent',fill:false,pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p75})),borderColor:'transparent',backgroundColor:'rgba(251,191,36,.35)',fill:'-1',pointRadius:0,tension:.3},
+        {data:R.burn.map(d=>({x:d.week,y:d.p50})),borderColor:'#b45309',backgroundColor:'transparent',fill:false,borderWidth:2.5,pointRadius:0,tension:.3},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,animation:{duration:300},
+        plugins:{legend:{display:false},
+          vl:{lines:[{xv:R.p50,color:'#16a34a',lbl:'P50'},{xv:R.p80,color:'#b45309',lbl:'P80'},{xv:R.p90,color:'#dc2626',lbl:'P90'}]},
+          tooltip:{mode:'index',intersect:false,filter:i=>[0,1,4].includes(i.datasetIndex),callbacks:{
+            title:items=>`Week ${items[0].parsed.x}`,
+            label:i=>{const w=i.parsed.x,bd=R.burn.find(d=>d.week===w);if(!bd)return null;
+              if(i.datasetIndex===0)return `P10: ${Math.round(bd.p10)} pts`;
+              if(i.datasetIndex===1)return `P90: ${Math.round(bd.p90)} pts`;
+              if(i.datasetIndex===4)return `P50: ${Math.round(bd.p50)} pts`;return null;}
+          }}
+        },
+        scales:{
+          x:{type:'linear',grid:{color:gc},ticks:{color:tc,maxTicksLimit:10,callback:v=>`Wk ${v}`},title:{display:true,text:'Program Week',color:'#64748b',font:{size:11}}},
+          y:{grid:{color:gc},ticks:{color:tc},title:{display:true,text:'Test Points Outstanding',color:'#64748b',font:{size:11}}}
+        }
+      }
+    });
+    document.getElementById('cleg').innerHTML=`<span><span style="color:#b45309">──</span> P50 Median</span><span>P10–P90 outer</span><span>P25–P75 inner</span>`;
+  }
+}
+
+// ── Milestone sync ────────────────────────────────────────────────────────────
+function syncMl(from){
+  const p=gp();
+  if(from==='wk'&&p.startDate){const w=+document.getElementById('ml-wk').value;if(w>0)document.getElementById('ml-dt').value=toInp(w2d(p.startDate,w));}
+  if(from==='dt'&&p.startDate){const ds=document.getElementById('ml-dt').value;if(ds)document.getElementById('ml-wk').value=d2w(p.startDate,ds);}
+  const wk=+document.getElementById('ml-wk').value;
+  if(wk>0&&RES){
+    const prob=(bsc(RES.sortedWks,wk)/RES.sortedWks.length*100).toFixed(1);
+    const pe=document.getElementById('ml-prob'),pv=document.getElementById('ml-pv');
+    pe.style.display='block';pv.textContent=prob+'%';
+    pv.style.color=+prob>80?'#16a34a':+prob>50?'#f59e0b':'#dc2626';
+    drawChart(TAB);
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('startDate').value=toInp(new Date());
+upd();
+</script>
+</body>
+</html>
