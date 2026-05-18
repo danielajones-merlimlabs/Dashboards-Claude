@@ -455,14 +455,10 @@ const SNAPSHOT = {
   total: { name:'Total', total:275, flown:131, accepted:89, notNeeded:37, reflies:25, pending:1, blocked:45, leftToFly:149, pct:37.39 },
 };
 
-const APPS_SCRIPT_URL = '';
-
-async function fetchLive() {
-  if (!APPS_SCRIPT_URL) throw new Error('no-url');
-  const res  = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), { cache: 'no-store' });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+async function fetchSnapshot() {
+  const res = await fetch('progress-snapshot.json?t=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('snapshot-missing');
+  return await res.json();
 }
 
 function render(data, source) {
@@ -501,8 +497,8 @@ function render(data, source) {
     </div>
     <div class="card">
       <div class="label">Source</div>
-      <div class="value" style="font-size:13px;margin-top:4px;color:${source==='live'?'var(--green)':'var(--yellow)'}">${source==='live'?'● Live':'● Snapshot'}</div>
-      <div class="sub2">${source==='live'?'Refreshes every 60s':'Updated '+data.lastUpdated}</div>
+      <div class="value" style="font-size:13px;margin-top:4px;color:${source==='daily'?'var(--green)':'var(--yellow)'}">${source==='daily'?'● Daily sync':'● Cached'}</div>
+      <div class="sub2">Updated ${data.lastUpdated}</div>
     </div>
   `;
   buildCharts(data);
@@ -646,29 +642,25 @@ async function fetchAndRender() {
   const dot = document.getElementById('sync-dot');
   const msg = document.getElementById('status-msg');
   dot.className = 'sync-dot';
-  msg.textContent = 'Fetching live data…';
-  document.getElementById('loading-msg').textContent = 'Connecting to Google Sheets…';
+  msg.textContent = 'Loading…';
+  document.getElementById('loading-msg').textContent = 'Fetching data…';
   try {
-    const liveData = await fetchLive();
-    const merged = { ...SNAPSHOT, ...liveData };
-    render(merged, 'live');
+    const data = await fetchSnapshot();
+    render(data, 'daily');
     dot.className = 'sync-dot live';
-    msg.textContent = 'Live · auto-refreshes every 60s · data from Google Sheets';
-    document.getElementById('last-sync').textContent = new Date().toLocaleTimeString();
+    msg.textContent = 'Data from Google Sheets · refreshed daily via GitHub Actions';
+    document.getElementById('last-sync').textContent = data.lastUpdated || '—';
   } catch(e) {
-    const isNoUrl = e.message === 'no-url';
-    render(SNAPSHOT, 'snapshot');
+    render(SNAPSHOT, 'cached');
     dot.className = 'sync-dot stale';
-    msg.textContent = isNoUrl
-      ? 'Showing snapshot · paste Apps Script URL in progress-metrics.html to go live'
-      : 'Showing snapshot from 2026-05-15 · Apps Script error: ' + e.message;
+    msg.textContent = 'Using embedded snapshot · updated ' + SNAPSHOT.lastUpdated;
     document.getElementById('last-sync').textContent = SNAPSHOT.lastUpdated;
   }
   document.getElementById('loading').style.display = 'none';
 }
 
 fetchAndRender();
-setInterval(fetchAndRender, 60_000);
+setInterval(fetchAndRender, 3_600_000); // re-check hourly to pick up daily refreshes
 
 // ── Page tab switching ────────────────────────────────────────────────────
 function switchPageTab(tab) {
