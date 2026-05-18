@@ -209,6 +209,11 @@
     </div>
   </div>
   <div class="chart-card">
+    <div class="chart-title">Open DRs by Functional System</div>
+    <div class="chart-sub">Stacked by status · based on shared Functional System column</div>
+    <canvas id="chartFuncSys" style="max-height:300px"></canvas>
+  </div>
+  <div class="chart-card">
     <div class="chart-title">DRs by FT Test Campaign</div>
     <div class="chart-sub">Open DRs tagged to each flight test campaign · stacked by project</div>
     <canvas id="chartCampaign" style="max-height:220px"></canvas>
@@ -750,6 +755,7 @@ let _metricsChart = null;
 let _pieChart = null;
 let _burndownChart = null;
 let _campaignChart = null;
+let _funcSysChart = null;
 
 const TEAM_COLORS = [
   "#1d4ed8","#dc2626","#16a34a","#7c3aed","#ea580c",
@@ -832,6 +838,56 @@ function renderMetrics(){
     }
   });
 
+
+  // ── Bar: Open DRs by Functional System (stacked by status) ──
+  {
+    const FS_ORDER = ["FCC","ACS","EFIS/IFD","Other","(unassigned)"];
+    const fsStatusMap = {}; // { funcSys: { status: count } }
+    DR_DATA.forEach(r => {
+      const fs = getShared(r.Key,"FuncSys") || "(unassigned)";
+      const st = STATUS_MERGE[r.Status] || r.Status || "Unknown";
+      if(!fsStatusMap[fs]) fsStatusMap[fs] = {};
+      fsStatusMap[fs][st] = (fsStatusMap[fs][st]||0) + 1;
+    });
+    const fsLabels = FS_ORDER.filter(fs => fsStatusMap[fs]);
+    // add any unexpected values not in FS_ORDER
+    Object.keys(fsStatusMap).forEach(fs => { if(!FS_ORDER.includes(fs)) fsLabels.push(fs); });
+
+    const STATUS_COLORS_SOLID = {
+      "New":"#1565c0","Investigating":"#856404","To-Do":"#5b4ecc","Triaged":"#0369a1",
+      "In progress":"#065f46","In Review":"#0f766e","Ready to Test Fix":"#0d9488",
+      "Blocked":"#9a3412","Need Team Input":"#991b1b","Watch":"#854d0e",
+      "Product Backlog- Future":"#475569","Unknown":"#94a3b8"
+    };
+    const allFsStatuses = [...new Set(DR_DATA.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
+    const fsDatasets = [...STATUS_ORDER.filter(s=>allFsStatuses.includes(s)), ...allFsStatuses.filter(s=>!STATUS_ORDER.includes(s))]
+      .map(st => ({
+        label: STATUS_DISPLAY[st]||st,
+        data: fsLabels.map(fs => (fsStatusMap[fs]||{})[st]||0),
+        backgroundColor: STATUS_COLORS_SOLID[st]||"#94a3b8",
+        borderRadius: 3, borderSkipped: false,
+      })).filter(ds => ds.data.some(v=>v>0));
+
+    if(_funcSysChart) _funcSysChart.destroy();
+    _funcSysChart = new Chart(document.getElementById("chartFuncSys").getContext("2d"), {
+      type: "bar",
+      data: { labels: fsLabels, datasets: fsDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
+          tooltip: { mode:"index", intersect:false,
+            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) }
+          }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
+          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" },
+               title:{ display:true, text:"# of Open DRs", font:{size:11}, color:"#6b7280" } }
+        }
+      }
+    });
+  }
 
   // ── Bar: DRs by FT Test Campaign ──
   {
