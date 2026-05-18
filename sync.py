@@ -1,6 +1,7 @@
 """
 DR Sync Script - runs from repo root
-Fetches live DR data from Jira and rebuilds index.html from template.html
+Fetches live DR data from Jira and rebuilds index.html from template.html.
+Also syncs progress metrics from Google Sheets to progress-snapshot.json.
 """
 
 import json, os, requests
@@ -208,5 +209,138 @@ def main():
 
     print(f"index.html rebuilt - {len(all_rows)} open + {len(closed_rows)} closed, {timestamp}")
 
+# ── Progress Metrics Sync ─────────────────────────────────────────────────────
+PROGRESS_SHEET_ID = '1axaAXoiObpBw150OyQi_iee6_oUMoHnQA3BLXqomdfA'
+PROGRESS_GID      = 289464578
+TARGET_CAPS       = ['LPV', 'TO', 'TD', 'ACS']
+
+def sync_progress_metrics():
+    sa_key_str = os.environ.get('GOOGLE_SA_KEY', '')
+    if not sa_key_str:
+        print("\nGOOGLE_SA_KEY not set — skipping progress metrics sync")
+        return
+
+    print("\nSyncing progress metrics from Google Sheets...")
+    try:
+        import gspread
+        gc = gspread.service_account_from_dict(json.loads(sa_key_str))
+        sh = gc.open_by_key(PROGRESS_SHEET_ID)
+        ws = sh.get_worksheet_by_id(PROGRESS_GID)
+        rows = ws.get_all_values()
+    except Exception as e:
+        print(f"  Error reading sheet: {e}")
+        return
+
+    # Find the header row containing "Capability" and "Total Points"
+    header_idx = -1
+    for i, row in enumerate(rows):
+        stripped = [str(c).strip() for c in row]
+        if 'Capability' in stripped and 'Total Points' in stripped:
+            header_idx = i
+            break
+    if header_idx == -1:
+        print("  Could not find header row")
+        return
+
+    headers = [str(c).strip() for c in rows[header_idx]]
+
+    def col(name):
+        try:
+            return headers.index(name)
+        except ValueError:
+            return -1
+
+    C = {
+        'cap':       col('Capability'),
+        'total':     col('Total Points'),
+        'flown':     col('Points Flown'),
+        'accepted':  col('Points Accepted'),
+        'notNeeded': col('Points Not Needed'),
+        'reflies':   col('Reflies To Be Flown'),
+        'pending':   col('Pending Review'),
+        'blocked':   col('Blocked Test Points'),
+        'leftToFly': col('Points Left to Fly'),
+        'pct':       col('Percent Completed'),
+    }
+
+    def num(v):
+        try:
+            return int(float(str(v).replace(',', '') or '0'))
+        except (ValueError, TypeError):
+            return 0
+
+    def parse_pct(v):
+        s = str(v).strip()
+        if not s:
+            return 0.0
+        if s.endswith('%'):
+            return round(float(s[:-1]), 2)
+        try:
+            f = float(s)
+            return round(f * 100 if f <= 1 else f, 2)
+        except ValueError:
+            return 0.0
+
+    capabilities = []
+    for row in rows[header_idx + 1:]:
+        if C['cap'] < 0 or C['cap'] >= len(row):
+            continue
+        cap_name = str(row[C['cap']]).strip()
+        if cap_name not in TARGET_CAPS:
+            continue
+        capabilities.append({
+            'name':       cap_name,
+            'total':      num(row[C['total']]),
+            'flown':      num(row[C['flown']]),
+            'accepted':   num(row[C['accepted']]),
+            'notNeeded':  num(row[C['notNeeded']]),
+            'reflies':    num(row[C['reflies']]),
+            'pending':    num(row[C['pending']]),
+            'blocked':    num(row[C['blocked']]),
+            'leftToFly':  num(row[C['leftToFly']]),
+            'pct':        parse_pct(row[C['pct']]),
+        })
+        if len(capabilities) == len(TARGET_CAPS):
+            break
+
+    if not capabilities:
+        print("  No capability rows found")
+        return
+
+    def ssum(k):
+        return sum(c[k] for c in capabilities)
+
+    total_pts      = ssum('total')
+    total_not_needed = ssum('notNeeded')
+    total_accepted = ssum('accepted')
+    total = {
+        'name':       'Total',
+        'total':      total_pts,
+        'flown':      ssum('flown'),
+        'accepted':   total_accepted,
+        'notNeeded':  total_not_needed,
+        'reflies':    ssum('reflies'),
+        'pending':    ssum('pending'),
+        'blocked':    ssum('blocked'),
+        'leftToFly':  ssum('leftToFly'),
+        'pct':        round(total_accepted / (total_pts - total_not_needed) * 100, 2)
+                      if (total_pts - total_not_needed) > 0 else 0,
+    }
+
+    snapshot = {
+        'lastUpdated':  datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+        'capabilities': capabilities,
+        'total':        total,
+    }
+
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'progress-snapshot.json')
+    with open(out, 'w', encoding='utf-8') as f:
+        json.dump(snapshot, f, separators=(',', ':'))
+
+    print(f"  Wrote progress-snapshot.json — {len(capabilities)} caps, "
+          f"{total_accepted}/{total_pts - total_not_needed} accepted ({total['pct']}%)")
+
+
 if __name__ == "__main__":
     main()
+    sync_progress_metrics()

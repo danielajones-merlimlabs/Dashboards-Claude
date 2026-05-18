@@ -23,7 +23,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests gspread
 
       - name: Configure git
         run: |
@@ -35,13 +35,14 @@ jobs:
 
       - name: Run DR sync
         env:
-          JIRA_EMAIL:  ${{ secrets.JIRA_EMAIL }}
-          JIRA_TOKEN:  ${{ secrets.JIRA_TOKEN }}
-          JIRA_BASE:   https://merlinlabs.atlassian.net
-        run: python sync.py   # always runs against the latest template.html
+          JIRA_EMAIL:      ${{ secrets.JIRA_EMAIL }}
+          JIRA_TOKEN:      ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE:       https://merlinlabs.atlassian.net
+          GOOGLE_SA_KEY:   ${{ secrets.GOOGLE_SA_KEY }}
+        run: python sync.py
 
-      - name: Commit and push updated index.html
+      - name: Commit and push updated files
         run: |
-          git add index.html
+          git add index.html progress-snapshot.json
           git diff --cached --quiet || git commit -m "chore: daily DR sync $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
