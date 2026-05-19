@@ -35,9 +35,12 @@ def is_fft_aircraft(issue):
                 return True
     return False
 
-# Note: "Won't Fix" removed to avoid quote escaping issues - excluded via statusCategory below
+# Aircraft filter done in JQL (cf[10123] "in" operator works for select fields)
+# Python-based is_fft_aircraft() was unreliable — REST API sometimes returns customfield_10123
+# as null for older tickets even when the field is populated in the UI.
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
-FFT_JQL  = 'project = FFT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
+FFT_JQL  = ('project = FFT AND issuetype = DR AND statusCategory != Done '
+            'AND cf[10123] in ("N208B", "ZK-MLN") ORDER BY created DESC')
 
 QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
 
@@ -47,6 +50,7 @@ CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "i
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 FFT_CLOSED_JQL  = ('project = FFT AND issuetype = DR AND statusCategory = Done '
+                   'AND cf[10123] in ("N208B", "ZK-MLN") '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
 
@@ -166,10 +170,6 @@ def main():
     for project, jql in QUERIES.items():
         print(f"\nFetching {project}...")
         issues = fetch_all(jql, FIELDS)
-        if project == "FFT":
-            before = len(issues)
-            issues = [i for i in issues if is_fft_aircraft(i)]
-            print(f"  Aircraft filter: {before} -> {len(issues)}")
         rows = [parse_issue(i) for i in issues]
         rows.sort(key=lambda r: -int(r["Key"].split("-")[1]))
         all_rows.extend(rows)
@@ -181,8 +181,6 @@ def main():
     for project, jql in QUERIES_CLOSED.items():
         print(f"\nFetching closed {project}...")
         issues = fetch_all(jql, CLOSED_FIELDS)
-        if project == "FFT":
-            issues = [i for i in issues if is_fft_aircraft(i)]
         rows = [parse_closed(i) for i in issues]
         closed_rows.extend(rows)
         print(f"  -> {len(rows)} closed {project} DRs")
