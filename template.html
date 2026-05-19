@@ -336,7 +336,7 @@ const SYSTEMS    = ["","ACC + MCC Platform SW","Aircraft Integration","Certifica
 const PRIORITIES = ["","Highest","High","Medium","Low"];
 const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalashian","Brad Heath","Bryce Hill","Ellis Ahn","Gabriel Heredia Acevedo","Harlan Waldrop","Jared Basile","Karen Linda","Katelyn Schroll","Larry Friese Jr","Matt Rendos","Molly Connolly","Patrick Shine","Patrick Van Wie","Reed Bimson","Ryan McMahon","Shawn Bonneau","Shirley Shah","Tas Marshall","Ted Sieffert","Thao Trinh","Victoria Gilroy","Vincent Nhieu"];
 const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
-const CAMPAIGNS  = ["","Takeoff (TO)","Landing","LPV","ACS","Human Factors (HF)","Multiple","Other"];
+const CAMPAIGNS  = ["","Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other"];
 const FUNC_SYS   = ["","FCC","ACS","EFIS/IFD","Other"];
 const SFHA_FUNCS = ["","Automatic Flight Guidance","Autopilot","Pitch Trim Control","Automatic Throttle Control","AFCS Activation and Deactivation","Automated ATC Communication","AFCS ATC Interface","FMS Functions","Display Flight Information","Display AFCS Mode Information","Display Target Information","Display Navigation Information","Display Terrain Awareness","Flight Crew Alerting","Operational Mode Determination","Maintenance"];
 const PROG_APPLIC = ["","STC only","C130","King Air","L-39"];
@@ -891,7 +891,7 @@ function renderMetrics(){
 
   // ── Bar: DRs by FT Test Campaign ──
   {
-    const CAMP_ORDER = ["Takeoff (TO)","Landing","LPV","ACS","Human Factors (HF)","Multiple","Other","(none)"];
+    const CAMP_ORDER = ["Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other","(none)"];
     const campMPPT = {}, campFFT = {};
     DR_DATA.forEach(r => {
       const camp = getShared(r.Key,"Campaign") || "(none)";
