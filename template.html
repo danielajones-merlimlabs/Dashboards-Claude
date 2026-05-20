@@ -74,6 +74,8 @@
   .shared-select:hover{border-color:#86efac;background:#fff}.shared-select:focus{border-color:#16a34a;background:#fff}
   .shared-select.has-val{color:var(--text);font-weight:500}
   .edited-by{font-size:9px;color:var(--text3);margin-top:2px;font-style:italic}
+  .shared-cb-cell{text-align:center;vertical-align:middle !important}
+  .shared-cb-cell input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#16a34a}
   .sync-cell{text-align:center;vertical-align:middle !important;min-width:68px}
   .sync-row-btn{padding:3px 8px;border-radius:4px;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
   .sync-row-btn:hover{background:#16a34a;color:#fff}.sync-row-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -354,6 +356,7 @@ const COLS=[
   {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
   {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
+  {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
   {id:"avidyne",  label:"Avidyne",           group:"core",      type:"avi",           minW:58},
   {id:"priority", label:"Priority ✏️",     group:"core",        type:"jira-select",   minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
@@ -474,6 +477,7 @@ function cellForCol(c,r){
     case"shared-text":return`<td${tdCls}>${makeSharedText(key,c.sfield,false)}</td>`;
     case"shared-textarea":return`<td${tdCls}>${makeSharedText(key,c.sfield,true)}</td>`;
     case"shared-date":return`<td${tdCls}>${makeSharedDate(key,c.sfield)}</td>`;
+    case"shared-checkbox":{const checked=getShared(key,c.sfield)==="true";return`<td class="shared-cb-cell" style="min-width:${c.minW}px"><input type="checkbox" data-key="${key}" data-sfield="${c.sfield}"${checked?" checked":""} onchange="onSharedCheckChange(this)"></td>`;};
     default:return`<td>—</td>`;
   }
 }
@@ -491,6 +495,14 @@ function onJiraChange(sel){
 }
 
 function onSharedChange(sel){ onSharedBlur(sel); }
+
+function onSharedCheckChange(cb){
+  const key=cb.dataset.key, sfield=cb.dataset.sfield;
+  const val=String(cb.checked);
+  if(!sharedData[key])sharedData[key]={Key:key};
+  sharedData[key][sfield]=val;
+  saveToSheet(key,{[sfield]:val});
+}
 
 function onSharedBlur(el){
   const key=el.dataset.key,sfield=el.dataset.sfield;
@@ -636,12 +648,12 @@ function clearFilters(){["search","projFilter","statusFilter","typeFilter","assi
 ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","Notes","Avidyne","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
+  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
   const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
