@@ -66,6 +66,8 @@
   .dirty-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#d97706;margin-left:4px;vertical-align:middle}
   .edit-select{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text);outline:none;cursor:pointer;min-width:120px}
   .edit-select:focus{border-color:var(--accent2)}.edit-select.changed{border-color:#d97706;background:#fffbeb}
+  .edit-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text);outline:none;min-width:120px;box-sizing:border-box}
+  .edit-input:focus{border-color:var(--accent2)}.edit-input.changed{border-color:#d97706;background:#fffbeb}
   .shared-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;resize:none;transition:border .15s;min-width:120px}
   .shared-input:hover{border-color:#86efac;background:#fff}
   .shared-input:focus{border-color:#16a34a;background:#fff}
@@ -362,7 +364,7 @@ const COLS=[
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
   {id:"avidyne",  label:"Avidyne",           group:"core",      type:"avi",           minW:58},
   {id:"priority", label:"Priority ✏️",     group:"core",        type:"jira-select",   minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
-  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-select",   minW:145, sortField:"Assignee",                 field:"Assignee",                   options:ASSIGNEES},
+  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
   {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
@@ -427,6 +429,11 @@ function makeJiraSelect(options,current,field,key){
   return`<select class="edit-select${changed?" changed":""}" data-key="${key}" data-field="${field}" onchange="onJiraChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"(none)"}</option>`).join("")}</select>`;
 }
 
+function makeJiraText(current,field,key){
+  const d=dirty[key]||{};const val=field in d?d[field]:current;const changed=field in d&&d[field]!==current;
+  return`<input type="text" class="edit-input${changed?" changed":""}" data-key="${key}" data-field="${field}" data-orig="${current}" value="${(val||"").replace(/"/g,'&quot;')}" onblur="onJiraTextBlur(this)" placeholder="—">`;
+}
+
 function makeSharedSelect(options,key,sfield){
   const val=getShared(key,sfield);
   return`<select class="shared-select${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" onchange="onSharedChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"—"}</option>`).join("")}</select>`;
@@ -466,6 +473,7 @@ function cellForCol(c,r){
       return`<td class="shared-col"><span style="font-size:10px;color:var(--text2)">${by||"—"}</span>${atFmt?`<div class="edited-by">${atFmt}</div>`:""}`;
     }
     case"jira-select":return`<td>${makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
+    case"jira-text":return`<td>${makeJiraText(r[c.field]||"",c.field,key)}</td>`;
     case"shared-notes":{
       const note=getShared(key,"Notes");const by=getShared(key,"LastEditedBy");
       return`<td class="shared-col" style="min-width:${c.minW}px"><textarea class="shared-input${note?" has-val":""}" data-key="${key}" data-sfield="Notes" rows="2" onblur="onSharedBlur(this)" placeholder="Posts as Jira comment on sync…">${note}</textarea>${by?`<div class="edited-by">Last: ${by}</div>`:""}</td>`;
@@ -491,6 +499,18 @@ function onJiraChange(sel){
   if(sel.value===orig){delete dirty[key][field];if(!Object.keys(dirty[key]).length)delete dirty[key];}
   else dirty[key][field]=sel.value;
   sel.classList.toggle("changed",field in(dirty[key]||{}));
+  saveDirty();updateStats();
+  const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
+  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
+}
+
+function onJiraTextBlur(input){
+  const key=input.dataset.key,field=input.dataset.field;
+  const row=DR_DATA.find(r=>r.Key===key);const orig=row?row[field]||"":"";
+  if(!dirty[key])dirty[key]={};
+  if(input.value.trim()===orig){delete dirty[key][field];if(!Object.keys(dirty[key]).length)delete dirty[key];}
+  else dirty[key][field]=input.value.trim();
+  input.classList.toggle("changed",field in(dirty[key]||{}));
   saveDirty();updateStats();
   const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
   if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
