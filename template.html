@@ -562,7 +562,7 @@ function render(){
     if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
     if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
     if(chipFilters.special.size>0){
-      const passAvi  = chipFilters.special.has("Avidyne") && getShared(r.Key,"Avidyne")==="true";
+      const passAvi  = chipFilters.special.has("Avidyne") && getAvi(r.Key,r);
       const passFCC  = chipFilters.special.has("FCC")     && getShared(r.Key,"FuncSys")==="FCC";
       const passACS  = chipFilters.special.has("ACS")     && getShared(r.Key,"FuncSys")==="ACS";
       if(!passAvi && !passFCC && !passACS) return false;
@@ -620,7 +620,7 @@ function updateStats(){
   const on=()=>`chip-on`;
   const scOn=chipFilters.types.has("1 - Safety Critical"), certOn=chipFilters.types.has("2 - Required for Certification");
   const aviOn=chipFilters.special.has("Avidyne"), fccOn=chipFilters.special.has("FCC"), acsOn=chipFilters.special.has("ACS");
-  const aviCount = all.filter(r=>getShared(r.Key,"Avidyne")==="true").length;
+  const aviCount = all.filter(r=>getAvi(r.Key,r)).length;
   const fccCount = all.filter(r=>getShared(r.Key,"FuncSys")==="FCC").length;
   const acsCount = all.filter(r=>getShared(r.Key,"FuncSys")==="ACS").length;
   document.getElementById("stats").innerHTML=`
