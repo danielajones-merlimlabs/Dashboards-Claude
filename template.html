@@ -949,11 +949,22 @@ function renderMetrics(){
     let running = preOpen - preClosed;
     const netOpen = weeks.map((_,i) => { running += newPerWeek[i] - closedPerWeek[i]; return running; });
     const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+    const rollingAvg = (data, w=4) => data.map((_,i) => {
+      const slice = data.slice(Math.max(0,i-w+1), i+1);
+      return +(slice.reduce((a,b)=>a+b,0)/slice.length).toFixed(1);
+    });
+    const avgNew    = rollingAvg(newPerWeek);
+    const avgClosed = rollingAvg(closedPerWeek);
+
     if (_newClosedChart) _newClosedChart.destroy();
     _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
       data: { labels: weekLabels, datasets: [
-        { type:"bar",  label:"new this week",    data: newPerWeek,    backgroundColor:"#93c5fd", yAxisID:"yActivity", order:2, borderRadius:2, borderSkipped:false },
-        { type:"bar",  label:"closed this week", data: closedPerWeek, backgroundColor:"#86efac", yAxisID:"yActivity", order:2, borderRadius:2, borderSkipped:false },
+        { type:"bar",  label:"new this week",    data: newPerWeek,    backgroundColor:"#93c5fd", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+        { type:"bar",  label:"closed this week", data: closedPerWeek, backgroundColor:"#86efac", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+        { type:"line", label:"4-wk avg new",     data: avgNew,        borderColor:"#1d4ed8",     yAxisID:"yActivity",
+          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#1d4ed8", tension:0.3, order:2 },
+        { type:"line", label:"4-wk avg closed",  data: avgClosed,     borderColor:"#16a34a",     yAxisID:"yActivity",
+          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#16a34a", tension:0.3, order:2 },
         { type:"line", label:"total open DRs",   data: netOpen,       borderColor:"#dc2626",     yAxisID:"yOpen",
           backgroundColor:"rgba(220,38,38,0.07)", fill:true, tension:0.3,
           pointRadius:3, pointBackgroundColor:"#dc2626", borderWidth:2, order:1 },
