@@ -151,6 +151,7 @@
   <div class="hbtns">
     <button class="btn success" onclick="syncAllDirty()" id="syncAllBtn" style="display:none">⬆ Sync All to Jira</button>
     <button class="btn primary" onclick="exportCSV()">Export CSV</button>
+    <button class="btn primary" onclick="exportPDF()">Export PDF</button>
     <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong></div>
   </div>
 </div>
@@ -688,6 +689,72 @@ function exportCSV(){
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
+}
+
+function exportPDF(){
+  // Describe active filters for the report header
+  const filterParts = [];
+  if(chipFilters.types.size)   filterParts.push("DR Type: " + [...chipFilters.types].join(", "));
+  if(chipFilters.statuses.size)filterParts.push("Status: "  + [...chipFilters.statuses].join(", "));
+  if(chipFilters.special.size) filterParts.push([...chipFilters.special].join(", "));
+  const searchVal = document.getElementById("search").value.trim();
+  if(searchVal) filterParts.push(`Search: "${searchVal}"`);
+  const filterDesc = filterParts.length ? filterParts.join(" · ") : "All open DRs";
+
+  const PDF_COLS = [
+    {label:"Key",         val:r=>`<a href="${r.URL}" style="color:#1d4ed8;text-decoration:none;font-weight:600">${r.Key}</a>`},
+    {label:"Summary",     val:r=>esc(r.Summary)},
+    {label:"Status",      val:r=>esc(r.Status)},
+    {label:"DR Type",     val:r=>esc(r["DR Type"]||"—")},
+    {label:"Priority",    val:r=>esc(r.Priority||"—")},
+    {label:"Assignee",    val:r=>esc(r.Assignee||"—")},
+    {label:"Affected Aircraft", val:r=>esc(r["Affected Aircraft"]||"—")},
+    {label:"Functional System", val:r=>esc(getShared(r.Key,"FuncSys")||"—")},
+    {label:"FT Campaign", val:r=>esc(getShared(r.Key,"Campaign")||"—")},
+    {label:"Avidyne",     val:r=>getAvi(r.Key,r)?"✓":""},
+    {label:"Notes",       val:r=>esc(getShared(r.Key,"Notes")||"")},
+    {label:"Updated",     val:r=>esc(r.Updated||"")},
+  ];
+  const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  const rows = filtered.map(r=>`<tr>${PDF_COLS.map(c=>`<td>${c.val(r)}</td>`).join("")}</tr>`).join("");
+  const thead = PDF_COLS.map(c=>`<th>${c.label}</th>`).join("");
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>STC Caravan DRs — ${new Date().toLocaleDateString()}</title>
+<style>
+  @page { size: landscape; margin: 15mm 10mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9px; color: #1a1d2e; margin:0; }
+  h1 { font-size: 15px; margin: 0 0 3px; color: #162a50; }
+  .meta { font-size: 9px; color: #6b7280; margin-bottom: 12px; }
+  .filter-tag { display:inline-block; background:#ede9ff; color:#5b4ecc; border-radius:4px; padding:2px 7px; font-size:9px; font-weight:600; margin-right:4px; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:#162a50; color:#fff; padding:5px 6px; text-align:left; font-size:8px; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+  tbody td { padding:5px 6px; border-bottom:1px solid #e2e5f0; vertical-align:top; word-break:break-word; }
+  tbody tr:nth-child(even) td { background:#f8f9fe; }
+  tbody tr:hover td { background:#ede9ff; }
+  .footer { margin-top:12px; font-size:8px; color:#94a3b8; border-top:1px solid #e2e5f0; padding-top:6px; display:flex; justify-content:space-between; }
+</style>
+</head><body>
+<h1>STC Caravan Open Problem Reports</h1>
+<div class="meta">
+  Exported ${new Date().toLocaleString()} · Jira sync: ${SYNC_TIMESTAMP} · Showing <strong>${filtered.length}</strong> DRs
+  &nbsp;&nbsp;<span class="filter-tag">${filterDesc}</span>
+</div>
+<table>
+  <thead><tr>${thead}</tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">
+  <span>STC Caravan DR Dashboard · merlinlabs.atlassian.net</span>
+  <span>Generated ${new Date().toLocaleString()}</span>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`;
+
+  const w = window.open("","_blank");
+  w.document.write(html);
+  w.document.close();
 }
 
 if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.display="block";
