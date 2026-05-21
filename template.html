@@ -388,7 +388,7 @@ const COLS=[
 
 let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
-const chipFilters = { projects: new Set(), types: new Set(), statuses: new Set() };
+const chipFilters = { types: new Set(), statuses: new Set(), special: new Set() };
 function toggleChip(group, value) {
   chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
   render();
@@ -559,9 +559,14 @@ function render(){
     if(assign&&r.Assignee!==assign)return false;
     if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
-    if(chipFilters.projects.size>0&&!chipFilters.projects.has(r.Project))return false;
     if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
     if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
+    if(chipFilters.special.size>0){
+      const passAvi  = chipFilters.special.has("Avidyne") && getShared(r.Key,"Avidyne")==="true";
+      const passFCC  = chipFilters.special.has("FCC")     && getShared(r.Key,"FuncSys")==="FCC";
+      const passACS  = chipFilters.special.has("ACS")     && getShared(r.Key,"FuncSys")==="ACS";
+      if(!passAvi && !passFCC && !passACS) return false;
+    }
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -612,15 +617,19 @@ function updateStats(){
   const cert=all.filter(r=>r["DR Type"]==="2 - Required for Certification").length;
   const dirtyN=Object.keys(dirty).length;
   const closed=filtered.filter(r=>r.Status==="[CLOSED]").length;
-  const on=v=>`chip-on`;
-  const mpptOn=chipFilters.projects.has("MPPT"), fftOn=chipFilters.projects.has("FFT");
+  const on=()=>`chip-on`;
   const scOn=chipFilters.types.has("1 - Safety Critical"), certOn=chipFilters.types.has("2 - Required for Certification");
+  const aviOn=chipFilters.special.has("Avidyne"), fccOn=chipFilters.special.has("FCC"), acsOn=chipFilters.special.has("ACS");
+  const aviCount = all.filter(r=>getShared(r.Key,"Avidyne")==="true").length;
+  const fccCount = all.filter(r=>getShared(r.Key,"FuncSys")==="FCC").length;
+  const acsCount = all.filter(r=>getShared(r.Key,"FuncSys")==="ACS").length;
   document.getElementById("stats").innerHTML=`
     <div class="chip"><span class="label">Showing</span><span class="val">${filtered.length}</span></div>
-    <div class="chip clickable ${mpptOn?on():""}" onclick="toggleChip('projects','MPPT')"><span class="label">MPPT</span><span class="val">${mppt}</span></div>
-    <div class="chip clickable ${fftOn?on():""}" onclick="toggleChip('projects','FFT')"><span class="label">FFT</span><span class="val">${fft}</span></div>
     <div class="chip danger clickable ${scOn?on():""}" onclick="toggleChip('types','1 - Safety Critical')"><span class="label">Safety Critical</span><span class="val">${sc}</span></div>
     <div class="chip info clickable ${certOn?on():""}" onclick="toggleChip('types','2 - Required for Certification')"><span class="label">Cert Required</span><span class="val">${cert}</span></div>
+    <div class="chip clickable ${aviOn?on():""}" onclick="toggleChip('special','Avidyne')" style="border-color:#7c3aed20;color:#7c3aed;${aviOn?"background:#7c3aed;color:#fff;":""}"><span class="label">Avidyne</span><span class="val">${aviCount}</span></div>
+    <div class="chip clickable ${fccOn?on():""}" onclick="toggleChip('special','FCC')" style="border-color:#0891b220;color:#0891b2;${fccOn?"background:#0891b2;color:#fff;":""}"><span class="label">FCC</span><span class="val">${fccCount}</span></div>
+    <div class="chip clickable ${acsOn?on():""}" onclick="toggleChip('special','ACS')" style="border-color:#d9770620;color:#d97706;${acsOn?"background:#d97706;color:#fff;":""}"><span class="label">ACS</span><span class="val">${acsCount}</span></div>
     ${dirtyN?`<div class="chip dirty"><span class="label">Unsaved Jira</span><span class="val">${dirtyN}</span></div>`:""}
     ${closed?`<div class="chip danger"><span class="label">⚠ Closed</span><span class="val">${closed}</span></div>`:""}
   `;
