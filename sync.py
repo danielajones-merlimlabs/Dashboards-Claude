@@ -212,8 +212,10 @@ def main():
         ]).lower()
         return "avidyne" in text
 
-    avi_rows        = [r for r in all_rows   if is_avidyne(r)]
-    avi_closed_rows = [r for r in closed_rows if True]  # keep all closed for burndown shape
+    # Pass all open DRs — the Avidyne filter is pre-enabled in the template UI.
+    # A Python text-filter would miss DRs tagged Avidyne only via shared KV data.
+    avi_rows        = list(all_rows)
+    avi_closed_rows = list(closed_rows)
 
     avi_template_path = os.path.join(root, "template-avidyne.html")
     avi_output_path   = os.path.join(root, "avidyne.html")

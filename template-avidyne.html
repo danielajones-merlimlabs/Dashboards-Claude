@@ -392,7 +392,7 @@ const COLS=[
 
 let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
-const chipFilters = { types: new Set(), statuses: new Set(), special: new Set() };
+const chipFilters = { types: new Set(), statuses: new Set(), special: new Set(["Avidyne"]) };
 function toggleChip(group, value) {
   chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
   render();
