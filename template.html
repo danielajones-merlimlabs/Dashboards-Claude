@@ -353,13 +353,14 @@ const C130_OPR       = ["","No","Yes - no action required","Yes - action require
 const AVI_FIX_CHANGE = ["","Fix","Change","TBD"];
 
 const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
+const STATUSES = ["", ...Object.keys(SC)];
 
 const COLS=[
   {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
   {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
   {id:"proj",     label:"Proj",            group:"core",        type:"static",        minW:55,  sortField:"Project"},
   {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
-  {id:"status",   label:"Status",          group:"core",        type:"static",        minW:120, sortField:"Status"},
+  {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
   {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
@@ -368,8 +369,6 @@ const COLS=[
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
-  {id:"avidyne",  label:"Avidyne",           group:"core",      type:"avi",           minW:58},
-  {id:"priority", label:"Priority ✏️",     group:"core",        type:"jira-select",   minW:105, sortField:"Priority",                 field:"Priority",                   options:PRIORITIES},
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
@@ -384,9 +383,10 @@ const COLS=[
   {id:"reqAff",   label:"Requirement Affected 🟢",group:"observation", type:"shared-textarea", minW:180, sfield:"ReqAffected"},
   {id:"fccFound", label:"FCC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"FccBuildFound"},
   {id:"accFound", label:"ACC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"AccBuildFound"},
-  {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound"},
   {id:"fccFix",   label:"FCC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"FccBuildFix"},
   {id:"accFix",   label:"ACC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"AccBuildFix"},
+  {id:"avidyne",  label:"Avidyne",               group:"builds", type:"avi",         minW:58},
+  {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound"},
   {id:"aviFix",        label:"Avidyne Fix Build 🟢",      group:"builds", type:"shared-text",   minW:140, sfield:"AvidineBuildFix"},
   {id:"aviFixChange",  label:"Avidyne Fix vs Change 🟢",  group:"builds", type:"shared-select", minW:155, sfield:"AvidyneFixVsChange", options:AVI_FIX_CHANGE},
   {id:"aviCR",         label:"Avidyne CR 🟢",             group:"builds", type:"shared-text",   minW:120, sfield:"AvidineCR"},
@@ -488,7 +488,7 @@ function cellForCol(c,r){
       const note=getShared(key,"Notes");const by=getShared(key,"LastEditedBy");
       return`<td class="shared-col" style="min-width:${c.minW}px"><textarea class="shared-input${note?" has-val":""}" data-key="${key}" data-sfield="Notes" rows="2" onblur="onSharedBlur(this)" placeholder="Posts as Jira comment on sync…">${note}</textarea>${by?`<div class="edited-by">Last: ${by}</div>`:""}</td>`;
     }
-    case"avi":return`<td class="avi-cell"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} onchange="onAviChange(this)"></td>`;
+    case"avi":return`<td class="avi-cell${c.group!=="core"?" shared-col":""}"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} onchange="onAviChange(this)"></td>`;
     case"sync":{
       const has=dirty[key]&&Object.keys(dirty[key]).length;
       return`<td class="sync-cell"><button class="sync-row-btn${has?"":" synced"}" data-key="${key}" onclick="syncRow('${key}',this)">${has?"↑ Sync":"✓"}</button></td>`;
@@ -658,7 +658,7 @@ async function syncRow(key,btn){
   if(changes){
     if(changes["DR Type"]!==undefined)payload.updates.drType=changes["DR Type"];
     if(changes["Functional Team (System)"]!==undefined)payload.updates.system=changes["Functional Team (System)"];
-    if(changes["Priority"]!==undefined)payload.updates.priority=changes["Priority"];
+    if(changes["Status"]!==undefined)payload.updates.status=changes["Status"];
     if(changes["Assignee"]!==undefined)payload.updates.assignee=changes["Assignee"];
   }
   try{

@@ -14,7 +14,7 @@ const FIELD_LABELS = {
   AvidineCR: "Avidyne CR", C130OPRs: "C130 OPRs Applicability",
   PlannedCompletion: "Planned Completion",
   Notes: "Notes", Avidyne: "Avidyne",
-  "jira:drType": "DR Type (Jira)", "jira:priority": "Priority (Jira)",
+  "jira:drType": "DR Type (Jira)", "jira:status": "Status (Jira)",
   "jira:assignee": "Assignee (Jira)", "jira:system": "System (Jira)",
   "jira:comment": "Comment Added",
 };
@@ -127,7 +127,6 @@ export default {
     const fields = {};
     if (updates.drType)   fields.customfield_11935 = { value: updates.drType };
     if (updates.system)   fields.customfield_12068 = { value: updates.system };
-    if (updates.priority) fields.priority = { name: updates.priority };
 
     if (updates.assignee) {
       const userRes = await fetch(
@@ -168,6 +167,31 @@ export default {
       } else {
         const text = await r.text();
         results.push({ error: `Field update failed (${r.status}): ${text.slice(0, 300)}` });
+      }
+    }
+
+    if (updates.status) {
+      const transRes = await fetch(`${base}/rest/api/3/issue/${issueKey}/transitions`, { headers: hdrs });
+      if (transRes.ok) {
+        const { transitions = [] } = await transRes.json();
+        const match = transitions.find(t => t.name.toLowerCase() === updates.status.toLowerCase() || t.to?.name?.toLowerCase() === updates.status.toLowerCase());
+        if (match) {
+          const tr = await fetch(`${base}/rest/api/3/issue/${issueKey}/transitions`, {
+            method: "POST", headers: hdrs,
+            body: JSON.stringify({ transition: { id: match.id } }),
+          });
+          if (tr.ok || tr.status === 204) {
+            results.push({ ok: true, action: "status_transitioned" });
+            changelogEntries.push({ ts, drKey: issueKey, field: "Status (Jira)", oldVal: "", newVal: updates.status, user: jiraUser });
+          } else {
+            const text = await tr.text();
+            results.push({ error: `Status transition failed (${tr.status}): ${text.slice(0, 300)}` });
+          }
+        } else {
+          results.push({ error: `No transition found for status: ${updates.status}` });
+        }
+      } else {
+        results.push({ error: `Could not fetch transitions (${transRes.status})` });
       }
     }
 
