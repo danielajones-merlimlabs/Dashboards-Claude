@@ -190,6 +190,8 @@
   <select id="assigneeFilter"><option value="">All Assignees</option></select>
   <select id="whereFilter"><option value="">All Locations</option></select>
   <select id="campaignFilter"><option value="">All Campaigns</option></select>
+  <select id="funcSysFilter"><option value="">All Func. Systems</option></select>
+  <select id="sfhaFilter"><option value="">All SFHA Functions</option></select>
   <div class="fsep"></div>
   <button class="btn" onclick="clearFilters()">Clear</button>
 </div>
@@ -347,6 +349,8 @@ const CAMPAIGNS  = ["","Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factor
 const FUNC_SYS   = ["","FCC","ACS","EFIS/IFD","Other"];
 const SFHA_FUNCS = ["","Automatic Flight Guidance","Autopilot","Pitch Trim Control","Automatic Throttle Control","AFCS Activation and Deactivation","Automated ATC Communication","AFCS ATC Interface","FMS Functions","Display Flight Information","Display AFCS Mode Information","Display Target Information","Display Navigation Information","Display Terrain Awareness","Flight Crew Alerting","Operational Mode Determination","Maintenance"];
 const PROG_APPLIC = ["","STC only","C130","King Air","L-39"];
+const C130_OPR       = ["","No","Yes - no action required","Yes - action required"];
+const AVI_FIX_CHANGE = ["","Fix","Change","TBD"];
 
 const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
 
@@ -360,6 +364,7 @@ const COLS=[
   {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
   {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
+  {id:"c130opr",   label:"C130 OPRs Applicability 🟢",      group:"core", type:"shared-select", minW:185, shared:true, sfield:"C130OPRs",   options:C130_OPR},
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
@@ -382,7 +387,9 @@ const COLS=[
   {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound"},
   {id:"fccFix",   label:"FCC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"FccBuildFix"},
   {id:"accFix",   label:"ACC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"AccBuildFix"},
-  {id:"aviFix",   label:"Avidyne Fix Build 🟢",  group:"builds", type:"shared-text", minW:140, sfield:"AvidineBuildFix"},
+  {id:"aviFix",        label:"Avidyne Fix Build 🟢",      group:"builds", type:"shared-text",   minW:140, sfield:"AvidineBuildFix"},
+  {id:"aviFixChange",  label:"Avidyne Fix vs Change 🟢",  group:"builds", type:"shared-select", minW:155, sfield:"AvidyneFixVsChange", options:AVI_FIX_CHANGE},
+  {id:"aviCR",         label:"Avidyne CR 🟢",             group:"builds", type:"shared-text",   minW:120, sfield:"AvidineCR"},
   {id:"planned",  label:"Planned Completion 🟢",  group:"planning", type:"shared-date", minW:140, sfield:"PlannedCompletion"},
   {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
 ];
@@ -403,6 +410,8 @@ function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].so
 });
 WHERE_OBS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("whereFilter").appendChild(o);});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
+FUNC_SYS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("funcSysFilter").appendChild(o);});
+SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
 
 function renderHeader(){
   const vc=visibleCols();
@@ -552,6 +561,8 @@ function render(){
   const assign=document.getElementById("assigneeFilter").value;
   const where=document.getElementById("whereFilter").value;
   const campaign=document.getElementById("campaignFilter").value;
+  const funcSys=document.getElementById("funcSysFilter").value;
+  const sfha=document.getElementById("sfhaFilter").value;
 
   filtered=DR_DATA.filter(r=>{
     if(proj&&r.Project!==proj)return false;
@@ -560,6 +571,8 @@ function render(){
     if(assign&&r.Assignee!==assign)return false;
     if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
+    if(funcSys&&getShared(r.Key,"FuncSys")!==funcSys)return false;
+    if(sfha&&getShared(r.Key,"SfhaFunc")!==sfha)return false;
     if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
     if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
     if(chipFilters.special.size>0){
@@ -676,16 +689,16 @@ async function syncAllDirty(){
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
 
-function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>document.getElementById(id).value="");render();}
-["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");chipFilters.types.clear();chipFilters.statuses.clear();chipFilters.special.clear();render();}
+["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Planned Completion","Last Edited By","Last Edited At"];
+  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
   const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
