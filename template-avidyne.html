@@ -394,6 +394,7 @@ let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
 const chipFilters = { types: new Set(), statuses: new Set(), special: new Set(["Avidyne"]) };
 function toggleChip(group, value) {
+  if (group === 'special' && value === 'Avidyne') return; // locked — Avidyne filter cannot be removed
   chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
   render();
 }
@@ -639,7 +640,7 @@ function updateStats(){
     <div class="chip"><span class="label">Showing</span><span class="val">${filtered.length}</span></div>
     <div class="chip danger clickable ${scOn?on():""}" onclick="toggleChip('types','1 - Safety Critical')"><span class="label">Safety Critical</span><span class="val">${sc}</span></div>
     <div class="chip info clickable ${certOn?on():""}" onclick="toggleChip('types','2 - Required for Certification')"><span class="label">Cert Required</span><span class="val">${cert}</span></div>
-    <div class="chip clickable ${aviOn?on():""}" onclick="toggleChip('special','Avidyne')" style="border-color:#7c3aed20;color:#7c3aed;${aviOn?"background:#7c3aed;color:#fff;":""}"><span class="label">Avidyne</span><span class="val">${aviCount}</span></div>
+    <div class="chip" style="border-color:#7c3aed;background:#7c3aed;color:#fff;cursor:default" title="This dashboard only shows Avidyne DRs"><span class="label" style="color:rgba(255,255,255,.8)">🔒 Avidyne only</span><span class="val">${aviCount}</span></div>
     <div class="chip clickable ${fccOn?on():""}" onclick="toggleChip('special','FCC')" style="border-color:#0891b220;color:#0891b2;${fccOn?"background:#0891b2;color:#fff;":""}"><span class="label">FCC</span><span class="val">${fccCount}</span></div>
     <div class="chip clickable ${acsOn?on():""}" onclick="toggleChip('special','ACS')" style="border-color:#d9770620;color:#d97706;${acsOn?"background:#d97706;color:#fff;":""}"><span class="label">ACS</span><span class="val">${acsCount}</span></div>
     ${dirtyN?`<div class="chip dirty"><span class="label">Unsaved Jira</span><span class="val">${dirtyN}</span></div>`:""}
@@ -687,7 +688,7 @@ async function syncAllDirty(){
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
 
-function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");chipFilters.types.clear();chipFilters.statuses.clear();chipFilters.special.clear();render();}
+function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");chipFilters.types.clear();chipFilters.statuses.clear();chipFilters.special.clear();chipFilters.special.add("Avidyne");render();}
 ["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
