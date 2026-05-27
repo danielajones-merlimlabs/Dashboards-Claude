@@ -205,29 +205,25 @@ def main():
     print(f"index.html rebuilt - {len(all_rows)} open + {len(closed_rows)} closed, {timestamp}")
 
     # ── Avidyne-only dashboard ───────────────────────────────────────────────
-    def is_avidyne(row):
-        text = " ".join([
-            row.get("Labels", ""), row.get("Summary", ""),
-            row.get("Components", ""), row.get("Functional Team (System)", "")
-        ]).lower()
-        return "avidyne" in text
-
-    # Pass all open DRs — the Avidyne filter is pre-enabled in the template UI.
-    # A Python text-filter would miss DRs tagged Avidyne only via shared KV data.
-    avi_rows        = list(all_rows)
-    avi_closed_rows = list(closed_rows)
-
+    # Reuse data_json / closed_json already serialised above — no re-encode needed.
+    # The Avidyne chip filter is pre-enabled in the template UI so the supplier
+    # only sees Avidyne-tagged DRs without needing to interact.
     avi_template_path = os.path.join(root, "template-avidyne.html")
     avi_output_path   = os.path.join(root, "avidyne.html")
+    print(f"\nAvidyne template path: {avi_template_path}")
+    print(f"  exists: {os.path.exists(avi_template_path)}")
     if os.path.exists(avi_template_path):
-        with open(avi_template_path, "r", encoding="utf-8") as f:
-            avi_html = f.read()
-        avi_html = avi_html.replace("__DR_DATA_PLACEHOLDER__",      json.dumps(avi_rows,        ensure_ascii=False, separators=(",", ":")))
-        avi_html = avi_html.replace("__CLOSED_DATA_PLACEHOLDER__",  json.dumps(avi_closed_rows, ensure_ascii=False, separators=(",", ":")))
-        avi_html = avi_html.replace("__SYNC_TIMESTAMP_PLACEHOLDER__", timestamp)
-        with open(avi_output_path, "w", encoding="utf-8") as f:
-            f.write(avi_html)
-        print(f"avidyne.html rebuilt - {len(avi_rows)} Avidyne DRs, {timestamp}")
+        try:
+            with open(avi_template_path, "r", encoding="utf-8") as f:
+                avi_html = f.read()
+            avi_html = avi_html.replace("__DR_DATA_PLACEHOLDER__",     data_json)
+            avi_html = avi_html.replace("__CLOSED_DATA_PLACEHOLDER__", closed_json)
+            avi_html = avi_html.replace("__SYNC_TIMESTAMP_PLACEHOLDER__", timestamp)
+            with open(avi_output_path, "w", encoding="utf-8") as f:
+                f.write(avi_html)
+            print(f"avidyne.html rebuilt - {len(all_rows)} DRs, {timestamp}")
+        except Exception as e:
+            print(f"ERROR building avidyne.html: {e}")
     else:
         print("template-avidyne.html not found — skipping Avidyne dashboard")
 
