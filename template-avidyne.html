@@ -149,15 +149,20 @@
 <body>
 
 <div class="header">
-  <div><h1>STC Caravan — Avidyne DRs</h1><div class="sub">Avidyne DRs only · Synced from Jira daily · Read-only view</div></div>
+  <div><h1>STC Caravan — Avidyne DRs</h1><div class="sub">Avidyne DRs only · Synced from Jira daily 6am ET · Shared notes via Google Sheets</div></div>
   <div class="hbtns">
+    <button class="btn success" onclick="syncAllDirty()" id="syncAllBtn" style="display:none">⬆ Sync All to Jira</button>
     <button class="btn primary" onclick="exportCSV()">Export CSV</button>
     <button class="btn primary" onclick="exportPDF()">Export PDF</button>
     <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong></div>
   </div>
 </div>
 
-<div style="display:none" id="sheetStatus"></div>
+<div class="user-bar">
+  👤 <span>Editing as:</span>
+  <input type="text" id="userName" placeholder="Enter your name…" oninput="saveUserName(this.value)">
+  <span id="sheetStatus" style="margin-left:8px;color:rgba(255,255,255,.5)">Loading shared data…</span>
+</div>
 
 <div class="loading-bar" id="loadingBar">Loading shared data…</div>
 <div id="statusBar" class="status-bar"></div>
@@ -167,6 +172,7 @@
 <div class="tab-nav">
   <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
   <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
+  <button class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">Revision History</button>
 </div>
 
 <div id="tab-table">
@@ -253,7 +259,7 @@
   <div id="histBody"></div>
 </div>
 
-<div class="footer"><span id="footerCount"></span><span>Read-only view · Avidyne DRs only</span></div>
+<div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
 <div id="toast"></div>
 
 <script>
@@ -264,8 +270,7 @@ const SYNC_TIMESTAMP = "__SYNC_TIMESTAMP_PLACEHOLDER__";
 // SYNC_DATA_END
 
 // ── CONFIG ──
-const READ_ONLY  = true;
-const WORKER_URL = "https://dr-sync-worker.daniela-jones.workers.dev";
+const WORKER_URL     = "https://dr-sync-worker.daniela-jones.workers.dev";
 
 // ── USER NAME ──
 let currentUser = localStorage.getItem("dr_username") || "";
@@ -353,6 +358,7 @@ const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#
 const STATUSES = ["", ...Object.keys(SC)];
 
 const COLS=[
+  {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
   {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
   {id:"proj",     label:"Proj",            group:"core",        type:"static",        minW:55,  sortField:"Project"},
   {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
@@ -360,8 +366,6 @@ const COLS=[
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
   {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
-  {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
-  {id:"c130opr",   label:"C130 OPRs Applicability 🟢",      group:"core", type:"shared-select", minW:185, shared:true, sfield:"C130OPRs",   options:C130_OPR},
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
@@ -377,10 +381,6 @@ const COLS=[
   {id:"effOcc",   label:"Effect on Occupants 🟢", group:"observation", type:"shared-textarea", minW:170, sfield:"EffectOccupants"},
   {id:"effAc",    label:"Effect on Aircraft 🟢",  group:"observation", type:"shared-textarea", minW:170, sfield:"EffectAircraft"},
   {id:"reqAff",   label:"Requirement Affected 🟢",group:"observation", type:"shared-textarea", minW:180, sfield:"ReqAffected"},
-  {id:"fccFound", label:"FCC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"FccBuildFound"},
-  {id:"accFound", label:"ACC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"AccBuildFound"},
-  {id:"fccFix",   label:"FCC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"FccBuildFix"},
-  {id:"accFix",   label:"ACC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"AccBuildFix"},
   {id:"avidyne",  label:"Avidyne",               group:"builds", type:"avi",         minW:58,  aviCol:true},
   {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound",  aviCol:true},
   {id:"aviFix",        label:"Avidyne Fix Build 🟢",      group:"builds", type:"shared-text",   minW:140, sfield:"AvidineBuildFix",        aviCol:true},
@@ -480,18 +480,21 @@ function cellForCol(c,r){
       const atFmt=at?at.slice(0,10):"";
       return`<td class="shared-col"><span style="font-size:10px;color:var(--text2)">${by||"—"}</span>${atFmt?`<div class="edited-by">${atFmt}</div>`:""}`;
     }
-    case"jira-select":return`<td>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${r[c.field]||"—"}</span>`:makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
-    case"jira-text":return`<td>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${r[c.field]||"—"}</span>`:makeJiraText(r[c.field]||"",c.field,key)}</td>`;
+    case"jira-select":return`<td>${makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
+    case"jira-text":return`<td>${makeJiraText(r[c.field]||"",c.field,key)}</td>`;
     case"shared-notes":{
-      const note=getShared(key,"Notes");
-      return`<td class="shared-col" style="min-width:${c.minW}px"><span style="font-size:11px;color:var(--text2);white-space:pre-wrap">${note||"—"}</span></td>`;
+      const note=getShared(key,"Notes");const by=getShared(key,"LastEditedBy");
+      return`<td class="shared-col" style="min-width:${c.minW}px"><textarea class="shared-input${note?" has-val":""}" data-key="${key}" data-sfield="Notes" rows="2" onblur="onSharedBlur(this)" placeholder="Posts as Jira comment on sync…">${note}</textarea>${by?`<div class="edited-by">Last: ${by}</div>`:""}</td>`;
     }
-    case"avi":return`<td class="avi-cell${c.aviCol?" avi-col":c.group!=="core"?" shared-col":""}"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} ${READ_ONLY?"disabled":"onchange=\"onAviChange(this)\""}></td>`;
-    case"sync":return`<td></td>`;
-    case"shared-select":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedSelect(c.options,key,c.sfield)}</td>`;
-    case"shared-text":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedText(key,c.sfield,false)}</td>`;
-    case"shared-textarea":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2);white-space:pre-wrap">${getShared(key,c.sfield)||"—"}</span>`:makeSharedText(key,c.sfield,true)}</td>`;
-    case"shared-date":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedDate(key,c.sfield)}</td>`;
+    case"avi":return`<td class="avi-cell${c.aviCol?" avi-col":c.group!=="core"?" shared-col":""}"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} onchange="onAviChange(this)"></td>`;
+    case"sync":{
+      const has=dirty[key]&&Object.keys(dirty[key]).length;
+      return`<td class="sync-cell"><button class="sync-row-btn${has?"":" synced"}" data-key="${key}" onclick="syncRow('${key}',this)">${has?"↑ Sync":"✓"}</button></td>`;
+    }
+    case"shared-select":return`<td${tdCls}>${makeSharedSelect(c.options,key,c.sfield)}</td>`;
+    case"shared-text":return`<td${tdCls}>${makeSharedText(key,c.sfield,false)}</td>`;
+    case"shared-textarea":return`<td${tdCls}>${makeSharedText(key,c.sfield,true)}</td>`;
+    case"shared-date":return`<td${tdCls}>${makeSharedDate(key,c.sfield)}</td>`;
     case"shared-checkbox":{const checked=getShared(key,c.sfield)==="true";return`<td class="shared-cb-cell" style="min-width:${c.minW}px"><input type="checkbox" data-key="${key}" data-sfield="${c.sfield}"${checked?" checked":""} onchange="onSharedCheckChange(this)"></td>`;};
     default:return`<td>—</td>`;
   }
