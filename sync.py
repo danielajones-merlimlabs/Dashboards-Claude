@@ -188,24 +188,46 @@ def main():
     print(f"Total closed (18 mo): {len(closed_rows)} DRs")
 
     root = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(root, "template.html")
-    output_path   = os.path.join(root, "index.html")
-
-    with open(template_path, "r", encoding="utf-8") as f:
-        html = f.read()
-
     timestamp   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     data_json   = json.dumps(all_rows,    ensure_ascii=False, separators=(",", ":"))
     closed_json = json.dumps(closed_rows, ensure_ascii=False, separators=(",", ":"))
 
-    html = html.replace("__DR_DATA_PLACEHOLDER__",     data_json)
-    html = html.replace("__CLOSED_DATA_PLACEHOLDER__", closed_json)
+    # ── Main dashboard ──────────────────────────────────────────────────────
+    template_path = os.path.join(root, "template.html")
+    output_path   = os.path.join(root, "index.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    html = html.replace("__DR_DATA_PLACEHOLDER__",      data_json)
+    html = html.replace("__CLOSED_DATA_PLACEHOLDER__",  closed_json)
     html = html.replace("__SYNC_TIMESTAMP_PLACEHOLDER__", timestamp)
-
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
-
     print(f"index.html rebuilt - {len(all_rows)} open + {len(closed_rows)} closed, {timestamp}")
+
+    # ── Avidyne-only dashboard ───────────────────────────────────────────────
+    def is_avidyne(row):
+        text = " ".join([
+            row.get("Labels", ""), row.get("Summary", ""),
+            row.get("Components", ""), row.get("Functional Team (System)", "")
+        ]).lower()
+        return "avidyne" in text
+
+    avi_rows        = [r for r in all_rows   if is_avidyne(r)]
+    avi_closed_rows = [r for r in closed_rows if True]  # keep all closed for burndown shape
+
+    avi_template_path = os.path.join(root, "template-avidyne.html")
+    avi_output_path   = os.path.join(root, "avidyne.html")
+    if os.path.exists(avi_template_path):
+        with open(avi_template_path, "r", encoding="utf-8") as f:
+            avi_html = f.read()
+        avi_html = avi_html.replace("__DR_DATA_PLACEHOLDER__",      json.dumps(avi_rows,        ensure_ascii=False, separators=(",", ":")))
+        avi_html = avi_html.replace("__CLOSED_DATA_PLACEHOLDER__",  json.dumps(avi_closed_rows, ensure_ascii=False, separators=(",", ":")))
+        avi_html = avi_html.replace("__SYNC_TIMESTAMP_PLACEHOLDER__", timestamp)
+        with open(avi_output_path, "w", encoding="utf-8") as f:
+            f.write(avi_html)
+        print(f"avidyne.html rebuilt - {len(avi_rows)} Avidyne DRs, {timestamp}")
+    else:
+        print("template-avidyne.html not found — skipping Avidyne dashboard")
 
 # ── Progress Metrics Sync ─────────────────────────────────────────────────────
 PROGRESS_SHEET_ID = '1axaAXoiObpBw150OyQi_iee6_oUMoHnQA3BLXqomdfA'

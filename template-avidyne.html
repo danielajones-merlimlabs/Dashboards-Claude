@@ -1,0 +1,1220 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STC Caravan — Avidyne DRs</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f7f8fc;--surface:#fff;--surface2:#f0f2f9;--border:#e2e5f0;--border2:#cdd2e8;--text:#1a1d2e;--text2:#4a5068;--text3:#8891b0;--accent:#1f3864;--accent2:#2952a3;--mppt-bg:#dbeafe;--mppt-fg:#1d4ed8;--fft-bg:#ffedd5;--fft-fg:#c2410c;--sc-bg:#fee2e2;--sc-fg:#991b1b;--cert-bg:#dcfce7;--cert-fg:#166534;--row-hover:#eef1fb;--closed-bg:#fff0f0;--dirty-bg:#fffbeb;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+  .header{background:var(--accent);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .header h1{font-size:15px;font-weight:600}.header .sub{font-size:10px;opacity:.6;margin-top:2px;font-family:'IBM Plex Mono',monospace}
+  .hbtns{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .sync-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap}.sync-badge strong{color:#7dd3fc}
+  .user-bar{background:#162a50;padding:5px 20px;display:flex;align-items:center;gap:10px;font-size:11px;color:rgba(255,255,255,.7)}
+  .user-bar input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;font-family:inherit;outline:none;width:180px}
+  .user-bar input::placeholder{color:rgba(255,255,255,.4)}
+  .user-bar input:focus{border-color:#7dd3fc}
+  .loading-bar{background:#1d4ed8;color:#fff;padding:6px 20px;font-size:11px;text-align:center;display:none}
+  .stats{display:flex;gap:7px;padding:8px 20px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
+  .chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;display:flex;align-items:center;gap:4px}
+  .chip .label{color:var(--text3)}.chip .val{font-weight:600;font-family:'IBM Plex Mono',monospace}
+  .chip.danger .val{color:#991b1b}.chip.warn .val{color:#9a3412}.chip.info .val{color:#1d4ed8}.chip.dirty .val{color:#b45309}
+  .col-toggle-bar{padding:5px 20px;border-bottom:1px solid var(--border);background:#f8f9fe;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:11px}
+  .col-toggle-bar span{color:var(--text3);font-weight:600;margin-right:3px}
+  .col-pill{padding:3px 9px;border-radius:12px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:10px;font-weight:500;color:var(--text2);transition:all .15s;user-select:none}
+  .col-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .col-pill.shared{border-color:#16a34a;color:#15803d}.col-pill.shared.active{background:#16a34a;border-color:#16a34a;color:#fff}
+  .filters{padding:7px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .filters input,.filters select{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none}
+  .filters input:focus,.filters select:focus{border-color:var(--accent2)}
+  .filters input{width:185px}.fsep{width:1px;background:var(--border2);height:18px;margin:0 2px}
+  .btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border2);background:var(--surface2);font-size:11px;cursor:pointer;color:var(--text2);font-family:inherit;transition:background .15s}
+  .btn:hover{background:var(--border)}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn.primary:hover{background:var(--accent2)}
+  .btn.success{background:#16a34a;color:#fff;border-color:#16a34a}.btn.success:hover{background:#15803d}
+  .table-wrap{overflow-x:auto;max-height:calc(100vh - 250px);overflow-y:auto}
+  table{width:100%;border-collapse:collapse}
+  thead th{position:sticky;top:0;z-index:3;background:var(--accent);color:rgba(255,255,255,.85);padding:6px 8px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;cursor:pointer;user-select:none;border-right:1px solid rgba(255,255,255,.08)}
+  thead th:hover{color:#fff}thead th.sorted{color:#7dd3fc}thead th .arr{font-size:9px;margin-left:2px;opacity:.5}thead th.sorted .arr{opacity:1}thead th.no-sort{cursor:default}
+  thead th.shared-col{background:#1a4a2e}
+  thead th.avi-col{background:#4c1d95}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .08s}tbody tr:hover{background:var(--row-hover)}
+  tbody tr.closed-row{background:var(--closed-bg)}
+  tbody td{padding:4px 8px;vertical-align:top;font-size:11px;color:var(--text2);border-right:1px solid var(--border)}
+  tbody td.shared-col{background:#f0fdf8;border-right:1px solid #bbf7d0}
+  tbody td.avi-col{background:#f5f3ff;border-right:1px solid #ddd6fe}
+  .key-link{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}.key-link:hover{text-decoration:underline}
+  .badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+  .mppt{background:var(--mppt-bg);color:var(--mppt-fg)}.fft{background:var(--fft-bg);color:var(--fft-fg)}
+  .sc{background:var(--sc-bg);color:var(--sc-fg)}.cert{background:var(--cert-bg);color:var(--cert-fg)}
+  .status-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+  .status-bar{display:flex;flex-wrap:wrap;gap:5px;padding:6px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .sbar-chip{display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);white-space:nowrap}
+  .sbar-chip .sval{font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text)}
+  .sbar-chip.active{background:#fff7ed;border-color:#ea580c;color:#c2410c}.sbar-chip.active .sval{color:#c2410c}
+  .sbar-chip.sdanger{background:#fef2f2;border-color:#dc2626;color:#991b1b}.sbar-chip.sdanger .sval{color:#991b1b}
+  .sbar-chip.chip-on{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}.sbar-chip.chip-on .sval{color:#fff!important}
+  .sbar-chip.sdanger.chip-on{background:#991b1b!important;border-color:#991b1b!important}
+  .sbar-chip:hover{opacity:.8}
+  .summary-cell{max-width:250px}.summary-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;color:var(--text)}
+  .pri-highest{color:#dc2626;font-weight:600}.pri-high{color:#ea580c;font-weight:600}.pri-default{color:var(--text3)}
+  .date-cell{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap}
+  .ltag{display:inline-block;background:#e8eaf6;color:#3949ab;padding:1px 4px;border-radius:3px;font-size:9px;margin:1px}
+  .closed-tag{color:#dc2626;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:10px}
+  .dirty-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#d97706;margin-left:4px;vertical-align:middle}
+  .edit-select{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text);outline:none;cursor:pointer;min-width:120px}
+  .edit-select:focus{border-color:var(--accent2)}.edit-select.changed{border-color:#d97706;background:#fffbeb}
+  .edit-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text);outline:none;min-width:120px;box-sizing:border-box}
+  .edit-input:focus{border-color:var(--accent2)}.edit-input.changed{border-color:#d97706;background:#fffbeb}
+  .shared-input{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;resize:none;transition:border .15s;min-width:120px}
+  .shared-input:hover{border-color:#86efac;background:#fff}
+  .shared-input:focus{border-color:#16a34a;background:#fff}
+  .shared-input.has-val{color:var(--text);font-weight:500}
+  .shared-select{width:100%;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 5px;font-size:11px;font-family:inherit;color:var(--text2);outline:none;cursor:pointer;transition:border .15s;min-width:120px}
+  .shared-select:hover{border-color:#86efac;background:#fff}.shared-select:focus{border-color:#16a34a;background:#fff}
+  .shared-select.has-val{color:var(--text);font-weight:500}
+  .edited-by{font-size:9px;color:var(--text3);margin-top:2px;font-style:italic}
+  .shared-cb-cell{text-align:center;vertical-align:middle !important}
+  .shared-cb-cell input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#16a34a}
+  .sync-cell{text-align:center;vertical-align:middle !important;min-width:68px}
+  .sync-row-btn{padding:3px 8px;border-radius:4px;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .sync-row-btn:hover{background:#16a34a;color:#fff}.sync-row-btn:disabled{opacity:.5;cursor:not-allowed}
+  .sync-row-btn.syncing{background:#dbeafe;border-color:#3b82f6;color:#1d4ed8}
+  .sync-row-btn.synced{background:#f0fdf4;border-color:#86efac;color:#15803d}
+  .sync-row-btn.error{background:#fee2e2;border-color:#dc2626;color:#991b1b}
+  .avi-cell{text-align:center;vertical-align:middle !important}
+  .avi-check{appearance:none;-webkit-appearance:none;width:15px;height:15px;border:2px solid var(--border2);border-radius:3px;cursor:pointer;position:relative;transition:all .15s;background:var(--surface)}
+  .avi-check:checked{background:#1d4ed8;border-color:#1d4ed8}.avi-check:checked::after{content:"✓";position:absolute;top:-2px;left:0;font-size:11px;color:#fff;font-weight:700}
+  .footer{padding:6px 20px;border-top:1px solid var(--border);background:var(--surface);font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center}
+  ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  .no-results{padding:50px;text-align:center;color:var(--text3)}
+  #toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:6px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+  #toast.show{opacity:1}#toast.ok{background:#16a34a;color:#fff}#toast.err{background:#dc2626;color:#fff}#toast.info{background:#1d4ed8;color:#fff}
+  .legend{font-size:10px;display:flex;gap:14px;align-items:center;padding:4px 20px;background:#f8f9fe;border-bottom:1px solid var(--border)}
+  .legend-item{display:flex;align-items:center;gap:4px;color:var(--text3)}
+  .legend-dot{width:9px;height:9px;border-radius:2px}
+  .tab-nav{display:flex;padding:0 20px;background:var(--surface);border-bottom:2px solid var(--border)}
+  .tab-btn{padding:9px 18px;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab-btn:hover:not(.active){color:var(--text2)}
+  .chip.clickable{cursor:pointer;user-select:none;transition:all .15s}
+  .chip.clickable:hover{border-color:var(--accent2);background:var(--border)}
+  .chip.chip-on{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
+  .chip.chip-on .label{color:rgba(255,255,255,.75)!important}
+  .chip.chip-on .val{color:#fff!important}
+  .chip.danger.chip-on{background:#991b1b!important;border-color:#991b1b!important}
+  .chip.info.chip-on{background:#1d4ed8!important;border-color:#1d4ed8!important}
+  .burndown-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f8f9fe;border:1px solid var(--border);border-radius:6px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)}
+  .burndown-controls label{font-weight:600;white-space:nowrap}
+  .burndown-controls input[type=range]{width:180px;accent-color:var(--accent2);cursor:pointer}
+  .bd-rate-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);min-width:28px;text-align:center}
+  .bd-badge{margin-left:auto;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .bd-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+  .bd-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+  .bd-bad{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+  #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  #tab-history{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  .hist-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .hist-controls input{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text1);outline:none;width:200px}
+  .hist-controls input:focus{border-color:var(--accent)}
+  .hist-controls select{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text1);outline:none}
+  .hist-day{margin-bottom:22px}
+  .hist-day-header{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;padding:6px 0;border-bottom:2px solid var(--border);margin-bottom:8px}
+  .hist-table{width:100%;border-collapse:collapse;font-size:12px}
+  .hist-table th{background:var(--accent);color:rgba(255,255,255,.85);padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .hist-table td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text1)}
+  .hist-table tr:hover td{background:var(--surface)}
+  .hist-dr{font-weight:700;color:var(--accent);white-space:nowrap}
+  .hist-dr a{color:inherit;text-decoration:none}
+  .hist-dr a:hover{text-decoration:underline}
+  .hist-field{color:var(--text2);white-space:nowrap}
+  .hist-val{color:#64748b;font-style:italic;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-arrow{color:#94a3b8;padding:0 4px}
+  .hist-newval{color:var(--text1);font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-user{color:#059669;font-weight:600;white-space:nowrap}
+  .hist-time{color:#94a3b8;font-size:10px;white-space:nowrap}
+  .hist-empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+  .hist-count{font-size:11px;color:var(--text3);margin-left:auto}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:20px}
+  .chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .chart-sub{font-size:11px;color:var(--text3);margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>STC Caravan — Avidyne DRs</h1><div class="sub">Avidyne DRs only · Synced from Jira daily · Read-only view</div></div>
+  <div class="hbtns">
+    <button class="btn primary" onclick="exportCSV()">Export CSV</button>
+    <button class="btn primary" onclick="exportPDF()">Export PDF</button>
+    <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong></div>
+  </div>
+</div>
+
+<div style="display:none" id="sheetStatus"></div>
+
+<div class="loading-bar" id="loadingBar">Loading shared data…</div>
+<div id="statusBar" class="status-bar"></div>
+<div id="typeBar" class="status-bar" style="border-top:none;padding-top:3px;padding-bottom:8px"></div>
+<div class="stats" id="stats"></div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
+  <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
+</div>
+
+<div id="tab-table">
+<div class="legend">
+  <strong style="color:var(--text2)">Columns:</strong>
+  <div class="legend-item"><div class="legend-dot" style="background:#1f3864"></div>Jira (syncs back to Jira)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Shared (saves to Google Sheet, visible to everyone)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Unsaved Jira change</div>
+</div>
+
+<div class="filters">
+  <input type="text" id="search" placeholder="🔍  Search…">
+  <div class="fsep"></div>
+  <select id="projFilter"><option value="">Both Projects</option><option value="MPPT">MPPT</option><option value="FFT">FFT</option></select>
+  <select id="statusFilter"><option value="">All Statuses</option></select>
+  <select id="typeFilter"><option value="">All DR Types</option></select>
+  <select id="assigneeFilter"><option value="">All Assignees</option></select>
+  <select id="whereFilter"><option value="">All Locations</option></select>
+  <select id="campaignFilter"><option value="">All Campaigns</option></select>
+  <select id="funcSysFilter"><option value="">All Func. Systems</option></select>
+  <select id="sfhaFilter"><option value="">All SFHA Functions</option></select>
+  <div class="fsep"></div>
+  <button class="btn" onclick="clearFilters()">Clear</button>
+</div>
+
+<div class="table-wrap">
+  <table id="mainTable"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+  <div class="no-results" id="noResults" style="display:none">No DRs match.</div>
+</div>
+</div><!-- #tab-table -->
+
+<div id="tab-metrics">
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">DR Count by Status — stacked by DR Type</div>
+      <div class="chart-sub">All projects · open DRs only</div>
+      <canvas id="chartStatusType"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Safety Critical &amp; Cert Required by Functional Team</div>
+      <div class="chart-sub">Safety Critical + Required for Certification only</div>
+      <canvas id="chartFuncTeam" style="max-height:320px"></canvas>
+    </div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Open DRs by Functional System</div>
+      <div class="chart-sub">Stacked by status · based on shared Functional System column</div>
+      <canvas id="chartFuncSys" style="max-height:300px"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">DRs by FT Test Campaign</div>
+      <div class="chart-sub">Open DRs tagged to each flight test campaign · stacked by project</div>
+      <canvas id="chartCampaign" style="max-height:300px"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">New vs Closed DRs by Week</div>
+    <div class="chart-sub">Since March 2026 · bars = weekly counts</div>
+    <canvas id="chartNewVsClosed" style="max-height:220px"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">SC + Cert Required — Burndown to Sept 30, 2026</div>
+    <div class="chart-sub" id="burndownSub">Safety Critical + Required for Certification · target: all closed by Sept 30</div>
+    <div class="burndown-controls">
+      <label>Closures / week:</label>
+      <input type="range" id="bdSlider" min="0.5" max="15" step="0.5" value="2">
+      <span class="bd-rate-val" id="bdRateVal">2.0</span>
+      <span style="color:var(--text3);font-size:11px" id="bdPaceHint"></span>
+      <span class="bd-badge" id="bdBadge"></span>
+    </div>
+    <canvas id="chartBurndown" style="max-height:260px"></canvas>
+  </div>
+</div>
+
+<div id="tab-history">
+  <div class="hist-controls">
+    <input type="text" id="histSearch" placeholder="🔍  Filter by DR key or field…" oninput="filterHistory()">
+    <select id="histUserFilter" onchange="filterHistory()"><option value="">All Users</option></select>
+    <select id="histFieldFilter" onchange="filterHistory()"><option value="">All Fields</option></select>
+    <button class="btn" onclick="loadHistory(true)">↻ Refresh</button>
+    <span class="hist-count" id="histCount"></span>
+  </div>
+  <div id="histBody"></div>
+</div>
+
+<div class="footer"><span id="footerCount"></span><span>Read-only view · Avidyne DRs only</span></div>
+<div id="toast"></div>
+
+<script>
+// SYNC_DATA_START
+const DR_DATA = __DR_DATA_PLACEHOLDER__;
+const CLOSED_DATA = __CLOSED_DATA_PLACEHOLDER__;
+const SYNC_TIMESTAMP = "__SYNC_TIMESTAMP_PLACEHOLDER__";
+// SYNC_DATA_END
+
+// ── CONFIG ──
+const READ_ONLY  = true;
+const WORKER_URL = "https://dr-sync-worker.daniela-jones.workers.dev";
+
+// ── USER NAME ──
+let currentUser = localStorage.getItem("dr_username") || "";
+document.getElementById("userName").value = currentUser;
+function saveUserName(v){ currentUser=v.trim(); localStorage.setItem("dr_username",currentUser); }
+
+// ── SHARED DATA (from Google Sheets) ──
+// sharedData[key] = { Notes, Avidyne, WhereObserved, ... , LastEditedBy, LastEditedAt }
+let sharedData = {};
+let sheetLoaded = false;
+
+async function loadSharedData() {
+  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) { document.getElementById("sheetStatus").textContent = "⚠ Worker not configured"; sheetLoaded=true; render(); return; }
+  document.getElementById("loadingBar").style.display = "block";
+  try {
+    const res = await fetch(`${WORKER_URL}?action=getAll`);
+    const data = await res.json();
+    sharedData = {};
+    (data.rows || []).forEach(row => { if(row.Key) sharedData[row.Key] = row; });
+    document.getElementById("sheetStatus").textContent = `✓ Shared data loaded (${Object.keys(sharedData).length} rows)`;
+    sheetLoaded = true;
+  } catch(e) {
+    document.getElementById("sheetStatus").textContent = "⚠ Could not load sheet: " + e.message;
+    sheetLoaded = true;
+  }
+  document.getElementById("loadingBar").style.display = "none";
+  render();
+}
+
+async function saveToSheet(key, fields) {
+  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) return;
+  if (!currentUser) { showToast("Please enter your name at the top first", false); return; }
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"save", key, fields, user: currentUser })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (!sharedData[key]) sharedData[key] = { Key: key };
+      Object.assign(sharedData[key], fields);
+      sharedData[key].LastEditedBy = currentUser;
+      sharedData[key].LastEditedAt = data.timestamp;
+      showToast(`✓ Saved to sheet`, true);
+    } else {
+      showToast("Sheet error: " + (data.error||"unknown"), false);
+    }
+  } catch(e) {
+    showToast("Save failed: " + e.message, false);
+  }
+}
+
+function getShared(key, field){ return (sharedData[key]||{})[field] || ""; }
+
+// ── JIRA DIRTY STATE ──
+let dirty = JSON.parse(localStorage.getItem("dr_dirty_v1") || "{}");
+function saveDirty(){
+  localStorage.setItem("dr_dirty_v1", JSON.stringify(dirty));
+  document.getElementById("syncAllBtn").style.display = Object.keys(dirty).length > 0 ? "block" : "none";
+}
+
+function isAviDefault(r){ return [r.Labels||"",r.Summary||"",r.Components||"",r["Functional Team (System)"]||""].join(" ").toLowerCase().includes("avidyne"); }
+function getAvi(key,r){
+  const v = getShared(key, "Avidyne");
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return isAviDefault(r);
+}
+
+// ── OPTIONS ──
+const DR_TYPES   = ["","1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII"];
+const SYSTEMS    = ["","ACC + MCC Platform SW","Aircraft Integration","Certification","FCC Platform SW + Model SW - IO","Human Factors","Natural Language Processing","Systems Engineering","VTE"];
+const PRIORITIES = ["","Highest","High","Medium","Low"];
+const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalashian","Brad Heath","Bryce Hill","Ellis Ahn","Gabriel Heredia Acevedo","Harlan Waldrop","Jared Basile","Karen Linda","Katelyn Schroll","Larry Friese Jr","Matt Rendos","Molly Connolly","Patrick Shine","Patrick Van Wie","Reed Bimson","Ryan McMahon","Shawn Bonneau","Shirley Shah","Tas Marshall","Ted Sieffert","Thao Trinh","Victoria Gilroy","Vincent Nhieu"];
+const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
+const CAMPAIGNS  = ["","Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other"];
+const FUNC_SYS   = ["","FCC","ACS","EFIS/IFD","Other"];
+const SFHA_FUNCS = ["","Automatic Flight Guidance","Autopilot","Pitch Trim Control","Automatic Throttle Control","AFCS Activation and Deactivation","Automated ATC Communication","AFCS ATC Interface","FMS Functions","Display Flight Information","Display AFCS Mode Information","Display Target Information","Display Navigation Information","Display Terrain Awareness","Flight Crew Alerting","Operational Mode Determination","Maintenance"];
+const PROG_APPLIC = ["","STC only","C130","King Air","L-39"];
+const C130_OPR       = ["","No","Yes - no action required","Yes - action required"];
+const AVI_FIX_CHANGE = ["","Fix","Change","TBD"];
+
+const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
+const STATUSES = ["", ...Object.keys(SC)];
+
+const COLS=[
+  {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
+  {id:"proj",     label:"Proj",            group:"core",        type:"static",        minW:55,  sortField:"Project"},
+  {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
+  {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
+  {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
+  {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
+  {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
+  {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
+  {id:"c130opr",   label:"C130 OPRs Applicability 🟢",      group:"core", type:"shared-select", minW:185, shared:true, sfield:"C130OPRs",   options:C130_OPR},
+  {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
+  {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
+  {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
+  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
+  {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
+  {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
+  {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
+  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, shared:true, sfield:"Notes"},
+  {id:"whereObs", label:"Where Observed 🟢",     group:"observation", type:"shared-select",   minW:145, sfield:"WhereObserved",    options:WHERE_OBS},
+  {id:"obsBeh",   label:"Observed Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ObservedBehavior"},
+  {id:"expBeh",   label:"Expected Behavior 🟢",   group:"observation", type:"shared-textarea", minW:190, sfield:"ExpectedBehavior"},
+  {id:"effCrew",  label:"Effect on Crew 🟢",      group:"observation", type:"shared-textarea", minW:170, sfield:"EffectCrew"},
+  {id:"effOcc",   label:"Effect on Occupants 🟢", group:"observation", type:"shared-textarea", minW:170, sfield:"EffectOccupants"},
+  {id:"effAc",    label:"Effect on Aircraft 🟢",  group:"observation", type:"shared-textarea", minW:170, sfield:"EffectAircraft"},
+  {id:"reqAff",   label:"Requirement Affected 🟢",group:"observation", type:"shared-textarea", minW:180, sfield:"ReqAffected"},
+  {id:"fccFound", label:"FCC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"FccBuildFound"},
+  {id:"accFound", label:"ACC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"AccBuildFound"},
+  {id:"fccFix",   label:"FCC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"FccBuildFix"},
+  {id:"accFix",   label:"ACC SW Fix Build 🟢",   group:"builds", type:"shared-text", minW:140, sfield:"AccBuildFix"},
+  {id:"avidyne",  label:"Avidyne",               group:"builds", type:"avi",         minW:58,  aviCol:true},
+  {id:"aviFound", label:"Avidyne Build Found 🟢", group:"builds", type:"shared-text", minW:150, sfield:"AvidineBuildFound",  aviCol:true},
+  {id:"aviFix",        label:"Avidyne Fix Build 🟢",      group:"builds", type:"shared-text",   minW:140, sfield:"AvidineBuildFix",        aviCol:true},
+  {id:"aviFixChange",  label:"Avidyne Fix vs Change 🟢",  group:"builds", type:"shared-select", minW:155, sfield:"AvidyneFixVsChange", options:AVI_FIX_CHANGE, aviCol:true},
+  {id:"aviCR",         label:"Avidyne CR 🟢",             group:"builds", type:"shared-text",   minW:120, sfield:"AvidineCR",              aviCol:true},
+  {id:"planned",  label:"Planned Completion 🟢",  group:"planning", type:"shared-date", minW:140, sfield:"PlannedCompletion"},
+  {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
+];
+
+let visibleCols=()=>COLS;
+let sortCol="Key", sortDir=1, filtered=[];
+const chipFilters = { types: new Set(), statuses: new Set(), special: new Set() };
+function toggleChip(group, value) {
+  chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
+  render();
+}
+
+document.getElementById("syncDate").textContent=SYNC_TIMESTAMP;
+
+function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort();}
+[["statusFilter","Status"],["typeFilter","DR Type"],["assigneeFilter","Assignee"]].forEach(([id,key])=>{
+  const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
+});
+WHERE_OBS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("whereFilter").appendChild(o);});
+CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
+FUNC_SYS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("funcSysFilter").appendChild(o);});
+SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
+
+function renderHeader(){
+  const vc=visibleCols();
+  document.getElementById("thead").innerHTML=`<tr>${vc.map(c=>{
+    const isAvi=!!c.aviCol;
+    const isShared=!isAvi&&(c.group!=="core"||["notes"].includes(c.id));
+    const cls=isAvi?"avi-col no-sort":isShared?"shared-col no-sort":"";
+    return`<th class="${cls}${c.sortField?" sortable":""}" data-col="${c.sortField||""}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':""}</th>`;
+  }).join("")}</tr>`;
+  document.querySelectorAll("thead th.sortable").forEach(th=>{
+    th.classList.remove("no-sort"); th.style.cursor="pointer";
+    th.addEventListener("click",()=>{
+      const col=th.dataset.col;
+      document.querySelectorAll("thead th").forEach(h=>{h.classList.remove("sorted");const a=h.querySelector(".arr");if(a)a.textContent="↕";});
+      if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}
+      th.classList.add("sorted");th.querySelector(".arr").textContent=sortDir===1?"↓":"↑";render();
+    });
+  });
+}
+
+function pill(s){const[bg,fg]=SC[s]||["#f1f5f9","#475569"];return`<span class="status-pill" style="background:${bg};color:${fg}">${s}</span>`;}
+function ltags(l){if(!l)return"—";return l.split(",").map(s=>s.trim()).filter(Boolean).map(s=>`<span class="ltag">${s}</span>`).join(" ");}
+
+function makeJiraSelect(options,current,field,key){
+  const d=dirty[key]||{};const val=field in d?d[field]:current;const changed=field in d&&d[field]!==current;
+  return`<select class="edit-select${changed?" changed":""}" data-key="${key}" data-field="${field}" onchange="onJiraChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"(none)"}</option>`).join("")}</select>`;
+}
+
+function makeJiraText(current,field,key){
+  const d=dirty[key]||{};const val=field in d?d[field]:current;const changed=field in d&&d[field]!==current;
+  return`<input type="text" class="edit-input${changed?" changed":""}" data-key="${key}" data-field="${field}" data-orig="${current}" value="${(val||"").replace(/"/g,'&quot;')}" onblur="onJiraTextBlur(this)" placeholder="—">`;
+}
+
+function makeSharedSelect(options,key,sfield){
+  const val=getShared(key,sfield);
+  return`<select class="shared-select${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" onchange="onSharedChange(this)">${options.map(o=>`<option value="${o}"${o===val?" selected":""}>${o||"—"}</option>`).join("")}</select>`;
+}
+
+function makeSharedText(key,sfield,multi=false){
+  const val=getShared(key,sfield).replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  if(multi)return`<textarea class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" rows="2" onblur="onSharedBlur(this)" placeholder="—">${getShared(key,sfield)}</textarea>`;
+  return`<input type="text" class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" value="${val}" onblur="onSharedBlur(this)" placeholder="—">`;
+}
+
+function makeSharedDate(key,sfield){
+  const val=getShared(key,sfield);
+  return`<input type="date" class="shared-input${val?" has-val":""}" data-key="${key}" data-sfield="${sfield}" value="${val}" onblur="onSharedBlur(this)">`;
+}
+
+function cellForCol(c,r){
+  const key=r.Key;const isClosed=r.Status==="[CLOSED]";
+  const isAvi=!!c.aviCol;
+  const isShared=!isAvi&&c.group!=="core";
+  const tdCls=isAvi?` class="avi-col"`:isShared?` class="shared-col"`:"";
+  switch(c.type){
+    case"static":{
+      let content="";
+      if(c.id==="key")content=`<a class="key-link" href="${r.URL}" target="_blank">${r.Key}</a>${dirty[key]&&Object.keys(dirty[key]).length?'<span class="dirty-dot"></span>':""}`;
+      else if(c.id==="proj")content=`<span class="badge ${r.Project==="MPPT"?"mppt":"fft"}">${r.Project}</span>`;
+      else if(c.id==="summary")content=`<div class="summary-cell"><div class="summary-text" title="${(r.Summary||"").replace(/"/g,"&quot;")}">${r.Summary||""}</div></div>`;
+      else if(c.id==="status")content=isClosed?'<span class="closed-tag">[CLOSED]</span>':pill(r.Status);
+      else if(c.id==="labels")content=ltags(r.Labels);
+      else if(c.id==="updated")content=`<span class="date-cell">${r.Updated||"—"}</span>`;
+      else if(c.id==="affAircraft")content=r.Project==="FFT"?`<span style="font-size:10px;color:var(--text2)">${r["Affected Aircraft"]||"—"}</span>`:"";
+      else if(c.id==="comments")content=`<span style="font-size:10px;color:var(--text3)">${r["Comment Count"]??""}</span>`;
+      return`<td style="text-align:${c.id==="comments"?"center":"left"}">${content}</td>`;
+    }
+    case"static-shared":{
+      const by=getShared(key,"LastEditedBy");const at=getShared(key,"LastEditedAt");
+      const atFmt=at?at.slice(0,10):"";
+      return`<td class="shared-col"><span style="font-size:10px;color:var(--text2)">${by||"—"}</span>${atFmt?`<div class="edited-by">${atFmt}</div>`:""}`;
+    }
+    case"jira-select":return`<td>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${r[c.field]||"—"}</span>`:makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
+    case"jira-text":return`<td>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${r[c.field]||"—"}</span>`:makeJiraText(r[c.field]||"",c.field,key)}</td>`;
+    case"shared-notes":{
+      const note=getShared(key,"Notes");
+      return`<td class="shared-col" style="min-width:${c.minW}px"><span style="font-size:11px;color:var(--text2);white-space:pre-wrap">${note||"—"}</span></td>`;
+    }
+    case"avi":return`<td class="avi-cell${c.aviCol?" avi-col":c.group!=="core"?" shared-col":""}"><input type="checkbox" class="avi-check" data-key="${key}" ${getAvi(key,r)?"checked":""} ${READ_ONLY?"disabled":"onchange=\"onAviChange(this)\""}></td>`;
+    case"sync":return`<td></td>`;
+    case"shared-select":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedSelect(c.options,key,c.sfield)}</td>`;
+    case"shared-text":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedText(key,c.sfield,false)}</td>`;
+    case"shared-textarea":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2);white-space:pre-wrap">${getShared(key,c.sfield)||"—"}</span>`:makeSharedText(key,c.sfield,true)}</td>`;
+    case"shared-date":return`<td${tdCls}>${READ_ONLY?`<span style="font-size:11px;color:var(--text2)">${getShared(key,c.sfield)||"—"}</span>`:makeSharedDate(key,c.sfield)}</td>`;
+    case"shared-checkbox":{const checked=getShared(key,c.sfield)==="true";return`<td class="shared-cb-cell" style="min-width:${c.minW}px"><input type="checkbox" data-key="${key}" data-sfield="${c.sfield}"${checked?" checked":""} onchange="onSharedCheckChange(this)"></td>`;};
+    default:return`<td>—</td>`;
+  }
+}
+
+function onJiraChange(sel){
+  const key=sel.dataset.key,field=sel.dataset.field;
+  const row=DR_DATA.find(r=>r.Key===key);const orig=row?row[field]||"":"";
+  if(!dirty[key])dirty[key]={};
+  if(sel.value===orig){delete dirty[key][field];if(!Object.keys(dirty[key]).length)delete dirty[key];}
+  else dirty[key][field]=sel.value;
+  sel.classList.toggle("changed",field in(dirty[key]||{}));
+  saveDirty();updateStats();
+  const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
+  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
+}
+
+function onJiraTextBlur(input){
+  const key=input.dataset.key,field=input.dataset.field;
+  const row=DR_DATA.find(r=>r.Key===key);const orig=row?row[field]||"":"";
+  if(!dirty[key])dirty[key]={};
+  if(input.value.trim()===orig){delete dirty[key][field];if(!Object.keys(dirty[key]).length)delete dirty[key];}
+  else dirty[key][field]=input.value.trim();
+  input.classList.toggle("changed",field in(dirty[key]||{}));
+  saveDirty();updateStats();
+  const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
+  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
+}
+
+function onSharedChange(sel){ onSharedBlur(sel); }
+
+function onSharedCheckChange(cb){
+  const key=cb.dataset.key, sfield=cb.dataset.sfield;
+  const val=String(cb.checked);
+  if(!sharedData[key])sharedData[key]={Key:key};
+  sharedData[key][sfield]=val;
+  saveToSheet(key,{[sfield]:val});
+}
+
+function onSharedBlur(el){
+  const key=el.dataset.key,sfield=el.dataset.sfield;
+  const val=el.value;
+  if(!sharedData[key])sharedData[key]={Key:key};
+  const old=sharedData[key][sfield]||"";
+  if(val===old)return; // no change
+  sharedData[key][sfield]=val;
+  el.classList.toggle("has-val",!!val);
+  saveToSheet(key,{[sfield]:val});
+}
+
+function onAviChange(cb){
+  const key=cb.dataset.key;
+  saveToSheet(key,{Avidyne:String(cb.checked)});
+}
+
+function render(){
+  if(!sheetLoaded)return;
+  const search=document.getElementById("search").value.toLowerCase();
+  const proj=document.getElementById("projFilter").value;
+  const status=document.getElementById("statusFilter").value;
+  const type=document.getElementById("typeFilter").value;
+  const assign=document.getElementById("assigneeFilter").value;
+  const where=document.getElementById("whereFilter").value;
+  const campaign=document.getElementById("campaignFilter").value;
+  const funcSys=document.getElementById("funcSysFilter").value;
+  const sfha=document.getElementById("sfhaFilter").value;
+
+  filtered=DR_DATA.filter(r=>{
+    if(proj&&r.Project!==proj)return false;
+    if(status&&r.Status!==status)return false;
+    if(type&&r["DR Type"]!==type)return false;
+    if(assign&&r.Assignee!==assign)return false;
+    if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
+    if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
+    if(funcSys&&getShared(r.Key,"FuncSys")!==funcSys)return false;
+    if(sfha&&getShared(r.Key,"SfhaFunc")!==sfha)return false;
+    if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
+    if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
+    if(chipFilters.special.size>0){
+      const passAvi  = chipFilters.special.has("Avidyne") && getAvi(r.Key,r);
+      const passFCC  = chipFilters.special.has("FCC")     && getShared(r.Key,"FuncSys")==="FCC";
+      const passACS  = chipFilters.special.has("ACS")     && getShared(r.Key,"FuncSys")==="ACS";
+      if(!passAvi && !passFCC && !passACS) return false;
+    }
+    if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
+    return true;
+  });
+  filtered.sort((a,b)=>{let av=a[sortCol]??"",bv=b[sortCol]??"";if(sortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-sortDir:av>bv?sortDir:0;});
+
+  const vc=visibleCols();
+  const tbody=document.getElementById("tbody");
+  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";updateStats();document.getElementById("footerCount").textContent="";return;}
+  document.getElementById("noResults").style.display="none";
+  tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
+  updateStats();
+  updateStatusBar();
+  updateTypeBar();
+  document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
+}
+
+function updateTypeBar(){
+  const TYPE_ORDER = ["3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
+  const counts = {};
+  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
+  document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
+    const color = TYPE_COLORS[t] || "#94a3b8";
+    const on = chipFilters.types.has(t);
+    const onStyle = on ? `background:${color};color:#fff;border-color:${color}` : `border-color:${color}20;color:${color}`;
+    return `<div class="sbar-chip" style="${onStyle};cursor:pointer" onclick="toggleChip('types','${t.replace(/'/g,"\\'")}')"><span class="sval" style="color:inherit">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
+  }).join('');
+}
+
+function updateStatusBar(){
+  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Needs Testing","Blocked","Watch","Product Backlog- Future"];
+  const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
+  const counts = {};
+  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
+  const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
+  document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
+    const on = chipFilters.statuses.has(s);
+    const base = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
+    const cls = `sbar-chip ${base}${on?" chip-on":""}`;
+    return `<div class="${cls}" style="cursor:pointer" onclick="toggleChip('statuses','${s.replace(/'/g,"\\'")}')"><span class="sval">${counts[s]}</span>${s}</div>`;
+  }).join('');
+}
+
+function updateStats(){
+  const all=DR_DATA;
+  const mppt=all.filter(r=>r.Project==="MPPT").length;
+  const fft=all.filter(r=>r.Project==="FFT").length;
+  const sc=all.filter(r=>r["DR Type"]==="1 - Safety Critical").length;
+  const cert=all.filter(r=>r["DR Type"]==="2 - Required for Certification").length;
+  const dirtyN=Object.keys(dirty).length;
+  const closed=filtered.filter(r=>r.Status==="[CLOSED]").length;
+  const on=()=>`chip-on`;
+  const scOn=chipFilters.types.has("1 - Safety Critical"), certOn=chipFilters.types.has("2 - Required for Certification");
+  const aviOn=chipFilters.special.has("Avidyne"), fccOn=chipFilters.special.has("FCC"), acsOn=chipFilters.special.has("ACS");
+  const aviCount = all.filter(r=>getAvi(r.Key,r)).length;
+  const fccCount = all.filter(r=>getShared(r.Key,"FuncSys")==="FCC").length;
+  const acsCount = all.filter(r=>getShared(r.Key,"FuncSys")==="ACS").length;
+  document.getElementById("stats").innerHTML=`
+    <div class="chip"><span class="label">Showing</span><span class="val">${filtered.length}</span></div>
+    <div class="chip danger clickable ${scOn?on():""}" onclick="toggleChip('types','1 - Safety Critical')"><span class="label">Safety Critical</span><span class="val">${sc}</span></div>
+    <div class="chip info clickable ${certOn?on():""}" onclick="toggleChip('types','2 - Required for Certification')"><span class="label">Cert Required</span><span class="val">${cert}</span></div>
+    <div class="chip clickable ${aviOn?on():""}" onclick="toggleChip('special','Avidyne')" style="border-color:#7c3aed20;color:#7c3aed;${aviOn?"background:#7c3aed;color:#fff;":""}"><span class="label">Avidyne</span><span class="val">${aviCount}</span></div>
+    <div class="chip clickable ${fccOn?on():""}" onclick="toggleChip('special','FCC')" style="border-color:#0891b220;color:#0891b2;${fccOn?"background:#0891b2;color:#fff;":""}"><span class="label">FCC</span><span class="val">${fccCount}</span></div>
+    <div class="chip clickable ${acsOn?on():""}" onclick="toggleChip('special','ACS')" style="border-color:#d9770620;color:#d97706;${acsOn?"background:#d97706;color:#fff;":""}"><span class="label">ACS</span><span class="val">${acsCount}</span></div>
+    ${dirtyN?`<div class="chip dirty"><span class="label">Unsaved Jira</span><span class="val">${dirtyN}</span></div>`:""}
+    ${closed?`<div class="chip danger"><span class="label">⚠ Closed</span><span class="val">${closed}</span></div>`:""}
+  `;
+}
+
+async function syncRow(key,btn){
+  const changes=dirty[key];const note=getShared(key,"Notes");
+  if(!changes&&!note){showToast("Nothing to sync for "+key,false);return;}
+  if(!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")){showToast("⚠ Worker URL not configured yet — Jira sync disabled",false);return;}
+  btn.disabled=true;btn.textContent="…";btn.className="sync-row-btn syncing";
+  const payload={issueKey:key,updates:{},note:note||"",user:currentUser};
+  if(changes){
+    if(changes["DR Type"]!==undefined)payload.updates.drType=changes["DR Type"];
+    if(changes["Functional Team (System)"]!==undefined)payload.updates.system=changes["Functional Team (System)"];
+    if(changes["Status"]!==undefined)payload.updates.status=changes["Status"];
+    if(changes["Assignee"]!==undefined)payload.updates.assignee=changes["Assignee"];
+  }
+  try{
+    const res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await res.json();
+    const hasErr=data.results&&data.results.some(r=>r.error);
+    if(!hasErr){
+      delete dirty[key];saveDirty();
+      btn.textContent="✓";btn.className="sync-row-btn synced";btn.disabled=false;
+      document.querySelector(`tr[data-key="${key}"] .dirty-dot`)?.remove();
+      document.querySelectorAll(`tr[data-key="${key}"] .edit-select.changed`).forEach(s=>s.classList.remove("changed"));
+      showToast(`✓ ${key} synced to Jira`,true);updateStats();
+    }else{
+      const msg=data.results.filter(r=>r.error).map(r=>r.error).join("; ");
+      btn.textContent="✗";btn.className="sync-row-btn error";btn.disabled=false;
+      showToast(`Error: ${msg}`,false);
+    }
+  }catch(e){btn.textContent="✗";btn.className="sync-row-btn error";btn.disabled=false;showToast(`Network error: ${e.message}`,false);}
+}
+
+async function syncAllDirty(){
+  const keys=Object.keys(dirty);if(!keys.length){showToast("No pending Jira changes",false);return;}
+  const btn=document.getElementById("syncAllBtn");btn.disabled=true;btn.textContent=`Syncing ${keys.length}…`;
+  for(const key of keys){const rb=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);if(rb)await syncRow(key,rb);}
+  btn.disabled=false;btn.textContent="⬆ Sync All to Jira";
+}
+
+function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
+
+
+function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");chipFilters.types.clear();chipFilters.statuses.clear();chipFilters.special.clear();render();}
+["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+
+function exportCSV(){
+  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
+  const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
+  const rows=[headers.join(",")];
+  DR_DATA.forEach(r=>{
+    const k=r.Key;const s=sharedData[k]||{};
+    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+  });
+  const blob=new Blob([rows.join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
+}
+
+function exportPDF(){
+  // Describe active filters for the report header
+  const filterParts = [];
+  if(chipFilters.types.size)   filterParts.push("DR Type: " + [...chipFilters.types].join(", "));
+  if(chipFilters.statuses.size)filterParts.push("Status: "  + [...chipFilters.statuses].join(", "));
+  if(chipFilters.special.size) filterParts.push([...chipFilters.special].join(", "));
+  const searchVal = document.getElementById("search").value.trim();
+  if(searchVal) filterParts.push(`Search: "${searchVal}"`);
+  const filterDesc = filterParts.length ? filterParts.join(" · ") : "All open DRs";
+
+  const PDF_COLS = [
+    {label:"Key",         val:r=>`<a href="${r.URL}" style="color:#1d4ed8;text-decoration:none;font-weight:600">${r.Key}</a>`},
+    {label:"Summary",     val:r=>esc(r.Summary)},
+    {label:"Status",      val:r=>esc(r.Status)},
+    {label:"DR Type",     val:r=>esc(r["DR Type"]||"—")},
+    {label:"Priority",    val:r=>esc(r.Priority||"—")},
+    {label:"Assignee",    val:r=>esc(r.Assignee||"—")},
+    {label:"Affected Aircraft", val:r=>esc(r["Affected Aircraft"]||"—")},
+    {label:"Functional System", val:r=>esc(getShared(r.Key,"FuncSys")||"—")},
+    {label:"FT Campaign", val:r=>esc(getShared(r.Key,"Campaign")||"—")},
+    {label:"Avidyne",     val:r=>getAvi(r.Key,r)?"✓":""},
+    {label:"Notes",       val:r=>esc(getShared(r.Key,"Notes")||"")},
+    {label:"Updated",     val:r=>esc(r.Updated||"")},
+  ];
+  const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  const rows = filtered.map(r=>`<tr>${PDF_COLS.map(c=>`<td>${c.val(r)}</td>`).join("")}</tr>`).join("");
+  const thead = PDF_COLS.map(c=>`<th>${c.label}</th>`).join("");
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>STC Caravan DRs — ${new Date().toLocaleDateString()}</title>
+<style>
+  @page { size: landscape; margin: 15mm 10mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9px; color: #1a1d2e; margin:0; }
+  h1 { font-size: 15px; margin: 0 0 3px; color: #162a50; }
+  .meta { font-size: 9px; color: #6b7280; margin-bottom: 12px; }
+  .filter-tag { display:inline-block; background:#ede9ff; color:#5b4ecc; border-radius:4px; padding:2px 7px; font-size:9px; font-weight:600; margin-right:4px; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { background:#162a50; color:#fff; padding:5px 6px; text-align:left; font-size:8px; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+  tbody td { padding:5px 6px; border-bottom:1px solid #e2e5f0; vertical-align:top; word-break:break-word; }
+  tbody tr:nth-child(even) td { background:#f8f9fe; }
+  tbody tr:hover td { background:#ede9ff; }
+  .footer { margin-top:12px; font-size:8px; color:#94a3b8; border-top:1px solid #e2e5f0; padding-top:6px; display:flex; justify-content:space-between; }
+</style>
+</head><body>
+<h1>STC Caravan Open Problem Reports</h1>
+<div class="meta">
+  Exported ${new Date().toLocaleString()} · Jira sync: ${SYNC_TIMESTAMP} · Showing <strong>${filtered.length}</strong> DRs
+  &nbsp;&nbsp;<span class="filter-tag">${filterDesc}</span>
+</div>
+<table>
+  <thead><tr>${thead}</tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">
+  <span>STC Caravan DR Dashboard · merlinlabs.atlassian.net</span>
+  <span>Generated ${new Date().toLocaleString()}</span>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`;
+
+  const w = window.open("","_blank");
+  w.document.write(html);
+  w.document.close();
+}
+
+if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.display="block";
+renderHeader();
+loadSharedData(); // loads sheet then calls render()
+
+// ── TABS ──
+function switchTab(tab){
+  document.getElementById("tab-table").style.display   = tab==="table"   ? "block" : "none";
+  document.getElementById("tab-metrics").style.display = tab==="metrics" ? "block" : "none";
+  document.getElementById("tab-history").style.display = tab==="history" ? "block" : "none";
+  document.getElementById("tabBtnTable").classList.toggle("active",   tab==="table");
+  document.getElementById("tabBtnMetrics").classList.toggle("active", tab==="metrics");
+  document.getElementById("tabBtnHistory").classList.toggle("active", tab==="history");
+  if(tab==="metrics") renderMetrics();
+  if(tab==="history") loadHistory();
+}
+
+// ── REVISION HISTORY ──
+let historyLog = null; // null = not yet loaded
+
+async function loadHistory(force=false){
+  if(historyLog !== null && !force) { renderHistory(); return; }
+  document.getElementById("histBody").innerHTML = '<div class="hist-empty">Loading history…</div>';
+  try{
+    const res = await fetch(`${WORKER_URL}?action=getChangelog`);
+    const data = await res.json();
+    historyLog = data.log || [];
+    // Populate user + field filter dropdowns
+    const users  = [...new Set(historyLog.map(e=>e.user).filter(Boolean))].sort();
+    const fields = [...new Set(historyLog.map(e=>e.field).filter(Boolean))].sort();
+    const uSel = document.getElementById("histUserFilter");
+    const fSel = document.getElementById("histFieldFilter");
+    uSel.innerHTML = '<option value="">All Users</option>' + users.map(u=>`<option value="${u}">${u}</option>`).join("");
+    fSel.innerHTML = '<option value="">All Fields</option>' + fields.map(f=>`<option value="${f}">${f}</option>`).join("");
+    renderHistory();
+  }catch(e){
+    document.getElementById("histBody").innerHTML = `<div class="hist-empty">Error loading history: ${e.message}</div>`;
+  }
+}
+
+function filterHistory(){ renderHistory(); }
+
+function renderHistory(){
+  if(!historyLog){ loadHistory(); return; }
+  const search   = (document.getElementById("histSearch").value||"").toLowerCase();
+  const userF    = document.getElementById("histUserFilter").value;
+  const fieldF   = document.getElementById("histFieldFilter").value;
+
+  let entries = historyLog;
+  if(search)  entries = entries.filter(e=>(e.drKey||"").toLowerCase().includes(search)||(e.field||"").toLowerCase().includes(search)||(e.user||"").toLowerCase().includes(search)||(e.newVal||"").toLowerCase().includes(search));
+  if(userF)   entries = entries.filter(e=>e.user===userF);
+  if(fieldF)  entries = entries.filter(e=>e.field===fieldF);
+
+  document.getElementById("histCount").textContent = `${entries.length} change${entries.length===1?"":"s"}`;
+
+  if(!entries.length){
+    document.getElementById("histBody").innerHTML = '<div class="hist-empty">No changes recorded yet — edits made from this point forward will appear here.</div>';
+    return;
+  }
+
+  // Group by date (UTC day)
+  const byDay = {};
+  entries.forEach(e=>{
+    const day = (e.ts||"").slice(0,10) || "Unknown";
+    (byDay[day] = byDay[day]||[]).push(e);
+  });
+
+  const html = Object.entries(byDay).map(([day,rows])=>{
+    const label = day==="Unknown" ? "Unknown Date" : new Date(day+"T12:00:00Z").toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric",timeZone:"UTC"});
+    const trs = rows.map(e=>{
+      const time = e.ts ? new Date(e.ts).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC" : "";
+      const jiraUrl = `https://merlinlabs.atlassian.net/browse/${e.drKey}`;
+      const oldTrunc = (e.oldVal||"").length>80 ? e.oldVal.slice(0,80)+"…" : (e.oldVal||"");
+      const newTrunc = (e.newVal||"").length>80 ? e.newVal.slice(0,80)+"…" : (e.newVal||"");
+      return `<tr>
+        <td class="hist-dr"><a href="${jiraUrl}" target="_blank">${e.drKey||""}</a></td>
+        <td class="hist-field">${e.field||""}</td>
+        <td><span class="hist-val" title="${(e.oldVal||"").replace(/"/g,"&quot;")}">${oldTrunc||"<em style='color:#cbd5e1'>empty</em>"}</span><span class="hist-arrow">→</span><span class="hist-newval" title="${(e.newVal||"").replace(/"/g,"&quot;")}">${newTrunc||"<em style='color:#cbd5e1'>empty</em>"}</span></td>
+        <td class="hist-user">${e.user||"<em style='color:#94a3b8'>unknown</em>"}</td>
+        <td class="hist-time">${time}</td>
+      </tr>`;
+    }).join("");
+    return `<div class="hist-day">
+      <div class="hist-day-header">${label} <span style="font-weight:400;color:var(--text3)">(${rows.length} change${rows.length===1?"":"s"})</span></div>
+      <table class="hist-table">
+        <thead><tr><th>DR Key</th><th>Field</th><th>Change</th><th>Changed By</th><th>Time (UTC)</th></tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+
+  document.getElementById("histBody").innerHTML = html;
+}
+
+// ── METRICS ──
+const TYPE_COLORS = {
+  "1 - Safety Critical":              "#dc2626",
+  "2 - Required for Certification":   "#1d4ed8",
+  "3 - Performance Issue":            "#ea580c",
+  "4 - Product Improvement":          "#16a34a",
+  "5 - Test Infrastructure":          "#7c3aed",
+  "6 - SII":                          "#0891b2",
+  "(none)":                           "#94a3b8",
+};
+
+let _metricsChart = null;
+let _pieChart = null;
+let _burndownChart = null;
+let _campaignChart = null;
+let _funcSysChart = null;
+
+const TEAM_COLORS = [
+  "#1d4ed8","#dc2626","#16a34a","#7c3aed","#ea580c",
+  "#0891b2","#d97706","#db2777","#65a30d","#0f766e"
+];
+
+function renderMetrics(){
+  const STATUS_MERGE = { "Reviewed - To-Do": "To-Do", "Needs Testing": "Ready to Test Fix" };
+  const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do", "Ready to Test Fix": "Ready to Test / Needs Testing" };
+  const STATUS_ORDER = [
+    "New","Need Team Input","To-Do","Triaged","Investigating",
+    "In progress","In Review","Ready to Test Fix","Blocked","Watch","Product Backlog- Future"
+  ];
+
+  const rowStatus = r => STATUS_MERGE[r.Status] || r.Status;
+  const allStatuses = [...new Set(DR_DATA.map(r=>rowStatus(r)).filter(Boolean))];
+  const statuses = [...STATUS_ORDER.filter(s=>allStatuses.includes(s)), ...allStatuses.filter(s=>!STATUS_ORDER.includes(s))];
+  const statusLabels = statuses.map(s => STATUS_DISPLAY[s] || s);
+
+  const types = Object.keys(TYPE_COLORS);
+
+  const datasets = types.map(type=>{
+    const data = statuses.map(status=>
+      DR_DATA.filter(r=>rowStatus(r)===status && (type==="(none)" ? !r["DR Type"] : r["DR Type"]===type)).length
+    );
+    return { label: type, data, backgroundColor: TYPE_COLORS[type], borderRadius: 3, borderSkipped: false };
+  }).filter(ds=>ds.data.some(v=>v>0));
+
+  const ctx = document.getElementById("chartStatusType").getContext("2d");
+
+  if(_metricsChart){ _metricsChart.destroy(); }
+
+  _metricsChart = new Chart(ctx, {
+    type: "bar",
+    data: { labels: statusLabels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { font:{size:11}, padding:16, boxWidth:12 } },
+        tooltip: {
+          mode: "index", intersect: false,
+          callbacks: {
+            footer: items => "Total: " + items.reduce((s,i)=>s+i.parsed.y, 0)
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font:{size:11} }, grid: { display:false } },
+        y: { stacked: true, beginAtZero: true, ticks: { stepSize:1, font:{size:11} }, grid: { color:"#e2e5f0" } }
+      }
+    }
+  });
+
+  // ── Pie: Safety Critical + Cert Required by Functional Team ──
+  const teamCounts = {};
+  DR_DATA.filter(r => r["DR Type"] === "1 - Safety Critical" || r["DR Type"] === "2 - Required for Certification").forEach(r => {
+    const team = r["Functional Team (System)"] || "(none)";
+    teamCounts[team] = (teamCounts[team] || 0) + 1;
+  });
+  const teamEntries = Object.entries(teamCounts).sort((a,b) => b[1]-a[1]);
+  const teamLabels = teamEntries.map(([t])=>t);
+  const teamData   = teamEntries.map(([,c])=>c);
+  const teamColors = teamLabels.map((_,i) => TEAM_COLORS[i % TEAM_COLORS.length]);
+
+  if(_pieChart){ _pieChart.destroy(); }
+  _pieChart = new Chart(document.getElementById("chartFuncTeam").getContext("2d"), {
+    type: "pie",
+    data: { labels: teamLabels, datasets: [{ data: teamData, backgroundColor: teamColors, borderWidth: 2, borderColor: "#fff" }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom", labels: { font:{size:11}, padding:12, boxWidth:12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/teamData.reduce((a,b)=>a+b,0)*100)}%)`
+          }
+        }
+      }
+    }
+  });
+
+
+  // ── Bar: Open DRs by Functional System (stacked by status) ──
+  {
+    const FS_ORDER = ["FCC","ACS","EFIS/IFD","Other","(unassigned)"];
+    const fsStatusMap = {}; // { funcSys: { status: count } }
+    DR_DATA.forEach(r => {
+      const fs = getShared(r.Key,"FuncSys") || "(unassigned)";
+      const st = STATUS_MERGE[r.Status] || r.Status || "Unknown";
+      if(!fsStatusMap[fs]) fsStatusMap[fs] = {};
+      fsStatusMap[fs][st] = (fsStatusMap[fs][st]||0) + 1;
+    });
+    const fsLabels = FS_ORDER.filter(fs => fsStatusMap[fs]);
+    // add any unexpected values not in FS_ORDER
+    Object.keys(fsStatusMap).forEach(fs => { if(!FS_ORDER.includes(fs)) fsLabels.push(fs); });
+
+    const STATUS_COLORS_SOLID = {
+      "New":"#1565c0","Investigating":"#856404","To-Do":"#5b4ecc","Triaged":"#0369a1",
+      "In progress":"#065f46","In Review":"#0f766e","Ready to Test Fix":"#0d9488",
+      "Blocked":"#9a3412","Need Team Input":"#991b1b","Watch":"#854d0e",
+      "Product Backlog- Future":"#475569","Unknown":"#94a3b8"
+    };
+    const allFsStatuses = [...new Set(DR_DATA.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
+    const fsDatasets = [...STATUS_ORDER.filter(s=>allFsStatuses.includes(s)), ...allFsStatuses.filter(s=>!STATUS_ORDER.includes(s))]
+      .map(st => ({
+        label: STATUS_DISPLAY[st]||st,
+        data: fsLabels.map(fs => (fsStatusMap[fs]||{})[st]||0),
+        backgroundColor: STATUS_COLORS_SOLID[st]||"#94a3b8",
+        borderRadius: 3, borderSkipped: false,
+      })).filter(ds => ds.data.some(v=>v>0));
+
+    if(_funcSysChart) _funcSysChart.destroy();
+    _funcSysChart = new Chart(document.getElementById("chartFuncSys").getContext("2d"), {
+      type: "bar",
+      data: { labels: fsLabels, datasets: fsDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
+          tooltip: { mode:"index", intersect:false,
+            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) }
+          }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
+          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" },
+               title:{ display:true, text:"# of Open DRs", font:{size:11}, color:"#6b7280" } }
+        }
+      }
+    });
+  }
+
+  // ── Bar: DRs by FT Test Campaign ──
+  {
+    const CAMP_ORDER = ["Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other","(none)"];
+    const campMPPT = {}, campFFT = {};
+    DR_DATA.forEach(r => {
+      const camp = getShared(r.Key,"Campaign") || "(none)";
+      if(r.Project==="MPPT") campMPPT[camp] = (campMPPT[camp]||0)+1;
+      else                   campFFT[camp]  = (campFFT[camp]||0)+1;
+    });
+    const campLabels = CAMP_ORDER.filter(c=>(campMPPT[c]||0)+(campFFT[c]||0)>0);
+    if(_campaignChart) _campaignChart.destroy();
+    _campaignChart = new Chart(document.getElementById("chartCampaign").getContext("2d"),{
+      type:"bar",
+      data:{ labels:campLabels, datasets:[
+        { label:"MPPT", data:campLabels.map(c=>campMPPT[c]||0), backgroundColor:"#1d4ed8", borderRadius:3, borderSkipped:false },
+        { label:"FFT",  data:campLabels.map(c=>campFFT[c]||0),  backgroundColor:"#ea580c", borderRadius:3, borderSkipped:false },
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } },
+          tooltip:{ mode:"index", intersect:false, callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) } }
+        },
+        scales:{
+          x:{ stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
+          y:{ stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" } }
+        }
+      }
+    });
+  }
+
+  // ── New vs Closed per week ──
+  if (typeof CLOSED_DATA !== "undefined") {
+    const weekKey = d => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay()); return dt.toISOString().slice(0,10); };
+    const minWeek = "2026-03-01";
+    const weeks = [];
+    let cur = new Date(minWeek);
+    const today = new Date();
+    while (cur <= today) { weeks.push(cur.toISOString().slice(0,10)); cur.setUTCDate(cur.getUTCDate() + 7); }
+    const allDR = [...DR_DATA, ...CLOSED_DATA];
+    const newPerWeek    = weeks.map(w => allDR.filter(r => r.Created && weekKey(r.Created)===w).length);
+    const closedPerWeek = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
+    const preOpen   = allDR.filter(r => r.Created && r.Created < minWeek).length;
+    const preClosed = CLOSED_DATA.filter(r => r.ResolutionDate && r.ResolutionDate < minWeek).length;
+    let running = preOpen - preClosed;
+    const netOpen = weeks.map((_,i) => { running += newPerWeek[i] - closedPerWeek[i]; return running; });
+    const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+    const rollingAvg = (data, w=4) => data.map((_,i) => {
+      const slice = data.slice(Math.max(0,i-w+1), i+1);
+      return +(slice.reduce((a,b)=>a+b,0)/slice.length).toFixed(1);
+    });
+    const avgNew    = rollingAvg(newPerWeek);
+    const avgClosed = rollingAvg(closedPerWeek);
+
+    if (_newClosedChart) _newClosedChart.destroy();
+    _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
+      data: { labels: weekLabels, datasets: [
+        { type:"bar",  label:"new this week",    data: newPerWeek,    backgroundColor:"#93c5fd", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+        { type:"bar",  label:"closed this week", data: closedPerWeek, backgroundColor:"#86efac", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+        { type:"line", label:"4-wk avg new",     data: avgNew,        borderColor:"#1d4ed8",     yAxisID:"yActivity",
+          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#1d4ed8", tension:0.3, order:2 },
+        { type:"line", label:"4-wk avg closed",  data: avgClosed,     borderColor:"#16a34a",     yAxisID:"yActivity",
+          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#16a34a", tension:0.3, order:2 },
+        { type:"line", label:"total open DRs",   data: netOpen,       borderColor:"#dc2626",     yAxisID:"yOpen",
+          backgroundColor:"rgba(220,38,38,0.07)", fill:true, tension:0.3,
+          pointRadius:3, pointBackgroundColor:"#dc2626", borderWidth:2, order:1 },
+      ]},
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode:"index", intersect:false },
+        plugins: { legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } } },
+        scales: {
+          x: { ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:26 }, grid:{ display:false } },
+          yOpen: {
+            type:"linear", position:"left",
+            beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" },
+            title:{ display:true, text:"open DRs", font:{size:10}, color:"#6b7280" }
+          },
+          yActivity: {
+            type:"linear", position:"right",
+            beginAtZero:true, ticks:{ font:{size:11} }, grid:{ drawOnChartArea:false },
+            title:{ display:true, text:"weekly activity", font:{size:10}, color:"#6b7280" }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Burndown projection: SC + Cert Required → Sept 30 2026 (interactive) ──
+  if (typeof CLOSED_DATA !== "undefined") {
+    const SC_CERT  = new Set(["1 - Safety Critical", "2 - Required for Certification"]);
+    const sundayOf = d => { const dt = new Date(d+"T00:00:00Z"); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay()); return dt.toISOString().slice(0,10); };
+    const addWk    = (w,n) => { const d = new Date(w+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n*7); return d.toISOString().slice(0,10); };
+    const fmtDate  = s => new Date(s+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
+
+    const todayStr  = new Date().toISOString().slice(0,10);
+    const todayWk   = sundayOf(todayStr);
+    const targetWk  = "2026-09-28";
+
+    const allSC    = [...DR_DATA.filter(r=>SC_CERT.has(r["DR Type"])), ...CLOSED_DATA.filter(r=>SC_CERT.has(r["DR Type"]))];
+    const closedSC = CLOSED_DATA.filter(r=>SC_CERT.has(r["DR Type"]));
+
+    const bdWeeks = [];
+    let bc = sundayOf("2026-03-01");
+    while(bc <= addWk(targetWk,1)){ bdWeeks.push(bc); bc = addWk(bc,1); }
+
+    const histWeeks   = bdWeeks.filter(w=>w<=todayWk);
+    const futureWeeks = bdWeeks.filter(w=>w>todayWk);
+    const todayIdx    = histWeeks.length - 1;
+    const weeksLeft   = futureWeeks.length;
+
+    const histOpen = histWeeks.map(w => {
+      const created = allSC.filter(r=>r.Created && r.Created<=w).length;
+      const closed  = closedSC.filter(r=>r.ResolutionDate && r.ResolutionDate<=w).length;
+      return created - closed;
+    });
+
+    const currentOpen = DR_DATA.filter(r=>SC_CERT.has(r["DR Type"])).length;
+    const v4start     = addWk(todayWk,-4);
+    const actualVel   = +(closedSC.filter(r=>r.ResolutionDate && r.ResolutionDate>v4start && r.ResolutionDate<=todayStr).length / 4).toFixed(1);
+    const neededRate  = weeksLeft > 0 ? +(currentOpen/weeksLeft).toFixed(1) : 0;
+
+    document.getElementById("burndownSub").textContent =
+      `SC + Cert Required · ${currentOpen} open · ${weeksLeft} weeks to Sept 30 · need ${neededRate}/wk · current pace ${actualVel}/wk`;
+    document.getElementById("bdPaceHint").textContent =
+      `current pace: ${actualVel}/wk · needed: ${neededRate}/wk`;
+
+    const allWks     = [...histWeeks, ...futureWeeks];
+    const wkLabels   = allWks.map(w=>{ const d=new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+    const histDs     = allWks.map((_,i) => i < histWeeks.length ? histOpen[i] : null);
+    const reqDs      = allWks.map((_,i) => {
+      if(i < todayIdx) return null;
+      return Math.max(0, +(currentOpen - neededRate*(i-todayIdx)).toFixed(1));
+    });
+
+    const buildProj = rate => allWks.map((_,i) => {
+      if(i < todayIdx) return null;
+      return Math.max(0, +(currentOpen - rate*(i-todayIdx)).toFixed(1));
+    });
+
+    const projEndDate = rate => {
+      if(rate <= 0) return null;
+      return addWk(todayWk, Math.ceil(currentOpen/rate));
+    };
+
+    const todayMarkerPlugin = {
+      id:"bdTodayMarker",
+      afterDraw(chart){
+        const meta = chart.getDatasetMeta(0);
+        if(!meta.data[todayIdx]) return;
+        const x = meta.data[todayIdx].x;
+        const {ctx, chartArea:{top,bottom}} = chart;
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom);
+        ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke();
+        ctx.fillStyle="#94a3b8"; ctx.font="bold 9px sans-serif"; ctx.setLineDash([]);
+        ctx.fillText("today", x+4, top+12);
+        ctx.restore();
+      }
+    };
+
+    if(_burndownChart) _burndownChart.destroy();
+    _burndownChart = new Chart(document.getElementById("chartBurndown").getContext("2d"), {
+      type:"line", plugins:[todayMarkerPlugin],
+      data:{ labels:wkLabels, datasets:[
+        { label:"Actual open",              data:histDs,            borderColor:"#1d4ed8", backgroundColor:"rgba(29,78,216,0.08)", fill:true,  tension:0.3, pointRadius:2, borderWidth:2 },
+        { label:"Required pace",            data:reqDs,             borderColor:"#dc2626", backgroundColor:"transparent",          fill:false, tension:0,   pointRadius:0, borderWidth:2, borderDash:[6,3] },
+        { label:"Projected (adjust slider)",data:buildProj(actualVel), borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,0.05)", fill:true, tension:0, pointRadius:0, borderWidth:2.5, borderDash:[4,4] },
+      ]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:"index", intersect:false },
+        plugins:{ legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } },
+          tooltip:{ callbacks:{ footer: items => items[0].dataIndex===todayIdx ? "◀ today" : "" } }
+        },
+        scales:{
+          x:{ ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:30 }, grid:{ display:false } },
+          y:{ beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" } }
+        }
+      }
+    });
+
+    const slider  = document.getElementById("bdSlider");
+    const rateEl  = document.getElementById("bdRateVal");
+    const badgeEl = document.getElementById("bdBadge");
+    slider.value  = actualVel;
+    rateEl.textContent = actualVel.toFixed(1);
+
+    const updateBd = rate => {
+      _burndownChart.data.datasets[2].data = buildProj(rate);
+      _burndownChart.update("none");
+      rateEl.textContent = rate.toFixed(1);
+      const end = projEndDate(rate);
+      if(!end){ badgeEl.textContent="No progress"; badgeEl.className="bd-badge bd-bad"; return; }
+      const endFmt = fmtDate(end);
+      if(end <= targetWk){
+        badgeEl.textContent=`✓ Done by ${endFmt}`; badgeEl.className="bd-badge bd-ok";
+      } else {
+        const daysLate = Math.round((new Date(end+"T00:00:00Z")-new Date("2026-09-30T00:00:00Z"))/(86400000));
+        badgeEl.textContent=`⚠ ${endFmt} (${daysLate}d late)`;
+        badgeEl.className = daysLate<=28 ? "bd-badge bd-warn" : "bd-badge bd-bad";
+      }
+    };
+    slider.addEventListener("input", () => updateBd(parseFloat(slider.value)));
+    updateBd(actualVel);
+  }
+}
+let _newClosedChart = null;
+</script>
+</body>
+</html>

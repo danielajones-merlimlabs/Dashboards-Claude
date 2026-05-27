@@ -43,6 +43,6 @@ jobs:
 
       - name: Commit and push updated files
         run: |
-          git add index.html progress-snapshot.json
+          git add index.html avidyne.html progress-snapshot.json
           git diff --cached --quiet || git commit -m "chore: daily DR sync $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
