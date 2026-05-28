@@ -108,6 +108,11 @@
   .chip.chip-on .val{color:#fff!important}
   .chip.danger.chip-on{background:#991b1b!important;border-color:#991b1b!important}
   .chip.info.chip-on{background:#1d4ed8!important;border-color:#1d4ed8!important}
+  .status-summary{display:flex;gap:8px;padding:10px 20px;background:var(--surface);border-bottom:2px solid var(--border);flex-wrap:wrap;align-items:center}
+  .ssum{display:flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:10px;border:1.5px solid transparent;min-width:72px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
+  .ssum:hover{opacity:.85;transform:translateY(-1px)}
+  .ssum .ssum-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;line-height:1.1}
+  .ssum .ssum-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;opacity:.75}
   .burndown-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f8f9fe;border:1px solid var(--border);border-radius:6px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)}
   .burndown-controls label{font-weight:600;white-space:nowrap}
   .burndown-controls input[type=range]{width:180px;accent-color:var(--accent2);cursor:pointer}
@@ -168,6 +173,7 @@
 <div id="statusBar" class="status-bar"></div>
 <div id="typeBar" class="status-bar" style="border-top:none;padding-top:3px;padding-bottom:8px"></div>
 <div class="stats" id="stats"></div>
+<div class="status-summary" id="statusSummaryBar"></div>
 
 <div class="tab-nav">
   <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
@@ -592,13 +598,61 @@ function render(){
 
   const vc=visibleCols();
   const tbody=document.getElementById("tbody");
-  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";updateStats();document.getElementById("footerCount").textContent="";return;}
+  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";updateStats();renderStatusSummary();document.getElementById("footerCount").textContent="";return;}
   document.getElementById("noResults").style.display="none";
   tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
   updateStats();
   updateStatusBar();
   updateTypeBar();
+  renderStatusSummary();
   document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
+}
+
+const STATUS_SUMMARY_GROUPS = [
+  { label: "New",                           statuses: ["New"],                                     bg: "#dbeafe", color: "#1d4ed8", border: "#bfdbfe" },
+  { label: "Need Team Input",               statuses: ["Need Team Input"],                         bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  { label: "Reviewed / To-Do",              statuses: ["Reviewed - To-Do","To-Do"],               bg: "#ede9fe", color: "#5b21b6", border: "#ddd6fe" },
+  { label: "Triaged",                       statuses: ["Triaged"],                                 bg: "#fef3c7", color: "#b45309", border: "#fde68a" },
+  { label: "Investigating",                 statuses: ["Investigating"],                           bg: "#fff3cd", color: "#856404", border: "#ffe69c" },
+  { label: "In Progress",                   statuses: ["In progress","In Review"],                bg: "#d1fae5", color: "#065f46", border: "#6ee7b7" },
+  { label: "Needs Testing / Ready to Test", statuses: ["Needs Testing","Ready to Test Fix"],      bg: "#dcfce7", color: "#166534", border: "#86efac" },
+  { label: "Blocked",                       statuses: ["Blocked"],                                 bg: "#ffe4d6", color: "#9a3412", border: "#fed7aa" },
+  { label: "Watch",                         statuses: ["Watch"],                                   bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
+  { label: "Product Backlog",               statuses: ["Product Backlog- Future"],                bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" },
+];
+
+function toggleStatusGroup(statusStr) {
+  if (!statusStr) {
+    chipFilters.statuses.clear();
+  } else {
+    const statuses = statusStr.split("|");
+    const allOn = statuses.every(s => chipFilters.statuses.has(s));
+    if (allOn) {
+      statuses.forEach(s => chipFilters.statuses.delete(s));
+    } else {
+      statuses.forEach(s => chipFilters.statuses.add(s));
+    }
+  }
+  render();
+}
+
+function renderStatusSummary() {
+  const all = DR_DATA;
+  const totalOn = chipFilters.statuses.size === 0;
+  let html = `<div class="ssum" style="background:${totalOn?'var(--accent)':'#f0f2f9'};border-color:${totalOn?'var(--accent)':'#e2e5f0'};color:${totalOn?'#fff':'#1a1d2e'}" onclick="toggleStatusGroup('')" title="Clear status filter — show all">
+    <span class="ssum-val">${filtered.length}</span>
+    <span class="ssum-label">Total DRs</span>
+  </div>`;
+  STATUS_SUMMARY_GROUPS.forEach(g => {
+    const count = all.filter(r => g.statuses.includes(r.Status)).length;
+    if (!count) return;
+    const allOn = g.statuses.every(s => chipFilters.statuses.has(s));
+    html += `<div class="ssum" style="background:${allOn?g.color:g.bg};border-color:${allOn?g.color:g.border};color:${allOn?'#fff':g.color}" onclick="toggleStatusGroup('${g.statuses.join('|')}')" title="Filter: ${g.label}">
+      <span class="ssum-val">${count}</span>
+      <span class="ssum-label">${g.label}</span>
+    </div>`;
+  });
+  document.getElementById("statusSummaryBar").innerHTML = html;
 }
 
 function updateTypeBar(){
