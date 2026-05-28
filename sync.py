@@ -40,7 +40,7 @@ def is_fft_aircraft(issue):
 # as null for older tickets even when the field is populated in the UI.
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
 FFT_JQL  = ('project = FFT AND issuetype = DR AND statusCategory != Done '
-            'AND cf[10123] in ("N208B", "ZK-MLN") ORDER BY created DESC')
+            'AND cf[10123] in ("N208B", "ZK-MLN (NZ Caravan)") ORDER BY created DESC')
 
 QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
 
@@ -50,7 +50,7 @@ CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "i
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 FFT_CLOSED_JQL  = ('project = FFT AND issuetype = DR AND statusCategory = Done '
-                   'AND cf[10123] in ("N208B", "ZK-MLN") '
+                   'AND cf[10123] in ("N208B", "ZK-MLN (NZ Caravan)") '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
 
