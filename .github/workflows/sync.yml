@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -21,19 +23,26 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests gspread
+
+      - name: Pull latest changes
+        run: git pull --rebase
 
       - name: Run DR sync
         env:
-          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
-          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
-          JIRA_BASE: https://merlinlabs.atlassian.net
+          JIRA_EMAIL:    ${{ secrets.JIRA_EMAIL }}
+          JIRA_TOKEN:    ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE:     https://merlinlabs.atlassian.net
+          GOOGLE_SA_KEY: ${{ secrets.GOOGLE_SA_KEY }}
         run: python sync.py
 
-      - name: Commit and push updated index.html
+      - name: Build avidyne.html
+        run: python3 build_avidyne.py
+
+      - name: Commit and push updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html avidyne.html progress-snapshot.json
           git diff --cached --quiet || git commit -m "chore: daily DR sync $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
