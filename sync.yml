@@ -41,6 +41,29 @@ jobs:
           GOOGLE_SA_KEY:   ${{ secrets.GOOGLE_SA_KEY }}
         run: python sync.py
 
+      - name: Build avidyne.html from index.html
+        run: |
+          python3 - <<'PYEOF'
+          with open('index.html', 'r', encoding='utf-8') as f:
+              lines = f.readlines()
+          dr_json = closed_json = timestamp = ''
+          for line in lines:
+              if line.startswith('const DR_DATA = '):
+                  dr_json = line.strip()[len('const DR_DATA = '):-1]
+              elif line.startswith('const CLOSED_DATA = '):
+                  closed_json = line.strip()[len('const CLOSED_DATA = '):-1]
+              elif line.startswith('const SYNC_TIMESTAMP = '):
+                  timestamp = line.strip()[len('const SYNC_TIMESTAMP = '):-1].strip('"')
+          with open('template-avidyne.html', 'r', encoding='utf-8') as f:
+              html = f.read()
+          html = html.replace('__DR_DATA_PLACEHOLDER__', dr_json)
+          html = html.replace('__CLOSED_DATA_PLACEHOLDER__', closed_json)
+          html = html.replace('__SYNC_TIMESTAMP_PLACEHOLDER__', timestamp)
+          with open('avidyne.html', 'w', encoding='utf-8') as f:
+              f.write(html)
+          print(f'avidyne.html written ({len(html):,} bytes, {len(dr_json)} chars of DR data)')
+          PYEOF
+
       - name: Commit and push updated files
         run: |
           git add index.html avidyne.html progress-snapshot.json
