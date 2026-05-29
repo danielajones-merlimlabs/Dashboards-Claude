@@ -4,9 +4,18 @@ values from the dashboard shared KV store to the corresponding Jira custom field
 
 customfield_11176 = Functional System
 customfield_12607 = SFHA Function
+
+Valid Jira values for customfield_11176 (Functional System):
+  Navigation, NLP, Emrys, Flight Controls, MPX Hardware Rack,
+  Takeoff/Landing, CV Systems, FTS, Autochecklists, DevOps,
+  FCC, ACC, Avidyne IFD, Avidyne Vantage Display, Other
+
+Dashboard values that need manual remapping (not valid in Jira):
+  "ACS"      → no automatic mapping; skipped with a warning
+  "EFIS/IFD" → no automatic mapping; skipped with a warning
 """
 
-import json, os, sys, requests
+import json, os, requests
 
 JIRA_BASE  = os.environ["JIRA_BASE"]
 JIRA_EMAIL = os.environ["JIRA_EMAIL"]
@@ -18,6 +27,13 @@ FIELD_MAP = {
     "SfhaFunc": "customfield_12607",   # SFHA Function
 }
 
+# Jira allowed values for Functional System (customfield_11176)
+FUNC_SYS_VALID = {
+    "Navigation", "NLP", "Emrys", "Flight Controls", "MPX Hardware Rack",
+    "Takeoff/Landing", "CV Systems", "FTS", "Autochecklists", "DevOps",
+    "FCC", "ACC", "Avidyne IFD", "Avidyne Vantage Display", "Other",
+}
+
 
 def main():
     # ── 1. Fetch all shared data from the Worker KV store ──────────────────
@@ -27,11 +43,7 @@ def main():
     rows = r.json().get("rows", [])
     print(f"  {len(rows)} total KV entries")
 
-    # ── 2. Keep only rows that have at least one field to push ──────────────
-    to_update = [
-        row for row in rows
-        if row.get("FuncSys") or row.get("SfhaFunc")
-    ]
+    to_update = [row for row in rows if row.get("FuncSys") or row.get("SfhaFunc")]
     print(f"  {len(to_update)} entries have Functional System or SFHA Function set\n")
 
     if not to_update:
@@ -40,9 +52,10 @@ def main():
 
     auth    = (JIRA_EMAIL, JIRA_TOKEN)
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
-    ok_count = err_count = skip_count = 0
+    ok_count = err_count = skip_count = invalid_count = 0
+    invalid_values = {}
 
-    # ── 3. Push each entry to Jira ──────────────────────────────────────────
+    # ── 2. Push each entry to Jira ──────────────────────────────────────────
     for row in to_update:
         key = row.get("Key", "")
         if not key or not key.startswith("MPPT-"):
@@ -50,10 +63,23 @@ def main():
             continue
 
         jira_fields = {}
-        if row.get("FuncSys"):
-            jira_fields[FIELD_MAP["FuncSys"]]  = {"value": row["FuncSys"]}
-        if row.get("SfhaFunc"):
-            jira_fields[FIELD_MAP["SfhaFunc"]] = {"value": row["SfhaFunc"]}
+        func_sys  = row.get("FuncSys", "")
+        sfha_func = row.get("SfhaFunc", "")
+
+        # Validate FuncSys against Jira's allowed values
+        if func_sys:
+            if func_sys in FUNC_SYS_VALID:
+                jira_fields[FIELD_MAP["FuncSys"]] = {"value": func_sys}
+            else:
+                invalid_values.setdefault(func_sys, []).append(key)
+                invalid_count += 1
+
+        if sfha_func:
+            jira_fields[FIELD_MAP["SfhaFunc"]] = {"value": sfha_func}
+
+        if not jira_fields:
+            skip_count += 1
+            continue
 
         resp = requests.put(
             f"{JIRA_BASE}/rest/api/3/issue/{key}",
@@ -63,25 +89,29 @@ def main():
             timeout=30,
         )
 
-        func_sys  = row.get("FuncSys",  "—")
-        sfha_func = row.get("SfhaFunc", "—")
+        label_fs  = func_sys  or "—"
+        label_sf  = sfha_func or "—"
 
         if resp.ok or resp.status_code == 204:
-            print(f"  ✓ {key:12s}  FuncSys={func_sys!r:25s}  SfhaFunc={sfha_func!r}")
+            print(f"  ✓ {key:12s}  FuncSys={label_fs!r:25s}  SfhaFunc={label_sf!r}")
             ok_count += 1
         else:
             print(f"  ✗ {key:12s}  HTTP {resp.status_code} — {resp.text[:200]}")
             err_count += 1
 
-    # ── 4. Summary ──────────────────────────────────────────────────────────
+    # ── 3. Summary ──────────────────────────────────────────────────────────
     print(f"\n{'─'*60}")
-    print(f"  Updated : {ok_count}")
-    print(f"  Errors  : {err_count}")
-    print(f"  Skipped : {skip_count}")
+    print(f"  Updated      : {ok_count}")
+    print(f"  Jira errors  : {err_count}")
+    print(f"  Skipped      : {skip_count}")
+    if invalid_values:
+        print(f"\n  ⚠ {invalid_count} ticket(s) skipped — Functional System value not")
+        print(f"    recognised by Jira. Update the dashboard dropdown to use one")
+        print(f"    of the valid Jira values, then re-run this script:")
+        for val, keys in sorted(invalid_values.items()):
+            print(f"      {val!r:20s} → {len(keys)} tickets: {', '.join(keys[:8])}{'…' if len(keys)>8 else ''}")
+        print(f"\n    Valid Jira values: {', '.join(sorted(FUNC_SYS_VALID))}")
     print(f"{'─'*60}")
-
-    if err_count:
-        sys.exit(1)
 
 
 if __name__ == "__main__":
