@@ -491,6 +491,8 @@ const COLS=[
 
 let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
+let scCertFilteredRows=[], newTriageFilteredRows=[];
+let currentTab="sccert";
 let allDRsFilterState = { statusGroup: null, funcSys: null, types: new Set() };
 function toggleAllDRsStatusGroup(key){ allDRsFilterState.statusGroup=allDRsFilterState.statusGroup===key?null:key; render(); }
 function toggleAllDRsFuncSys(key){ allDRsFilterState.funcSys=allDRsFilterState.funcSys===key?null:key; render(); }
@@ -782,16 +784,40 @@ function exportCSV(){
 }
 
 function exportPDF(){
-  // Describe active filters for the report header
-  const filterParts = [];
-  if(allDRsFilterState.types.size)   filterParts.push("DR Type: " + [...allDRsFilterState.types].join(", "));
-  if(allDRsFilterState.statusGroup)  filterParts.push("Status: "  + allDRsFilterState.statusGroup);
-  if(allDRsFilterState.funcSys)      filterParts.push("Func. System: " + allDRsFilterState.funcSys);
-  const assignVal = document.getElementById("assigneeFilter").value;
-  if(assignVal) filterParts.push(`Assignee: ${assignVal}`);
-  const searchVal = document.getElementById("search").value.trim();
-  if(searchVal) filterParts.push(`Search: "${searchVal}"`);
-  const filterDesc = filterParts.length ? filterParts.join(" · ") : "All open DRs";
+  // Pick data source and build filter description based on active tab
+  let exportRows, tabLabel, filterParts = [];
+
+  if(currentTab === "sccert"){
+    exportRows = scCertFilteredRows;
+    tabLabel = "SC + Cert Required DRs";
+    if(scCertFilterState.types.size) filterParts.push("DR Type: " + [...scCertFilterState.types].join(", "));
+    if(scCertFilterState.statusGroup) filterParts.push("Status: " + scCertFilterState.statusGroup);
+    if(scCertFilterState.funcSys) filterParts.push("Func. System: " + scCertFilterState.funcSys);
+    const a = document.getElementById("sccertAssigneeFilter").value;
+    if(a) filterParts.push(`Assignee: ${a}`);
+    const s = document.getElementById("sccertSearch").value.trim();
+    if(s) filterParts.push(`Search: "${s}"`);
+  } else if(currentTab === "newtriage"){
+    exportRows = newTriageFilteredRows;
+    tabLabel = "New / Untyped DRs";
+    if(newTriageFilterState.statusGroup) filterParts.push("Status: " + newTriageFilterState.statusGroup);
+    if(newTriageFilterState.funcSys) filterParts.push("Func. System: " + newTriageFilterState.funcSys);
+    const a = document.getElementById("newTriageAssigneeFilter").value;
+    if(a) filterParts.push(`Assignee: ${a}`);
+    const s = document.getElementById("newTriageSearch").value.trim();
+    if(s) filterParts.push(`Search: "${s}"`);
+  } else {
+    exportRows = filtered;
+    tabLabel = "All Open DRs";
+    if(allDRsFilterState.types.size)  filterParts.push("DR Type: " + [...allDRsFilterState.types].join(", "));
+    if(allDRsFilterState.statusGroup) filterParts.push("Status: " + allDRsFilterState.statusGroup);
+    if(allDRsFilterState.funcSys)     filterParts.push("Func. System: " + allDRsFilterState.funcSys);
+    const a = document.getElementById("assigneeFilter").value;
+    if(a) filterParts.push(`Assignee: ${a}`);
+    const s = document.getElementById("search").value.trim();
+    if(s) filterParts.push(`Search: "${s}"`);
+  }
+  const filterDesc = filterParts.length ? filterParts.join(" · ") : tabLabel;
 
   const PDF_COLS = [
     {label:"Key",         val:r=>`<a href="${r.URL}" style="color:#1d4ed8;text-decoration:none;font-weight:600">${r.Key}</a>`},
@@ -809,7 +835,7 @@ function exportPDF(){
   ];
   const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
-  const rows = filtered.map(r=>`<tr>${PDF_COLS.map(c=>`<td>${c.val(r)}</td>`).join("")}</tr>`).join("");
+  const rows = exportRows.map(r=>`<tr>${PDF_COLS.map(c=>`<td>${c.val(r)}</td>`).join("")}</tr>`).join("");
   const thead = PDF_COLS.map(c=>`<th>${c.label}</th>`).join("");
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -830,7 +856,7 @@ function exportPDF(){
 </head><body>
 <h1>STC Caravan Open Problem Reports</h1>
 <div class="meta">
-  Exported ${new Date().toLocaleString()} · Jira sync: ${SYNC_TIMESTAMP} · Showing <strong>${filtered.length}</strong> DRs
+  Exported ${new Date().toLocaleString()} · Jira sync: ${SYNC_TIMESTAMP} · Showing <strong>${exportRows.length}</strong> DRs
   &nbsp;&nbsp;<span class="filter-tag">${filterDesc}</span>
 </div>
 <table>
@@ -857,6 +883,7 @@ loadSharedData(); // loads sheet then calls render()
 
 // ── TABS ──
 function switchTab(tab){
+  currentTab = tab;
   document.getElementById("tab-table").style.display      = tab==="table"      ? "block" : "none";
   document.getElementById("tab-metrics").style.display    = tab==="metrics"    ? "block" : "none";
   document.getElementById("tab-history").style.display    = tab==="history"    ? "block" : "none";
@@ -975,6 +1002,7 @@ function renderSCCert(){
   });
 
   rows.sort((a,b)=>{let av=a[scCertSortCol]??"",bv=b[scCertSortCol]??"";if(scCertSortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-scCertSortDir:av>bv?scCertSortDir:0;});
+  scCertFilteredRows = rows;
 
   const vc=visibleCols();
   const tbody=document.getElementById("sccert-tbody");
@@ -1100,6 +1128,7 @@ function renderNewTriage(){
   });
 
   rows.sort((a,b)=>{let av=a[newTriageSortCol]??"",bv=b[newTriageSortCol]??"";if(newTriageSortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-newTriageSortDir:av>bv?newTriageSortDir:0;});
+  newTriageFilteredRows = rows;
 
   const vc=visibleCols();
   const tbody=document.getElementById("newtriage-tbody");
