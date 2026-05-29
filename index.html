@@ -301,6 +301,7 @@
   <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Type:</span>
   <div id="scTypeChips" style="display:flex;gap:6px"></div>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <select id="sccertAssigneeFilter" onchange="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Assignees</option></select>
     <input type="text" id="sccertSearch" placeholder="🔍  Search…" oninput="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
     <button class="btn" onclick="clearSCCertFilters()">Clear all</button>
   </div>
@@ -318,6 +319,7 @@
 <div class="sc-topbar">
   <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Showing OPRs that are New or do not have a DR Type assigned</span>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <select id="newTriageAssigneeFilter" onchange="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Assignees</option></select>
     <input type="text" id="newTriageSearch" placeholder="🔍  Search…" oninput="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
     <button class="btn" onclick="clearNewTriageFilters()">Clear all</button>
   </div>
@@ -504,7 +506,7 @@ function toggleAllDRsType(type){ allDRsFilterState.types.has(type)?allDRsFilterS
 document.getElementById("syncDate").textContent=SYNC_TIMESTAMP;
 
 function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort();}
-[["assigneeFilter","Assignee"]].forEach(([id,key])=>{
+[["assigneeFilter","Assignee"],["sccertAssigneeFilter","Assignee"],["newTriageAssigneeFilter","Assignee"]].forEach(([id,key])=>{
   const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
 WHERE_OBS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("whereFilter").appendChild(o);});
@@ -795,6 +797,8 @@ function exportPDF(){
   if(allDRsFilterState.types.size)   filterParts.push("DR Type: " + [...allDRsFilterState.types].join(", "));
   if(allDRsFilterState.statusGroup)  filterParts.push("Status: "  + allDRsFilterState.statusGroup);
   if(allDRsFilterState.funcSys)      filterParts.push("Func. System: " + allDRsFilterState.funcSys);
+  const assignVal = document.getElementById("assigneeFilter").value;
+  if(assignVal) filterParts.push(`Assignee: ${assignVal}`);
   const searchVal = document.getElementById("search").value.trim();
   if(searchVal) filterParts.push(`Search: "${searchVal}"`);
   const filterDesc = filterParts.length ? filterParts.join(" · ") : "All open DRs";
@@ -951,6 +955,7 @@ function renderSCCertHeader(){
 function renderSCCert(){
   if(!sheetLoaded)return;
   const search = document.getElementById("sccertSearch").value.toLowerCase();
+  const assign = document.getElementById("sccertAssigneeFilter").value;
 
   // base pool: all SC+Cert DRs
   const allSCCert = DR_DATA.filter(r => SC_CERT_SET.has(r["DR Type"]));
@@ -974,6 +979,7 @@ function renderSCCert(){
   let rows = typeFiltered.filter(r=>{
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
     if(scCertFilterState.funcSys){if(scCertFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==scCertFilterState.funcSys)return false;}
+    if(assign&&r.Assignee!==assign)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1047,6 +1053,7 @@ function _renderSCFuncSysCards(pool){
 }
 
 function clearSCCertFilters(){
+  document.getElementById("sccertAssigneeFilter").value="";
   document.getElementById("sccertSearch").value="";
   scCertFilterState = { statusGroup: null, funcSys: null, types: new Set() };
   renderSCCert();
@@ -1079,6 +1086,7 @@ function renderNewTriageHeader(){
 function renderNewTriage(){
   if(!sheetLoaded)return;
   const search = document.getElementById("newTriageSearch").value.toLowerCase();
+  const assign = document.getElementById("newTriageAssigneeFilter").value;
 
   // base pool: Status=New OR no DR Type
   const allTriage = DR_DATA.filter(r => r.Status==="New" || !r["DR Type"]);
@@ -1096,6 +1104,7 @@ function renderNewTriage(){
   let rows = allTriage.filter(r=>{
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
     if(newTriageFilterState.funcSys){if(newTriageFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==newTriageFilterState.funcSys)return false;}
+    if(assign&&r.Assignee!==assign)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,r["DR Type"]||"",getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1161,6 +1170,7 @@ function toggleNewTriageFuncSys(key){
   renderNewTriage();
 }
 function clearNewTriageFilters(){
+  document.getElementById("newTriageAssigneeFilter").value="";
   document.getElementById("newTriageSearch").value="";
   newTriageFilterState = { statusGroup: null, funcSys: null };
   renderNewTriage();
