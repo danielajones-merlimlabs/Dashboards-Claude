@@ -108,11 +108,6 @@
   .chip.chip-on .val{color:#fff!important}
   .chip.danger.chip-on{background:#991b1b!important;border-color:#991b1b!important}
   .chip.info.chip-on{background:#1d4ed8!important;border-color:#1d4ed8!important}
-  .status-summary{display:flex;gap:8px;padding:10px 20px;background:var(--surface);border-bottom:2px solid var(--border);flex-wrap:wrap;align-items:center}
-  .ssum{display:flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:10px;border:1.5px solid transparent;min-width:72px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
-  .ssum:hover{opacity:.85;transform:translateY(-1px)}
-  .ssum .ssum-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;line-height:1.1}
-  .ssum .ssum-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;opacity:.75}
   .burndown-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f8f9fe;border:1px solid var(--border);border-radius:6px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)}
   .burndown-controls label{font-weight:600;white-space:nowrap}
   .burndown-controls input[type=range]{width:180px;accent-color:var(--accent2);cursor:pointer}
@@ -123,6 +118,23 @@
   .bd-bad{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
   #tab-metrics{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
   #tab-history{display:none;padding:24px 20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 200px)}
+  #tab-table{display:none}
+  #tab-sccert{}
+  #tab-newtriage{display:none}
+  .sc-topbar{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+  .sc-type-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:2px solid;transition:all .15s;user-select:none;white-space:nowrap}
+  .sc-chip-count{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700}
+  .sc-cards-bar{display:flex;gap:8px;padding:10px 20px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--bg);align-items:stretch}
+  .sc-stat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 18px;border-radius:14px;border:2px solid;cursor:pointer;min-width:72px;transition:all .15s;user-select:none;flex:0 0 auto}
+  .sc-stat-card:hover{filter:brightness(.94);transform:translateY(-1px)}
+  .sc-stat-num{font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:5px}
+  .sc-stat-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;line-height:1.3;max-width:100px}
+  .sc-stat-card.sc-card-active{box-shadow:inset 0 0 0 3px rgba(0,0,0,.25)}
+  .sc-funcsys-bar{display:flex;gap:8px;padding:8px 20px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface);align-items:center}
+  .sc-fs-label{font-size:11px;font-weight:600;color:var(--text3);margin-right:4px;white-space:nowrap}
+  .sc-fs-chip{display:inline-flex;flex-direction:column;align-items:center;padding:5px 16px;border-radius:20px;border:2px solid;cursor:pointer;font-size:10px;font-weight:700;transition:all .15s;user-select:none;min-width:52px}
+  .sc-fs-chip:hover{filter:brightness(.93);transform:translateY(-1px)}
+  .sc-fs-num{font-size:16px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;margin-bottom:2px}
   .hist-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
   .hist-controls input{padding:5px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text1);outline:none;width:200px}
   .hist-controls input:focus{border-color:var(--accent)}
@@ -149,12 +161,29 @@
   .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-bottom:20px}
   .chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
   .chart-sub{font-size:11px;color:var(--text3);margin-bottom:16px}
+  /* chart drill-down modal */
+  .drill-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center}
+  .drill-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(720px,94vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+  .drill-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .drill-title{font-size:13px;font-weight:700;color:var(--text);flex:1}
+  .drill-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);line-height:1;padding:2px 6px;border-radius:4px}
+  .drill-close:hover{background:var(--surface2)}
+  .drill-body{overflow-y:auto;padding:10px 0}
+  .drill-row{display:grid;grid-template-columns:90px 1fr 120px 110px;gap:8px;align-items:baseline;padding:7px 18px;border-bottom:1px solid var(--border);font-size:12px}
+  .drill-row:last-child{border-bottom:none}
+  .drill-key{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px}
+  .drill-key a{color:var(--accent);text-decoration:none}
+  .drill-key a:hover{text-decoration:underline}
+  .drill-summary{color:var(--text);line-height:1.4}
+  .drill-assignee{color:var(--text2);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .drill-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-align:center;white-space:nowrap}
+  .drill-empty{text-align:center;padding:30px;color:var(--text3);font-size:13px}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div><h1>STC Caravan Open Problem Reports</h1><div class="sub">MPPT (all) · FFT (N208B / ZK-MLN) · Synced from Jira daily 6am ET · Shared notes via Google Sheets</div></div>
+  <div><h1>STC Caravan Open Problem Reports</h1></div>
   <div class="hbtns">
     <button class="btn success" onclick="syncAllDirty()" id="syncAllBtn" style="display:none">⬆ Sync All to Jira</button>
     <button class="btn primary" onclick="exportCSV()">Export CSV</button>
@@ -170,38 +199,32 @@
 </div>
 
 <div class="loading-bar" id="loadingBar">Loading shared data…</div>
-<div id="statusBar" class="status-bar"></div>
-<div id="typeBar" class="status-bar" style="border-top:none;padding-top:3px;padding-bottom:8px"></div>
-<div class="stats" id="stats"></div>
-<div class="status-summary" id="statusSummaryBar"></div>
 
 <div class="tab-nav">
-  <button class="tab-btn active" id="tabBtnTable" onclick="switchTab('table')">Table</button>
+  <button class="tab-btn active" id="tabBtnSCCert" onclick="switchTab('sccert')">SC + Cert Required</button>
+  <button class="tab-btn" id="tabBtnNewTriage" onclick="switchTab('newtriage')">New or no DR Type Assigned</button>
+  <button class="tab-btn" id="tabBtnTable" onclick="switchTab('table')">All DRs</button>
   <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
   <button class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">Revision History</button>
 </div>
 
 <div id="tab-table">
-<div class="legend">
-  <strong style="color:var(--text2)">Columns:</strong>
-  <div class="legend-item"><div class="legend-dot" style="background:#1f3864"></div>Jira (syncs back to Jira)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Shared (saves to Google Sheet, visible to everyone)</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>Unsaved Jira change</div>
+<div style="padding:7px 20px;border-bottom:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:600;color:var(--text3)">Showing All OPRs — excluding closed or won't fix</div>
+<div class="sc-topbar">
+  <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Type:</span>
+  <div id="allDRsTypeChips" style="display:flex;gap:5px;flex-wrap:wrap"></div>
 </div>
-
+<div id="allDRsStatusCards" class="sc-cards-bar"></div>
+<div id="allDRsFuncSysCards" class="sc-funcsys-bar"></div>
 <div class="filters">
   <input type="text" id="search" placeholder="🔍  Search…">
   <div class="fsep"></div>
-  <select id="projFilter"><option value="">Both Projects</option><option value="MPPT">MPPT</option><option value="FFT">FFT</option></select>
-  <select id="statusFilter"><option value="">All Statuses</option></select>
-  <select id="typeFilter"><option value="">All DR Types</option></select>
   <select id="assigneeFilter"><option value="">All Assignees</option></select>
   <select id="whereFilter"><option value="">All Locations</option></select>
   <select id="campaignFilter"><option value="">All Campaigns</option></select>
-  <select id="funcSysFilter"><option value="">All Func. Systems</option></select>
   <select id="sfhaFilter"><option value="">All SFHA Functions</option></select>
   <div class="fsep"></div>
-  <button class="btn" onclick="clearFilters()">Clear</button>
+  <button class="btn" onclick="clearFilters()">Clear all</button>
 </div>
 
 <div class="table-wrap">
@@ -211,34 +234,41 @@
 </div><!-- #tab-table -->
 
 <div id="tab-metrics">
+<div style="padding:7px 20px;border-bottom:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:600;color:var(--text3)">Metrics are generated for OPRs that are Safety Critical or Required for Certification</div>
   <div class="charts-grid">
     <div class="chart-card">
-      <div class="chart-title">DR Count by Status — stacked by DR Type</div>
-      <div class="chart-sub">All projects · open DRs only</div>
+      <div class="chart-title">SC + Cert Required by Status</div>
+      <div class="chart-sub">Safety Critical + Cert Required only · open DRs</div>
       <canvas id="chartStatusType"></canvas>
     </div>
     <div class="chart-card">
       <div class="chart-title">Safety Critical &amp; Cert Required by Functional Team</div>
       <div class="chart-sub">Safety Critical + Required for Certification only</div>
-      <canvas id="chartFuncTeam" style="max-height:320px"></canvas>
-    </div>
-  </div>
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-title">Open DRs by Functional System</div>
-      <div class="chart-sub">Stacked by status · based on shared Functional System column</div>
-      <canvas id="chartFuncSys" style="max-height:300px"></canvas>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">DRs by FT Test Campaign</div>
-      <div class="chart-sub">Open DRs tagged to each flight test campaign · stacked by project</div>
-      <canvas id="chartCampaign" style="max-height:300px"></canvas>
+      <canvas id="chartFuncTeam" style="min-height:380px;max-height:500px"></canvas>
     </div>
   </div>
   <div class="chart-card">
-    <div class="chart-title">New vs Closed DRs by Week</div>
-    <div class="chart-sub">Since March 2026 · bars = weekly counts</div>
+    <div class="chart-title">SC + Cert Required by FT Test Campaign</div>
+    <div class="chart-sub">Safety Critical + Cert Required only · stacked by project</div>
+    <canvas id="chartCampaign" style="max-height:300px"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">SC + Cert Required: New vs Closed by Week</div>
+    <div class="chart-sub">Safety Critical + Cert Required only · Since March 2026</div>
+    <div id="newClosedFsChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
     <canvas id="chartNewVsClosed" style="max-height:220px"></canvas>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">SC + Cert Required — Days in State</div>
+      <div class="chart-sub">Age since created · grouped by status · green = fresh, red = stale</div>
+      <canvas id="chartAgeBuckets" style="max-height:300px"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">SC + Cert Required — Open DRs by Assignee</div>
+      <div class="chart-sub">Open DRs only · stacked by status</div>
+      <canvas id="chartAssignee" style="min-height:300px;max-height:420px"></canvas>
+    </div>
   </div>
   <div class="chart-card">
     <div class="chart-title">SC + Cert Required — Burndown to Sept 30, 2026</div>
@@ -265,8 +295,55 @@
   <div id="histBody"></div>
 </div>
 
+<div id="tab-sccert">
+<div style="padding:7px 20px;border-bottom:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:600;color:var(--text3)">Only Showing OPRs that are allocated as Safety Critical or Required for Certification</div>
+<div class="sc-topbar">
+  <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Type:</span>
+  <div id="scTypeChips" style="display:flex;gap:6px"></div>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="sccertSearch" placeholder="🔍  Search…" oninput="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
+    <button class="btn" onclick="clearSCCertFilters()">Clear all</button>
+  </div>
+</div>
+<div id="sccertStatusCards" class="sc-cards-bar"></div>
+<div id="sccertFuncSysCards" class="sc-funcsys-bar"></div>
+<div class="table-wrap">
+  <table id="sccertTable"><thead id="sccert-thead"></thead><tbody id="sccert-tbody"></tbody></table>
+  <div class="no-results" id="sccertNoResults" style="display:none">No DRs match.</div>
+</div>
+<div class="footer" style="border-top:1px solid var(--border)"><span id="sccertFooterCount"></span><span>SC + Cert Required DRs only</span></div>
+</div><!-- #tab-sccert -->
+
+<div id="tab-newtriage" style="display:none">
+<div class="sc-topbar">
+  <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Showing OPRs that are New or do not have a DR Type assigned</span>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="newTriageSearch" placeholder="🔍  Search…" oninput="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
+    <button class="btn" onclick="clearNewTriageFilters()">Clear all</button>
+  </div>
+</div>
+<div id="newTriageStatusCards" class="sc-cards-bar"></div>
+<div id="newTriageFuncSysCards" class="sc-funcsys-bar"></div>
+<div class="table-wrap">
+  <table id="newTriageTable"><thead id="newtriage-thead"></thead><tbody id="newtriage-tbody"></tbody></table>
+  <div class="no-results" id="newTriageNoResults" style="display:none">No DRs match.</div>
+</div>
+<div class="footer" style="border-top:1px solid var(--border)"><span id="newTriageFooterCount"></span><span>New status or no DR Type assigned</span></div>
+</div><!-- #tab-newtriage -->
+
 <div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
 <div id="toast"></div>
+
+<!-- chart drill-down modal -->
+<div id="drillOverlay" class="drill-overlay" style="display:none" onclick="closeDrillModal(event)">
+  <div class="drill-modal">
+    <div class="drill-header">
+      <div class="drill-title" id="drillTitle"></div>
+      <button class="drill-close" onclick="closeDrillModal()">✕</button>
+    </div>
+    <div class="drill-body" id="drillBody"></div>
+  </div>
+</div>
 
 <script>
 // SYNC_DATA_START
@@ -289,7 +366,7 @@ let sharedData = {};
 let sheetLoaded = false;
 
 async function loadSharedData() {
-  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) { document.getElementById("sheetStatus").textContent = "⚠ Worker not configured"; sheetLoaded=true; render(); return; }
+  if (!WORKER_URL||WORKER_URL.includes("PLACEHOLDER")) { document.getElementById("sheetStatus").textContent = "⚠ Worker not configured"; sheetLoaded=true; render(); renderSCCert(); return; }
   document.getElementById("loadingBar").style.display = "block";
   try {
     const res = await fetch(`${WORKER_URL}?action=getAll`);
@@ -304,6 +381,8 @@ async function loadSharedData() {
   }
   document.getElementById("loadingBar").style.display = "none";
   render();
+  renderSCCert();
+  renderNewTriage();
 }
 
 async function saveToSheet(key, fields) {
@@ -366,7 +445,6 @@ const STATUSES = ["", ...Object.keys(SC)];
 const COLS=[
   {id:"sync",     label:"Jira Sync",       group:"core",        type:"sync",          minW:72},
   {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
-  {id:"proj",     label:"Proj",            group:"core",        type:"static",        minW:55,  sortField:"Project"},
   {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
   {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
@@ -404,21 +482,19 @@ const COLS=[
 
 let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
-const chipFilters = { types: new Set(), statuses: new Set(), special: new Set() };
-function toggleChip(group, value) {
-  chipFilters[group].has(value) ? chipFilters[group].delete(value) : chipFilters[group].add(value);
-  render();
-}
+let allDRsFilterState = { statusGroup: null, funcSys: null, types: new Set() };
+function toggleAllDRsStatusGroup(key){ allDRsFilterState.statusGroup=allDRsFilterState.statusGroup===key?null:key; render(); }
+function toggleAllDRsFuncSys(key){ allDRsFilterState.funcSys=allDRsFilterState.funcSys===key?null:key; render(); }
+function toggleAllDRsType(type){ allDRsFilterState.types.has(type)?allDRsFilterState.types.delete(type):allDRsFilterState.types.add(type); render(); }
 
 document.getElementById("syncDate").textContent=SYNC_TIMESTAMP;
 
 function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort();}
-[["statusFilter","Status"],["typeFilter","DR Type"],["assigneeFilter","Assignee"]].forEach(([id,key])=>{
+[["assigneeFilter","Assignee"]].forEach(([id,key])=>{
   const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
 WHERE_OBS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("whereFilter").appendChild(o);});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
-FUNC_SYS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("funcSysFilter").appendChild(o);});
 SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
 
 function renderHeader(){
@@ -565,32 +641,26 @@ function onAviChange(cb){
 function render(){
   if(!sheetLoaded)return;
   const search=document.getElementById("search").value.toLowerCase();
-  const proj=document.getElementById("projFilter").value;
-  const status=document.getElementById("statusFilter").value;
-  const type=document.getElementById("typeFilter").value;
   const assign=document.getElementById("assigneeFilter").value;
   const where=document.getElementById("whereFilter").value;
   const campaign=document.getElementById("campaignFilter").value;
-  const funcSys=document.getElementById("funcSysFilter").value;
   const sfha=document.getElementById("sfhaFilter").value;
 
+  // card-count pools (each layer filters on top of the previous)
+  const typePool=allDRsFilterState.types.size>0?DR_DATA.filter(r=>allDRsFilterState.types.has(r["DR Type"]||"(none)")):DR_DATA;
+  const funcSysPool=allDRsFilterState.funcSys?(allDRsFilterState.funcSys==="(unassigned)"?typePool.filter(r=>!getShared(r.Key,"FuncSys")):typePool.filter(r=>getShared(r.Key,"FuncSys")===allDRsFilterState.funcSys)):typePool;
+  _renderAllDRsTypeChips(DR_DATA);
+  _renderAllDRsFuncSysCards(typePool);
+  _renderAllDRsStatusCards(funcSysPool);
+
   filtered=DR_DATA.filter(r=>{
-    if(proj&&r.Project!==proj)return false;
-    if(status&&r.Status!==status)return false;
-    if(type&&r["DR Type"]!==type)return false;
+    if(allDRsFilterState.types.size>0&&!allDRsFilterState.types.has(r["DR Type"]||"(none)"))return false;
+    if(allDRsFilterState.funcSys){if(allDRsFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==allDRsFilterState.funcSys)return false;}
+    if(allDRsFilterState.statusGroup){const g=SC_STATUS_GROUPS.find(g=>g.key===allDRsFilterState.statusGroup);if(g&&!g.statuses.includes(r.Status))return false;}
     if(assign&&r.Assignee!==assign)return false;
     if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
-    if(funcSys&&getShared(r.Key,"FuncSys")!==funcSys)return false;
     if(sfha&&getShared(r.Key,"SfhaFunc")!==sfha)return false;
-    if(chipFilters.types.size>0&&!chipFilters.types.has(r["DR Type"]||"(none)"))return false;
-    if(chipFilters.statuses.size>0&&!chipFilters.statuses.has(r.Status))return false;
-    if(chipFilters.special.size>0){
-      const passAvi  = chipFilters.special.has("Avidyne") && getAvi(r.Key,r);
-      const passFCC  = chipFilters.special.has("FCC")     && getShared(r.Key,"FuncSys")==="FCC";
-      const passACS  = chipFilters.special.has("ACS")     && getShared(r.Key,"FuncSys")==="ACS";
-      if(!passAvi && !passFCC && !passACS) return false;
-    }
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -598,114 +668,16 @@ function render(){
 
   const vc=visibleCols();
   const tbody=document.getElementById("tbody");
-  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";updateStats();renderStatusSummary();document.getElementById("footerCount").textContent="";return;}
+  if(!filtered.length){tbody.innerHTML="";document.getElementById("noResults").style.display="block";document.getElementById("footerCount").textContent="";return;}
   document.getElementById("noResults").style.display="none";
   tbody.innerHTML=filtered.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
-  updateStats();
-  updateStatusBar();
-  updateTypeBar();
-  renderStatusSummary();
   document.getElementById("footerCount").textContent=`${filtered.length} of ${DR_DATA.length} DRs`;
 }
 
-const STATUS_SUMMARY_GROUPS = [
-  { label: "New",                           statuses: ["New"],                                     bg: "#dbeafe", color: "#1d4ed8", border: "#bfdbfe" },
-  { label: "Need Team Input",               statuses: ["Need Team Input"],                         bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
-  { label: "Reviewed / To-Do",              statuses: ["Reviewed - To-Do","To-Do"],               bg: "#ede9fe", color: "#5b21b6", border: "#ddd6fe" },
-  { label: "Triaged",                       statuses: ["Triaged"],                                 bg: "#fef3c7", color: "#b45309", border: "#fde68a" },
-  { label: "Investigating",                 statuses: ["Investigating"],                           bg: "#fff3cd", color: "#856404", border: "#ffe69c" },
-  { label: "In Progress",                   statuses: ["In progress","In Review"],                bg: "#d1fae5", color: "#065f46", border: "#6ee7b7" },
-  { label: "Needs Testing / Ready to Test", statuses: ["Needs Testing","Ready to Test Fix"],      bg: "#dcfce7", color: "#166534", border: "#86efac" },
-  { label: "Blocked",                       statuses: ["Blocked"],                                 bg: "#ffe4d6", color: "#9a3412", border: "#fed7aa" },
-  { label: "Watch",                         statuses: ["Watch"],                                   bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
-  { label: "Product Backlog",               statuses: ["Product Backlog- Future"],                bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" },
-];
+function updateTypeBar(){}
 
-function toggleStatusGroup(statusStr) {
-  if (!statusStr) {
-    chipFilters.statuses.clear();
-  } else {
-    const statuses = statusStr.split("|");
-    const allOn = statuses.every(s => chipFilters.statuses.has(s));
-    if (allOn) {
-      statuses.forEach(s => chipFilters.statuses.delete(s));
-    } else {
-      statuses.forEach(s => chipFilters.statuses.add(s));
-    }
-  }
-  render();
-}
-
-function renderStatusSummary() {
-  const all = DR_DATA;
-  const totalOn = chipFilters.statuses.size === 0;
-  let html = `<div class="ssum" style="background:${totalOn?'var(--accent)':'#f0f2f9'};border-color:${totalOn?'var(--accent)':'#e2e5f0'};color:${totalOn?'#fff':'#1a1d2e'}" onclick="toggleStatusGroup('')" title="Clear status filter — show all">
-    <span class="ssum-val">${filtered.length}</span>
-    <span class="ssum-label">Total DRs</span>
-  </div>`;
-  STATUS_SUMMARY_GROUPS.forEach(g => {
-    const count = all.filter(r => g.statuses.includes(r.Status)).length;
-    if (!count) return;
-    const allOn = g.statuses.every(s => chipFilters.statuses.has(s));
-    html += `<div class="ssum" style="background:${allOn?g.color:g.bg};border-color:${allOn?g.color:g.border};color:${allOn?'#fff':g.color}" onclick="toggleStatusGroup('${g.statuses.join('|')}')" title="Filter: ${g.label}">
-      <span class="ssum-val">${count}</span>
-      <span class="ssum-label">${g.label}</span>
-    </div>`;
-  });
-  document.getElementById("statusSummaryBar").innerHTML = html;
-}
-
-function updateTypeBar(){
-  const TYPE_ORDER = ["3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII","(none)"];
-  const counts = {};
-  DR_DATA.forEach(r => { const t = r["DR Type"]||"(none)"; counts[t] = (counts[t]||0)+1; });
-  document.getElementById("typeBar").innerHTML = TYPE_ORDER.filter(t => counts[t]).map(t => {
-    const color = TYPE_COLORS[t] || "#94a3b8";
-    const on = chipFilters.types.has(t);
-    const onStyle = on ? `background:${color};color:#fff;border-color:${color}` : `border-color:${color}20;color:${color}`;
-    return `<div class="sbar-chip" style="${onStyle};cursor:pointer" onclick="toggleChip('types','${t.replace(/'/g,"\\'")}')"><span class="sval" style="color:inherit">${counts[t]}</span>${t.replace(/^\d+ - /,'')}</div>`;
-  }).join('');
-}
-
-function updateStatusBar(){
-  const ORDER = ["New","Need Team Input","Reviewed - To-Do","To-Do","Triaged","Investigating","In progress","In Review","Ready to Test Fix","Needs Testing","Blocked","Watch","Product Backlog- Future"];
-  const IN_PROGRESS = new Set(["In progress","In Review","Ready to Test Fix"]);
-  const counts = {};
-  DR_DATA.forEach(r => { if(r.Status) counts[r.Status] = (counts[r.Status]||0)+1; });
-  const extra = Object.keys(counts).filter(s => !ORDER.includes(s));
-  document.getElementById("statusBar").innerHTML = [...ORDER, ...extra].filter(s => counts[s]).map(s => {
-    const on = chipFilters.statuses.has(s);
-    const base = s==="Blocked" ? "sdanger" : IN_PROGRESS.has(s) ? "active" : "";
-    const cls = `sbar-chip ${base}${on?" chip-on":""}`;
-    return `<div class="${cls}" style="cursor:pointer" onclick="toggleChip('statuses','${s.replace(/'/g,"\\'")}')"><span class="sval">${counts[s]}</span>${s}</div>`;
-  }).join('');
-}
-
-function updateStats(){
-  const all=DR_DATA;
-  const mppt=all.filter(r=>r.Project==="MPPT").length;
-  const fft=all.filter(r=>r.Project==="FFT").length;
-  const sc=all.filter(r=>r["DR Type"]==="1 - Safety Critical").length;
-  const cert=all.filter(r=>r["DR Type"]==="2 - Required for Certification").length;
-  const dirtyN=Object.keys(dirty).length;
-  const closed=filtered.filter(r=>r.Status==="[CLOSED]").length;
-  const on=()=>`chip-on`;
-  const scOn=chipFilters.types.has("1 - Safety Critical"), certOn=chipFilters.types.has("2 - Required for Certification");
-  const aviOn=chipFilters.special.has("Avidyne"), fccOn=chipFilters.special.has("FCC"), acsOn=chipFilters.special.has("ACS");
-  const aviCount = all.filter(r=>getAvi(r.Key,r)).length;
-  const fccCount = all.filter(r=>getShared(r.Key,"FuncSys")==="FCC").length;
-  const acsCount = all.filter(r=>getShared(r.Key,"FuncSys")==="ACS").length;
-  document.getElementById("stats").innerHTML=`
-    <div class="chip"><span class="label">Showing</span><span class="val">${filtered.length}</span></div>
-    <div class="chip danger clickable ${scOn?on():""}" onclick="toggleChip('types','1 - Safety Critical')"><span class="label">Safety Critical</span><span class="val">${sc}</span></div>
-    <div class="chip info clickable ${certOn?on():""}" onclick="toggleChip('types','2 - Required for Certification')"><span class="label">Cert Required</span><span class="val">${cert}</span></div>
-    <div class="chip clickable ${aviOn?on():""}" onclick="toggleChip('special','Avidyne')" style="border-color:#7c3aed20;color:#7c3aed;${aviOn?"background:#7c3aed;color:#fff;":""}"><span class="label">Avidyne</span><span class="val">${aviCount}</span></div>
-    <div class="chip clickable ${fccOn?on():""}" onclick="toggleChip('special','FCC')" style="border-color:#0891b220;color:#0891b2;${fccOn?"background:#0891b2;color:#fff;":""}"><span class="label">FCC</span><span class="val">${fccCount}</span></div>
-    <div class="chip clickable ${acsOn?on():""}" onclick="toggleChip('special','ACS')" style="border-color:#d9770620;color:#d97706;${acsOn?"background:#d97706;color:#fff;":""}"><span class="label">ACS</span><span class="val">${acsCount}</span></div>
-    ${dirtyN?`<div class="chip dirty"><span class="label">Unsaved Jira</span><span class="val">${dirtyN}</span></div>`:""}
-    ${closed?`<div class="chip danger"><span class="label">⚠ Closed</span><span class="val">${closed}</span></div>`:""}
-  `;
-}
+function updateStatusBar(){}
+function updateStats(){}
 
 async function syncRow(key,btn){
   const changes=dirty[key];const note=getShared(key,"Notes");
@@ -744,11 +716,50 @@ async function syncAllDirty(){
   btn.disabled=false;btn.textContent="⬆ Sync All to Jira";
 }
 
+// ── CHART DRILL-DOWN MODAL ──
+function openDrillModal(title, rows){
+  const STAT_STYLES = {
+    "New":              {bg:"#dbeafe",color:"#1d4ed8"},
+    "Need Team Input":  {bg:"#fee2e2",color:"#b91c1c"},
+    "To-Do":            {bg:"#f5f3ff",color:"#7c3aed"},
+    "Reviewing- To-Do": {bg:"#f5f3ff",color:"#7c3aed"},
+    "Investigating":    {bg:"#fef3c7",color:"#92400e"},
+    "Triaged":          {bg:"#fef3c7",color:"#92400e"},
+    "In progress":      {bg:"#d1fae5",color:"#065f46"},
+    "In Review":        {bg:"#ccfbf1",color:"#0f766e"},
+    "Ready to Test Fix":{bg:"#dcfce7",color:"#166534"},
+    "Needs Testing":    {bg:"#dcfce7",color:"#166534"},
+    "Blocked":          {bg:"#fff1f2",color:"#991b1b"},
+    "Watch":            {bg:"#fffbeb",color:"#b45309"},
+  };
+  document.getElementById("drillTitle").textContent = title;
+  const body = document.getElementById("drillBody");
+  if(!rows.length){ body.innerHTML=`<div class="drill-empty">No DRs found.</div>`; }
+  else {
+    body.innerHTML = rows.map(r => {
+      const st = STAT_STYLES[r.Status] || {bg:"#f1f5f9",color:"#64748b"};
+      const assignee = r.Assignee || "—";
+      return `<div class="drill-row">
+        <div class="drill-key"><a href="${r.URL||"#"}" target="_blank">${r.Key}</a></div>
+        <div class="drill-summary">${r.Summary||""}</div>
+        <div class="drill-assignee" title="${assignee}">${assignee}</div>
+        <div><span class="drill-status" style="background:${st.bg};color:${st.color}">${r.Status}</span></div>
+      </div>`;
+    }).join("");
+  }
+  document.getElementById("drillOverlay").style.display = "flex";
+}
+function closeDrillModal(e){
+  if(e && e.target !== document.getElementById("drillOverlay")) return;
+  document.getElementById("drillOverlay").style.display = "none";
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") document.getElementById("drillOverlay").style.display="none"; });
+
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
 
-function clearFilters(){["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");chipFilters.types.clear();chipFilters.statuses.clear();chipFilters.special.clear();render();}
-["search","projFilter","statusFilter","typeFilter","assigneeFilter","whereFilter","campaignFilter","funcSysFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+function clearFilters(){["search","assigneeFilter","whereFilter","campaignFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");allDRsFilterState={statusGroup:null,funcSys:null,types:new Set()};render();}
+["search","assigneeFilter","whereFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
   const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
@@ -765,9 +776,9 @@ function exportCSV(){
 function exportPDF(){
   // Describe active filters for the report header
   const filterParts = [];
-  if(chipFilters.types.size)   filterParts.push("DR Type: " + [...chipFilters.types].join(", "));
-  if(chipFilters.statuses.size)filterParts.push("Status: "  + [...chipFilters.statuses].join(", "));
-  if(chipFilters.special.size) filterParts.push([...chipFilters.special].join(", "));
+  if(allDRsFilterState.types.size)   filterParts.push("DR Type: " + [...allDRsFilterState.types].join(", "));
+  if(allDRsFilterState.statusGroup)  filterParts.push("Status: "  + allDRsFilterState.statusGroup);
+  if(allDRsFilterState.funcSys)      filterParts.push("Func. System: " + allDRsFilterState.funcSys);
   const searchVal = document.getElementById("search").value.trim();
   if(searchVal) filterParts.push(`Search: "${searchVal}"`);
   const filterDesc = filterParts.length ? filterParts.join(" · ") : "All open DRs";
@@ -830,18 +841,367 @@ function exportPDF(){
 
 if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.display="block";
 renderHeader();
+renderSCCertHeader();
+renderNewTriageHeader();
 loadSharedData(); // loads sheet then calls render()
 
 // ── TABS ──
 function switchTab(tab){
-  document.getElementById("tab-table").style.display   = tab==="table"   ? "block" : "none";
-  document.getElementById("tab-metrics").style.display = tab==="metrics" ? "block" : "none";
-  document.getElementById("tab-history").style.display = tab==="history" ? "block" : "none";
-  document.getElementById("tabBtnTable").classList.toggle("active",   tab==="table");
-  document.getElementById("tabBtnMetrics").classList.toggle("active", tab==="metrics");
-  document.getElementById("tabBtnHistory").classList.toggle("active", tab==="history");
-  if(tab==="metrics") renderMetrics();
-  if(tab==="history") loadHistory();
+  document.getElementById("tab-table").style.display      = tab==="table"      ? "block" : "none";
+  document.getElementById("tab-metrics").style.display    = tab==="metrics"    ? "block" : "none";
+  document.getElementById("tab-history").style.display    = tab==="history"    ? "block" : "none";
+  document.getElementById("tab-sccert").style.display     = tab==="sccert"     ? "block" : "none";
+  document.getElementById("tab-newtriage").style.display  = tab==="newtriage"  ? "block" : "none";
+  document.getElementById("tabBtnTable").classList.toggle("active",      tab==="table");
+  document.getElementById("tabBtnMetrics").classList.toggle("active",    tab==="metrics");
+  document.getElementById("tabBtnHistory").classList.toggle("active",    tab==="history");
+  document.getElementById("tabBtnSCCert").classList.toggle("active",     tab==="sccert");
+  document.getElementById("tabBtnNewTriage").classList.toggle("active",  tab==="newtriage");
+  if(tab==="metrics")    renderMetrics();
+  if(tab==="history")    loadHistory();
+  if(tab==="sccert")     renderSCCert();
+  if(tab==="newtriage")  renderNewTriage();
+}
+
+// ── SC + CERT REQUIRED TAB ──
+let scCertSortCol="Key", scCertSortDir=1;
+let scCertFilterState = { statusGroup: null, funcSys: null, types: new Set() };
+
+const SC_CERT_SET = new Set(["1 - Safety Critical","2 - Required for Certification"]);
+
+const SC_STATUS_GROUPS = [
+  { key:"new",           label:"New",                    statuses:["New"],                                color:"#1d4ed8", bg:"#dbeafe", border:"#bfdbfe" },
+  { key:"team_input",    label:"Need Team Input",        statuses:["Need Team Input"],                    color:"#b91c1c", bg:"#fee2e2", border:"#fca5a5" },
+  { key:"todo",          label:"Reviewed / To-Do",       statuses:["To-Do","Reviewed - To-Do"],           color:"#7c3aed", bg:"#f5f3ff", border:"#ddd6fe" },
+  { key:"investigating", label:"Investigating",           statuses:["Investigating","Triaged"],            color:"#92400e", bg:"#fef3c7", border:"#fde68a" },
+  { key:"in_progress",   label:"In Progress",            statuses:["In progress"],                        color:"#065f46", bg:"#d1fae5", border:"#a7f3d0" },
+  { key:"in_review",     label:"In Review",              statuses:["In Review"],                          color:"#0f766e", bg:"#ccfbf1", border:"#99f6e4" },
+  { key:"needs_testing", label:"Needs Testing / Ready",  statuses:["Ready to Test Fix","Needs Testing"],  color:"#166534", bg:"#dcfce7", border:"#bbf7d0" },
+  { key:"blocked",       label:"Blocked",                statuses:["Blocked"],                            color:"#991b1b", bg:"#fff1f2", border:"#fca5a5" },
+  { key:"watch",         label:"Watch",                  statuses:["Watch"],                              color:"#b45309", bg:"#fffbeb", border:"#fde68a" },
+];
+
+const SC_FUNCSYS_GROUPS = [
+  { key:"FCC",           color:"#0891b2", bg:"#e0f2fe", border:"#7dd3fc" },
+  { key:"ACS",           color:"#d97706", bg:"#fffbeb", border:"#fde68a" },
+  { key:"EFIS/IFD",      color:"#7c3aed", bg:"#f5f3ff", border:"#ddd6fe" },
+  { key:"(unassigned)",  color:"#64748b", bg:"#f1f5f9", border:"#cbd5e1" },
+];
+
+const DR_TYPE_GROUPS = [
+  { key:"1 - Safety Critical",            label:"Safety Critical",  color:"#991b1b", bg:"var(--sc-bg)",   border:"#991b1b" },
+  { key:"2 - Required for Certification", label:"Cert Required",    color:"#166534", bg:"var(--cert-bg)", border:"#166534" },
+  { key:"3 - Performance Issue",          label:"Perf. Issue",      color:"#ea580c", bg:"#fff7ed",        border:"#fed7aa" },
+  { key:"4 - Product Improvement",        label:"Product Improv.",  color:"#16a34a", bg:"#f0fdf4",        border:"#bbf7d0" },
+  { key:"5 - Test Infrastructure",        label:"Test Infra",       color:"#7c3aed", bg:"#f5f3ff",        border:"#ddd6fe" },
+  { key:"6 - SII",                        label:"SII",              color:"#0891b2", bg:"#e0f2fe",        border:"#7dd3fc" },
+  { key:"(none)",                         label:"No Type",          color:"#64748b", bg:"#f1f5f9",        border:"#cbd5e1" },
+];
+
+function toggleSCCertStatusGroup(key){
+  scCertFilterState.statusGroup = scCertFilterState.statusGroup===key ? null : key;
+  renderSCCert();
+}
+function toggleSCCertFuncSys(key){
+  scCertFilterState.funcSys = scCertFilterState.funcSys===key ? null : key;
+  renderSCCert();
+}
+function toggleSCCertType(type){
+  if(scCertFilterState.types.has(type)) scCertFilterState.types.delete(type);
+  else scCertFilterState.types.add(type);
+  renderSCCert();
+}
+
+function renderSCCertHeader(){
+  const vc=visibleCols();
+  document.getElementById("sccert-thead").innerHTML=`<tr>${vc.map(c=>{
+    const isAvi=!!c.aviCol;
+    const isShared=!isAvi&&(c.group!=="core"||["notes"].includes(c.id));
+    const cls=isAvi?"avi-col no-sort":isShared?"shared-col no-sort":"";
+    return`<th class="${cls}${c.sortField?" sortable":""}" data-col="${c.sortField||""}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':""}</th>`;
+  }).join("")}</tr>`;
+  document.querySelectorAll("#sccert-thead th.sortable").forEach(th=>{
+    th.classList.remove("no-sort"); th.style.cursor="pointer";
+    th.addEventListener("click",()=>{
+      const col=th.dataset.col;
+      document.querySelectorAll("#sccert-thead th").forEach(h=>{h.classList.remove("sorted");const a=h.querySelector(".arr");if(a)a.textContent="↕";});
+      if(scCertSortCol===col)scCertSortDir*=-1;else{scCertSortCol=col;scCertSortDir=1;}
+      th.classList.add("sorted");th.querySelector(".arr").textContent=scCertSortDir===1?"↓":"↑";
+      renderSCCert();
+    });
+  });
+}
+
+function renderSCCert(){
+  if(!sheetLoaded)return;
+  const search = document.getElementById("sccertSearch").value.toLowerCase();
+
+  // base pool: all SC+Cert DRs
+  const allSCCert = DR_DATA.filter(r => SC_CERT_SET.has(r["DR Type"]));
+
+  // pool after type chip filter (used for card counts)
+  const typeFiltered = scCertFilterState.types.size > 0
+    ? allSCCert.filter(r => scCertFilterState.types.has(r["DR Type"]))
+    : allSCCert;
+
+  // funcSys-filtered pool: status cards update when funcSys is clicked
+  const funcSysPool = scCertFilterState.funcSys
+    ? (scCertFilterState.funcSys==="(unassigned)" ? typeFiltered.filter(r=>!getShared(r.Key,"FuncSys")) : typeFiltered.filter(r=>getShared(r.Key,"FuncSys")===scCertFilterState.funcSys))
+    : typeFiltered;
+
+  _renderSCTypeChips(allSCCert);
+  _renderSCStatusCards(funcSysPool);
+  _renderSCFuncSysCards(typeFiltered);
+
+  // final filter: status group + funcSys + search
+  const activeGroup = SC_STATUS_GROUPS.find(g => g.key===scCertFilterState.statusGroup);
+  let rows = typeFiltered.filter(r=>{
+    if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
+    if(scCertFilterState.funcSys){if(scCertFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==scCertFilterState.funcSys)return false;}
+    if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
+    return true;
+  });
+
+  rows.sort((a,b)=>{let av=a[scCertSortCol]??"",bv=b[scCertSortCol]??"";if(scCertSortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-scCertSortDir:av>bv?scCertSortDir:0;});
+
+  const vc=visibleCols();
+  const tbody=document.getElementById("sccert-tbody");
+  if(!rows.length){tbody.innerHTML="";document.getElementById("sccertNoResults").style.display="block";}
+  else{
+    document.getElementById("sccertNoResults").style.display="none";
+    tbody.innerHTML=rows.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
+  }
+  document.getElementById("sccertFooterCount").textContent=`${rows.length} of ${allSCCert.length} SC + Cert Required DRs`;
+}
+
+function _renderSCTypeChips(allSCCert){
+  const scCount   = allSCCert.filter(r=>r["DR Type"]==="1 - Safety Critical").length;
+  const certCount = allSCCert.filter(r=>r["DR Type"]==="2 - Required for Certification").length;
+  const scOn   = scCertFilterState.types.has("1 - Safety Critical");
+  const certOn = scCertFilterState.types.has("2 - Required for Certification");
+  const scStyle   = scOn   ? "background:#991b1b;border-color:#991b1b;color:#fff" : "background:var(--sc-bg);border-color:#991b1b;color:#991b1b";
+  const certStyle = certOn ? "background:#166534;border-color:#166534;color:#fff" : "background:var(--cert-bg);border-color:#166534;color:#166534";
+  document.getElementById("scTypeChips").innerHTML=`
+    <div class="sc-type-chip" style="${scStyle}" onclick="toggleSCCertType('1 - Safety Critical')">
+      <span class="sc-chip-count">${scCount}</span> Safety Critical
+    </div>
+    <div class="sc-type-chip" style="${certStyle}" onclick="toggleSCCertType('2 - Required for Certification')">
+      <span class="sc-chip-count">${certCount}</span> Cert Required
+    </div>`;
+}
+
+function _renderSCStatusCards(pool){
+  const active = scCertFilterState.statusGroup;
+  const totalStyle = active ? "background:var(--surface2);border-color:var(--border2);color:var(--text2)" : "background:var(--surface2);border-color:var(--accent);color:var(--accent)";
+  let html = `<div class="sc-stat-card${!active?" sc-card-active":""}" style="${totalStyle}" onclick="toggleSCCertStatusGroup(null)">
+    <div class="sc-stat-num">${pool.length}</div>
+    <div class="sc-stat-label">Total DRs</div>
+  </div>`;
+  SC_STATUS_GROUPS.forEach(g=>{
+    const count = pool.filter(r=>g.statuses.includes(r.Status)).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    const shadow = isOn ? "sc-card-active" : "";
+    html += `<div class="sc-stat-card ${shadow}" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleSCCertStatusGroup('${g.key}')">
+      <div class="sc-stat-num">${count}</div>
+      <div class="sc-stat-label">${g.label}</div>
+    </div>`;
+  });
+  document.getElementById("sccertStatusCards").innerHTML = html;
+}
+
+function _renderSCFuncSysCards(pool){
+  const active = scCertFilterState.funcSys;
+  let html = `<span class="sc-fs-label">Func. System:</span>`;
+  SC_FUNCSYS_GROUPS.forEach(g=>{
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    html += `<div class="sc-fs-chip" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleSCCertFuncSys('${g.key}')">
+      <div class="sc-fs-num">${count}</div>${g.key==="(unassigned)"?"unassigned":g.key}
+    </div>`;
+  });
+  document.getElementById("sccertFuncSysCards").innerHTML = html;
+}
+
+function clearSCCertFilters(){
+  document.getElementById("sccertSearch").value="";
+  scCertFilterState = { statusGroup: null, funcSys: null, types: new Set() };
+  renderSCCert();
+}
+
+// ── NEW + UNTYPED TAB ──
+let newTriageSortCol="Key", newTriageSortDir=1;
+let newTriageFilterState = { statusGroup: null, funcSys: null };
+
+function renderNewTriageHeader(){
+  const vc=visibleCols();
+  document.getElementById("newtriage-thead").innerHTML=`<tr>${vc.map(c=>{
+    const isAvi=!!c.aviCol;
+    const isShared=!isAvi&&(c.group!=="core"||["notes"].includes(c.id));
+    const cls=isAvi?"avi-col no-sort":isShared?"shared-col no-sort":"";
+    return`<th class="${cls}${c.sortField?" sortable":""}" data-col="${c.sortField||""}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':""}</th>`;
+  }).join("")}</tr>`;
+  document.querySelectorAll("#newtriage-thead th.sortable").forEach(th=>{
+    th.classList.remove("no-sort"); th.style.cursor="pointer";
+    th.addEventListener("click",()=>{
+      const col=th.dataset.col;
+      document.querySelectorAll("#newtriage-thead th").forEach(h=>{h.classList.remove("sorted");const a=h.querySelector(".arr");if(a)a.textContent="↕";});
+      if(newTriageSortCol===col)newTriageSortDir*=-1;else{newTriageSortCol=col;newTriageSortDir=1;}
+      th.classList.add("sorted");th.querySelector(".arr").textContent=newTriageSortDir===1?"↓":"↑";
+      renderNewTriage();
+    });
+  });
+}
+
+function renderNewTriage(){
+  if(!sheetLoaded)return;
+  const search = document.getElementById("newTriageSearch").value.toLowerCase();
+
+  // base pool: Status=New OR no DR Type
+  const allTriage = DR_DATA.filter(r => r.Status==="New" || !r["DR Type"]);
+
+  // funcSys-filtered pool for status card counts
+  const funcSysPool = newTriageFilterState.funcSys
+    ? (newTriageFilterState.funcSys==="(unassigned)" ? allTriage.filter(r=>!getShared(r.Key,"FuncSys")) : allTriage.filter(r=>getShared(r.Key,"FuncSys")===newTriageFilterState.funcSys))
+    : allTriage;
+
+  _renderNewTriageStatusCards(funcSysPool);
+  _renderNewTriageFuncSysCards(allTriage);
+
+  // final filter
+  const activeGroup = SC_STATUS_GROUPS.find(g => g.key===newTriageFilterState.statusGroup);
+  let rows = allTriage.filter(r=>{
+    if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
+    if(newTriageFilterState.funcSys){if(newTriageFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==newTriageFilterState.funcSys)return false;}
+    if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,r["DR Type"]||"",getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
+    return true;
+  });
+
+  rows.sort((a,b)=>{let av=a[newTriageSortCol]??"",bv=b[newTriageSortCol]??"";if(newTriageSortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-newTriageSortDir:av>bv?newTriageSortDir:0;});
+
+  const vc=visibleCols();
+  const tbody=document.getElementById("newtriage-tbody");
+  if(!rows.length){tbody.innerHTML="";document.getElementById("newTriageNoResults").style.display="block";}
+  else{
+    document.getElementById("newTriageNoResults").style.display="none";
+    tbody.innerHTML=rows.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
+  }
+  document.getElementById("newTriageFooterCount").textContent=`${rows.length} of ${allTriage.length} DRs`;
+}
+
+function _renderNewTriageStatusCards(pool){
+  const active = newTriageFilterState.statusGroup;
+  const totalStyle = active ? "background:var(--surface2);border-color:var(--border2);color:var(--text2)" : "background:var(--surface2);border-color:var(--accent);color:var(--accent)";
+  let html = `<div class="sc-stat-card${!active?" sc-card-active":""}" style="${totalStyle}" onclick="toggleNewTriageStatusGroup(null)">
+    <div class="sc-stat-num">${pool.length}</div>
+    <div class="sc-stat-label">Total DRs</div>
+  </div>`;
+  SC_STATUS_GROUPS.forEach(g=>{
+    const count = pool.filter(r=>g.statuses.includes(r.Status)).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    const shadow = isOn ? "sc-card-active" : "";
+    html += `<div class="sc-stat-card ${shadow}" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleNewTriageStatusGroup('${g.key}')">
+      <div class="sc-stat-num">${count}</div>
+      <div class="sc-stat-label">${g.label}</div>
+    </div>`;
+  });
+  document.getElementById("newTriageStatusCards").innerHTML = html;
+}
+
+function _renderNewTriageFuncSysCards(pool){
+  const active = newTriageFilterState.funcSys;
+  let html = `<span class="sc-fs-label">Func. System:</span>`;
+  SC_FUNCSYS_GROUPS.forEach(g=>{
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    html += `<div class="sc-fs-chip" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleNewTriageFuncSys('${g.key}')">
+      <div class="sc-fs-num">${count}</div>${g.key==="(unassigned)"?"unassigned":g.key}
+    </div>`;
+  });
+  document.getElementById("newTriageFuncSysCards").innerHTML = html;
+}
+
+function toggleNewTriageStatusGroup(key){
+  newTriageFilterState.statusGroup = newTriageFilterState.statusGroup===key ? null : key;
+  renderNewTriage();
+}
+function toggleNewTriageFuncSys(key){
+  newTriageFilterState.funcSys = newTriageFilterState.funcSys===key ? null : key;
+  renderNewTriage();
+}
+function clearNewTriageFilters(){
+  document.getElementById("newTriageSearch").value="";
+  newTriageFilterState = { statusGroup: null, funcSys: null };
+  renderNewTriage();
+}
+
+// ── ALL DRs STAT CARDS ──
+function _renderAllDRsTypeChips(pool){
+  const active = allDRsFilterState.types;
+  let html = "";
+  DR_TYPE_GROUPS.forEach(g=>{
+    const count = g.key==="(none)" ? pool.filter(r=>!r["DR Type"]).length : pool.filter(r=>r["DR Type"]===g.key).length;
+    if(!count) return;
+    const isOn = active.has(g.key);
+    const style = isOn
+      ? `background:${g.color};border-color:${g.color};color:#fff`
+      : `background:${g.bg};border-color:${g.border};color:${g.color}`;
+    html += `<div class="sc-type-chip" style="${style}" onclick="toggleAllDRsType('${g.key.replace(/'/g,"\\'")}')">
+      <span class="sc-chip-count">${count}</span> ${g.label}
+    </div>`;
+  });
+  document.getElementById("allDRsTypeChips").innerHTML = html;
+}
+
+function _renderAllDRsFuncSysCards(pool){
+  const active = allDRsFilterState.funcSys;
+  let html = `<span class="sc-fs-label">Func. System:</span>`;
+  SC_FUNCSYS_GROUPS.forEach(g=>{
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    html += `<div class="sc-fs-chip" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleAllDRsFuncSys('${g.key.replace(/'/g,"\\'")}')">
+      <div class="sc-fs-num">${count}</div>${g.key==="(unassigned)"?"unassigned":g.key}
+    </div>`;
+  });
+  document.getElementById("allDRsFuncSysCards").innerHTML = html;
+}
+
+function _renderAllDRsStatusCards(pool){
+  const active = allDRsFilterState.statusGroup;
+  const totalStyle = active ? "background:var(--surface2);border-color:var(--border2);color:var(--text2)" : "background:var(--surface2);border-color:var(--accent);color:var(--accent)";
+  let html = `<div class="sc-stat-card${!active?" sc-card-active":""}" style="${totalStyle}" onclick="toggleAllDRsStatusGroup(null)">
+    <div class="sc-stat-num">${pool.length}</div>
+    <div class="sc-stat-label">Total DRs</div>
+  </div>`;
+  SC_STATUS_GROUPS.forEach(g=>{
+    const count = pool.filter(r=>g.statuses.includes(r.Status)).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    html += `<div class="sc-stat-card${isOn?" sc-card-active":""}" style="background:${isOn?g.color:g.bg};border-color:${isOn?g.color:g.border};color:${isOn?"#fff":g.color}" onclick="toggleAllDRsStatusGroup('${g.key}')">
+      <div class="sc-stat-num">${count}</div>
+      <div class="sc-stat-label">${g.label}</div>
+    </div>`;
+  });
+  document.getElementById("allDRsStatusCards").innerHTML = html;
 }
 
 // ── REVISION HISTORY ──
@@ -933,10 +1293,13 @@ const TYPE_COLORS = {
 };
 
 let _metricsChart = null;
+let _newClosedFuncSys = null;
 let _pieChart = null;
 let _burndownChart = null;
 let _campaignChart = null;
 let _funcSysChart = null;
+let _ageBucketsChart = null;
+let _assigneeChart = null;
 
 const TEAM_COLORS = [
   "#1d4ed8","#dc2626","#16a34a","#7c3aed","#ea580c",
@@ -944,6 +1307,9 @@ const TEAM_COLORS = [
 ];
 
 function renderMetrics(){
+  const SC_CERT = new Set(["1 - Safety Critical","2 - Required for Certification"]);
+  const scCertDR = DR_DATA.filter(r => SC_CERT.has(r["DR Type"]));
+
   const STATUS_MERGE = { "Reviewed - To-Do": "To-Do", "Needs Testing": "Ready to Test Fix" };
   const STATUS_DISPLAY = { "To-Do": "Reviewed / To-Do", "Ready to Test Fix": "Ready to Test / Needs Testing" };
   const STATUS_ORDER = [
@@ -952,17 +1318,23 @@ function renderMetrics(){
   ];
 
   const rowStatus = r => STATUS_MERGE[r.Status] || r.Status;
-  const allStatuses = [...new Set(DR_DATA.map(r=>rowStatus(r)).filter(Boolean))];
+  const allStatuses = [...new Set(scCertDR.map(r=>rowStatus(r)).filter(Boolean))];
   const statuses = [...STATUS_ORDER.filter(s=>allStatuses.includes(s)), ...allStatuses.filter(s=>!STATUS_ORDER.includes(s))];
   const statusLabels = statuses.map(s => STATUS_DISPLAY[s] || s);
 
-  const types = Object.keys(TYPE_COLORS);
-
-  const datasets = types.map(type=>{
+  // stacked by functional system — all SC+Cert combined
+  const CHART_FS = [
+    { key:"FCC",          label:"FCC",        color:"#0891b2" },
+    { key:"ACS",          label:"ACS",        color:"#d97706" },
+    { key:"EFIS/IFD",     label:"EFIS/IFD",   color:"#7c3aed" },
+    { key:"Other",        label:"Other",      color:"#16a34a" },
+    { key:"(unassigned)", label:"unassigned", color:"#94a3b8" },
+  ];
+  const datasets = CHART_FS.map(g=>{
     const data = statuses.map(status=>
-      DR_DATA.filter(r=>rowStatus(r)===status && (type==="(none)" ? !r["DR Type"] : r["DR Type"]===type)).length
+      scCertDR.filter(r=>rowStatus(r)===status && (g.key==="(unassigned)"?!getShared(r.Key,"FuncSys"):getShared(r.Key,"FuncSys")===g.key)).length
     );
-    return { label: type, data, backgroundColor: TYPE_COLORS[type], borderRadius: 3, borderSkipped: false };
+    return { label: g.label, data, backgroundColor: g.color, borderRadius: 3, borderSkipped: false };
   }).filter(ds=>ds.data.some(v=>v>0));
 
   const ctx = document.getElementById("chartStatusType").getContext("2d");
@@ -974,6 +1346,20 @@ function renderMetrics(){
     data: { labels: statusLabels, datasets },
     options: {
       responsive: true,
+      onClick(evt, elements){
+        if(!elements.length) return;
+        const dsIndex    = elements[0].datasetIndex;
+        const barIndex   = elements[0].index;
+        const fs         = datasets[dsIndex].label;  // "FCC", "ACS", "EFIS/IFD", "Other", "unassigned"
+        const statusRaw  = statuses[barIndex];
+        const statusDisp = statusLabels[barIndex];
+        const rows = scCertDR.filter(r => {
+          const matchFs = fs==="unassigned" ? !getShared(r.Key,"FuncSys") : getShared(r.Key,"FuncSys")===fs;
+          return matchFs && rowStatus(r)===statusRaw;
+        });
+        openDrillModal(`${statusDisp} — ${fs} (${rows.length})`, rows);
+      },
+      onHover(evt, elements){ evt.native.target.style.cursor = elements.length ? "pointer" : "default"; },
       plugins: {
         legend: { position: "bottom", labels: { font:{size:11}, padding:16, boxWidth:12 } },
         tooltip: {
@@ -990,91 +1376,76 @@ function renderMetrics(){
     }
   });
 
-  // ── Pie: Safety Critical + Cert Required by Functional Team ──
-  const teamCounts = {};
-  DR_DATA.filter(r => r["DR Type"] === "1 - Safety Critical" || r["DR Type"] === "2 - Required for Certification").forEach(r => {
-    const team = r["Functional Team (System)"] || "(none)";
-    teamCounts[team] = (teamCounts[team] || 0) + 1;
-  });
-  const teamEntries = Object.entries(teamCounts).sort((a,b) => b[1]-a[1]);
-  const teamLabels = teamEntries.map(([t])=>t);
-  const teamData   = teamEntries.map(([,c])=>c);
-  const teamColors = teamLabels.map((_,i) => TEAM_COLORS[i % TEAM_COLORS.length]);
-
-  if(_pieChart){ _pieChart.destroy(); }
-  _pieChart = new Chart(document.getElementById("chartFuncTeam").getContext("2d"), {
-    type: "pie",
-    data: { labels: teamLabels, datasets: [{ data: teamData, backgroundColor: teamColors, borderWidth: 2, borderColor: "#fff" }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: "bottom", labels: { font:{size:11}, padding:12, boxWidth:12 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/teamData.reduce((a,b)=>a+b,0)*100)}%)`
-          }
-        }
-      }
-    }
-  });
-
-
-  // ── Bar: Open DRs by Functional System (stacked by status) ──
+  // ── Stacked Bar: Safety Critical + Cert Required by Functional Team ──
   {
-    const FS_ORDER = ["FCC","ACS","EFIS/IFD","Other","(unassigned)"];
-    const fsStatusMap = {}; // { funcSys: { status: count } }
-    DR_DATA.forEach(r => {
-      const fs = getShared(r.Key,"FuncSys") || "(unassigned)";
-      const st = STATUS_MERGE[r.Status] || r.Status || "Unknown";
-      if(!fsStatusMap[fs]) fsStatusMap[fs] = {};
-      fsStatusMap[fs][st] = (fsStatusMap[fs][st]||0) + 1;
+    const teamStatusMap = {};
+    scCertDR.forEach(r => {
+      const team = r["Functional Team (System)"] || "(none)";
+      const st   = STATUS_MERGE[r.Status] || r.Status || "Unknown";
+      if(!teamStatusMap[team]) teamStatusMap[team] = {};
+      teamStatusMap[team][st] = (teamStatusMap[team][st]||0) + 1;
     });
-    const fsLabels = FS_ORDER.filter(fs => fsStatusMap[fs]);
-    // add any unexpected values not in FS_ORDER
-    Object.keys(fsStatusMap).forEach(fs => { if(!FS_ORDER.includes(fs)) fsLabels.push(fs); });
-
-    const STATUS_COLORS_SOLID = {
+    // sort teams by total count descending
+    const teamLabels = Object.entries(teamStatusMap)
+      .sort((a,b) => Object.values(b[1]).reduce((s,v)=>s+v,0) - Object.values(a[1]).reduce((s,v)=>s+v,0))
+      .map(([t])=>t);
+    const TEAM_STATUS_COLORS = {
       "New":"#1565c0","Investigating":"#856404","To-Do":"#5b4ecc","Triaged":"#0369a1",
       "In progress":"#065f46","In Review":"#0f766e","Ready to Test Fix":"#0d9488",
       "Blocked":"#9a3412","Need Team Input":"#991b1b","Watch":"#854d0e",
       "Product Backlog- Future":"#475569","Unknown":"#94a3b8"
     };
-    const allFsStatuses = [...new Set(DR_DATA.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
-    const fsDatasets = [...STATUS_ORDER.filter(s=>allFsStatuses.includes(s)), ...allFsStatuses.filter(s=>!STATUS_ORDER.includes(s))]
+    const allTeamStatuses = [...new Set(scCertDR.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
+    const teamDatasets = [...STATUS_ORDER.filter(s=>allTeamStatuses.includes(s)), ...allTeamStatuses.filter(s=>!STATUS_ORDER.includes(s))]
       .map(st => ({
         label: STATUS_DISPLAY[st]||st,
-        data: fsLabels.map(fs => (fsStatusMap[fs]||{})[st]||0),
-        backgroundColor: STATUS_COLORS_SOLID[st]||"#94a3b8",
+        data: teamLabels.map(t => (teamStatusMap[t]||{})[st]||0),
+        backgroundColor: TEAM_STATUS_COLORS[st]||"#94a3b8",
         borderRadius: 3, borderSkipped: false,
       })).filter(ds => ds.data.some(v=>v>0));
 
-    if(_funcSysChart) _funcSysChart.destroy();
-    _funcSysChart = new Chart(document.getElementById("chartFuncSys").getContext("2d"), {
+    if(_pieChart){ _pieChart.destroy(); }
+    _pieChart = new Chart(document.getElementById("chartFuncTeam").getContext("2d"), {
       type: "bar",
-      data: { labels: fsLabels, datasets: fsDatasets },
+      data: { labels: teamLabels, datasets: teamDatasets },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        onClick(evt, elements){
+          if(!elements.length) return;
+          const dsIndex  = elements[0].datasetIndex;
+          const barIndex = elements[0].index;
+          const team     = teamLabels[barIndex];
+          const status   = teamDatasets[dsIndex].label;
+          const rows = scCertDR.filter(r => {
+            const t = r["Functional Team (System)"] || "(none)";
+            const s = STATUS_DISPLAY[STATUS_MERGE[r.Status]||r.Status] || r.Status;
+            return t===team && s===status;
+          });
+          openDrillModal(`${team} — ${status} (${rows.length})`, rows);
+        },
+        onHover(evt, elements){ evt.native.target.style.cursor = elements.length ? "pointer" : "default"; },
         plugins: {
           legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
           tooltip: { mode:"index", intersect:false,
-            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) }
+            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.x,0) }
           }
         },
         scales: {
-          x: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
-          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" },
-               title:{ display:true, text:"# of Open DRs", font:{size:11}, color:"#6b7280" } }
+          x: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"rgba(0,0,0,.06)" } },
+          y: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } }
         }
       }
     });
   }
 
+
   // ── Bar: DRs by FT Test Campaign ──
   {
     const CAMP_ORDER = ["Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other","(none)"];
     const campMPPT = {}, campFFT = {};
-    DR_DATA.forEach(r => {
+    scCertDR.forEach(r => {
       const camp = getShared(r.Key,"Campaign") || "(none)";
       if(r.Project==="MPPT") campMPPT[camp] = (campMPPT[camp]||0)+1;
       else                   campFFT[camp]  = (campFFT[camp]||0)+1;
@@ -1101,62 +1472,7 @@ function renderMetrics(){
   }
 
   // ── New vs Closed per week ──
-  if (typeof CLOSED_DATA !== "undefined") {
-    const weekKey = d => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay()); return dt.toISOString().slice(0,10); };
-    const minWeek = "2026-03-01";
-    const weeks = [];
-    let cur = new Date(minWeek);
-    const today = new Date();
-    while (cur <= today) { weeks.push(cur.toISOString().slice(0,10)); cur.setUTCDate(cur.getUTCDate() + 7); }
-    const allDR = [...DR_DATA, ...CLOSED_DATA];
-    const newPerWeek    = weeks.map(w => allDR.filter(r => r.Created && weekKey(r.Created)===w).length);
-    const closedPerWeek = weeks.map(w => CLOSED_DATA.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
-    const preOpen   = allDR.filter(r => r.Created && r.Created < minWeek).length;
-    const preClosed = CLOSED_DATA.filter(r => r.ResolutionDate && r.ResolutionDate < minWeek).length;
-    let running = preOpen - preClosed;
-    const netOpen = weeks.map((_,i) => { running += newPerWeek[i] - closedPerWeek[i]; return running; });
-    const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
-    const rollingAvg = (data, w=4) => data.map((_,i) => {
-      const slice = data.slice(Math.max(0,i-w+1), i+1);
-      return +(slice.reduce((a,b)=>a+b,0)/slice.length).toFixed(1);
-    });
-    const avgNew    = rollingAvg(newPerWeek);
-    const avgClosed = rollingAvg(closedPerWeek);
-
-    if (_newClosedChart) _newClosedChart.destroy();
-    _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
-      data: { labels: weekLabels, datasets: [
-        { type:"bar",  label:"new this week",    data: newPerWeek,    backgroundColor:"#93c5fd", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
-        { type:"bar",  label:"closed this week", data: closedPerWeek, backgroundColor:"#86efac", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
-        { type:"line", label:"4-wk avg new",     data: avgNew,        borderColor:"#1d4ed8",     yAxisID:"yActivity",
-          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#1d4ed8", tension:0.3, order:2 },
-        { type:"line", label:"4-wk avg closed",  data: avgClosed,     borderColor:"#16a34a",     yAxisID:"yActivity",
-          backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#16a34a", tension:0.3, order:2 },
-        { type:"line", label:"total open DRs",   data: netOpen,       borderColor:"#dc2626",     yAxisID:"yOpen",
-          backgroundColor:"rgba(220,38,38,0.07)", fill:true, tension:0.3,
-          pointRadius:3, pointBackgroundColor:"#dc2626", borderWidth:2, order:1 },
-      ]},
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode:"index", intersect:false },
-        plugins: { legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } } },
-        scales: {
-          x: { ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:26 }, grid:{ display:false } },
-          yOpen: {
-            type:"linear", position:"left",
-            beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" },
-            title:{ display:true, text:"open DRs", font:{size:10}, color:"#6b7280" }
-          },
-          yActivity: {
-            type:"linear", position:"right",
-            beginAtZero:true, ticks:{ font:{size:11} }, grid:{ drawOnChartArea:false },
-            title:{ display:true, text:"weekly activity", font:{size:10}, color:"#6b7280" }
-          }
-        }
-      }
-    });
-  }
+  renderNewVsClosedChart(_newClosedFuncSys);
 
   // ── Burndown projection: SC + Cert Required → Sept 30 2026 (interactive) ──
   if (typeof CLOSED_DATA !== "undefined") {
@@ -1276,8 +1592,207 @@ function renderMetrics(){
     slider.addEventListener("input", () => updateBd(parseFloat(slider.value)));
     updateBd(actualVel);
   }
+
+  // ── Bar: Days in State — open DRs by status × age bucket ──
+  {
+    const today = new Date();
+    const ageDays = r => r.Created ? Math.floor((today - new Date(r.Created)) / 86400000) : 0;
+    const AGE_BUCKETS = [
+      { label:"< 30 days",   color:"#86efac", min:0,  max:30  },
+      { label:"30–60 days",  color:"#fde68a", min:30, max:60  },
+      { label:"60–90 days",  color:"#fdba74", min:60, max:90  },
+      { label:"90+ days",    color:"#fca5a5", min:90, max:Infinity },
+    ];
+    const bucketOf = r => { const d = ageDays(r); return AGE_BUCKETS.find(b => d >= b.min && d < b.max); };
+
+    // x-axis: statuses that have at least one open DR
+    const activeStatuses = STATUS_ORDER
+      .map(s => ({ raw: s, display: STATUS_DISPLAY[s] || s }))
+      .filter(s => scCertDR.some(r => (STATUS_MERGE[r.Status]||r.Status) === s.raw));
+
+    const ageDatasets = AGE_BUCKETS.map(b => ({
+      label: b.label,
+      data: activeStatuses.map(s => scCertDR.filter(r => (STATUS_MERGE[r.Status]||r.Status)===s.raw && bucketOf(r)?.label===b.label).length),
+      backgroundColor: b.color, borderRadius: 3, borderSkipped: false,
+    })).filter(ds => ds.data.some(v=>v>0));
+
+    if(_ageBucketsChart) _ageBucketsChart.destroy();
+    _ageBucketsChart = new Chart(document.getElementById("chartAgeBuckets").getContext("2d"), {
+      type: "bar",
+      data: { labels: activeStatuses.map(s=>s.display), datasets: ageDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        onClick(evt, elements){
+          if(!elements.length) return;
+          const statusRaw  = activeStatuses[elements[0].index].raw;
+          const statusDisp = activeStatuses[elements[0].index].display;
+          const bucket     = ageDatasets[elements[0].datasetIndex].label;
+          const bDef       = AGE_BUCKETS.find(b=>b.label===bucket);
+          const rows = scCertDR.filter(r => {
+            const d = ageDays(r);
+            return (STATUS_MERGE[r.Status]||r.Status)===statusRaw && d>=bDef.min && d<bDef.max;
+          });
+          openDrillModal(`${statusDisp} — ${bucket} (${rows.length})`, rows);
+        },
+        onHover(evt, elements){ evt.native.target.style.cursor = elements.length ? "pointer" : "default"; },
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
+          tooltip: { mode:"index", intersect:false, callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) } }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
+          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" },
+               title:{ display:true, text:"# of Open DRs", font:{size:10}, color:"#6b7280" } }
+        }
+      }
+    });
+  }
+
+  // ── Bar: Open DRs by Assignee (stacked by status) ──
+  {
+    const ASGN_STATUS_COLORS = {
+      "New":"#1565c0","Investigating":"#856404","To-Do":"#5b4ecc","Triaged":"#0369a1",
+      "In progress":"#065f46","In Review":"#0f766e","Ready to Test Fix":"#0d9488",
+      "Blocked":"#9a3412","Need Team Input":"#991b1b","Watch":"#854d0e",
+      "Product Backlog- Future":"#475569","Unknown":"#94a3b8"
+    };
+    const assigneeStatusMap = {};
+    scCertDR.forEach(r => {
+      const a  = r.Assignee || "(unassigned)";
+      const st = STATUS_MERGE[r.Status] || r.Status || "Unknown";
+      if(!assigneeStatusMap[a]) assigneeStatusMap[a] = {};
+      assigneeStatusMap[a][st] = (assigneeStatusMap[a][st]||0) + 1;
+    });
+    const assigneeLabels = Object.entries(assigneeStatusMap)
+      .sort((a,b) => Object.values(b[1]).reduce((s,v)=>s+v,0) - Object.values(a[1]).reduce((s,v)=>s+v,0))
+      .map(([a])=>a);
+    const allAsgStatuses = [...new Set(scCertDR.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
+    const assigneeDatasets = [...STATUS_ORDER.filter(s=>allAsgStatuses.includes(s)), ...allAsgStatuses.filter(s=>!STATUS_ORDER.includes(s))]
+      .map(st => ({
+        label: STATUS_DISPLAY[st]||st,
+        data: assigneeLabels.map(a => (assigneeStatusMap[a]||{})[st]||0),
+        backgroundColor: ASGN_STATUS_COLORS[st]||"#94a3b8",
+        borderRadius: 3, borderSkipped: false,
+      })).filter(ds => ds.data.some(v=>v>0));
+
+    if(_assigneeChart) _assigneeChart.destroy();
+    _assigneeChart = new Chart(document.getElementById("chartAssignee").getContext("2d"), {
+      type: "bar",
+      data: { labels: assigneeLabels, datasets: assigneeDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        onClick(evt, elements){
+          if(!elements.length) return;
+          const assignee   = assigneeLabels[elements[0].index];
+          const statusDisp = assigneeDatasets[elements[0].datasetIndex].label;
+          const rows = scCertDR.filter(r => {
+            const a  = r.Assignee || "(unassigned)";
+            const st = STATUS_DISPLAY[STATUS_MERGE[r.Status]||r.Status] || r.Status;
+            return a===assignee && st===statusDisp;
+          });
+          openDrillModal(`${assignee} — ${statusDisp} (${rows.length})`, rows);
+        },
+        onHover(evt, elements){ evt.native.target.style.cursor = elements.length ? "pointer" : "default"; },
+        plugins: {
+          legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
+          tooltip: { mode:"index", intersect:false, callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) } }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ font:{size:10}, maxRotation:35 }, grid:{ display:false } },
+          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" },
+               title:{ display:true, text:"# of Open DRs", font:{size:10}, color:"#6b7280" } }
+        }
+      }
+    });
+  }
 }
 let _newClosedChart = null;
+
+function renderNewVsClosedChart(funcSys) {
+  if (typeof CLOSED_DATA === "undefined") return;
+  const SC_CERT = new Set(["1 - Safety Critical","2 - Required for Certification"]);
+  const FS_GROUPS = [
+    { key:"all",          label:"All",        color:"#64748b", bg:"#f1f5f9", border:"#cbd5e1" },
+    { key:"FCC",          label:"FCC",        color:"#0891b2", bg:"#e0f2fe", border:"#7dd3fc" },
+    { key:"ACS",          label:"ACS",        color:"#d97706", bg:"#fffbeb", border:"#fde68a" },
+    { key:"EFIS/IFD",     label:"EFIS/IFD",   color:"#7c3aed", bg:"#f5f3ff", border:"#ddd6fe" },
+    { key:"(unassigned)", label:"unassigned", color:"#64748b", bg:"#f1f5f9", border:"#cbd5e1" },
+  ];
+
+  // render chips
+  const chipsEl = document.getElementById("newClosedFsChips");
+  if (chipsEl) {
+    chipsEl.innerHTML = FS_GROUPS.map(g => {
+      const active = (funcSys === null && g.key === "all") || funcSys === g.key;
+      const bg  = active ? g.color : g.bg;
+      const clr = active ? "#fff"  : g.color;
+      const bdr = active ? g.color : g.border;
+      return `<div class="sc-fs-chip" style="background:${bg};border-color:${bdr};color:${clr};padding:4px 14px;flex-direction:row;gap:0" onclick="setNewClosedFs('${g.key}')">${g.label}</div>`;
+    }).join("");
+  }
+
+  // filter data by funcSys
+  const matchFs = r => {
+    if (!funcSys || funcSys === "all") return true;
+    if (funcSys === "(unassigned)") return !getShared(r.Key, "FuncSys");
+    return getShared(r.Key, "FuncSys") === funcSys;
+  };
+
+  const scCertOpen   = DR_DATA.filter(r => SC_CERT.has(r["DR Type"]) && matchFs(r));
+  const scCertClosed = CLOSED_DATA.filter(r => SC_CERT.has(r["DR Type"]) && matchFs(r));
+  const allDR = [...scCertOpen, ...scCertClosed];
+
+  const weekKey = d => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay()); return dt.toISOString().slice(0,10); };
+  const minWeek = "2026-03-01";
+  const weeks = [];
+  let cur = new Date(minWeek);
+  const today = new Date();
+  while (cur <= today) { weeks.push(cur.toISOString().slice(0,10)); cur.setUTCDate(cur.getUTCDate() + 7); }
+
+  const newPerWeek    = weeks.map(w => allDR.filter(r => r.Created && weekKey(r.Created)===w).length);
+  const closedPerWeek = weeks.map(w => scCertClosed.filter(r => r.ResolutionDate && weekKey(r.ResolutionDate)===w).length);
+  const preOpen   = allDR.filter(r => r.Created && r.Created < minWeek).length;
+  const preClosed = scCertClosed.filter(r => r.ResolutionDate && r.ResolutionDate < minWeek).length;
+  let running = preOpen - preClosed;
+  const netOpen = weeks.map((_,i) => { running += newPerWeek[i] - closedPerWeek[i]; return running; });
+  const weekLabels = weeks.map(w => { const d = new Date(w+"T12:00:00Z"); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; });
+  const rollingAvg = (data, w=4) => data.map((_,i) => {
+    const slice = data.slice(Math.max(0,i-w+1), i+1);
+    return +(slice.reduce((a,b)=>a+b,0)/slice.length).toFixed(1);
+  });
+
+  if (_newClosedChart) _newClosedChart.destroy();
+  _newClosedChart = new Chart(document.getElementById("chartNewVsClosed").getContext("2d"), {
+    data: { labels: weekLabels, datasets: [
+      { type:"bar",  label:"new this week",    data: newPerWeek,    backgroundColor:"#93c5fd", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+      { type:"bar",  label:"closed this week", data: closedPerWeek, backgroundColor:"#86efac", yAxisID:"yActivity", order:3, borderRadius:2, borderSkipped:false },
+      { type:"line", label:"4-wk avg new",     data: rollingAvg(newPerWeek),    borderColor:"#1d4ed8", yAxisID:"yActivity",
+        backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#1d4ed8", tension:0.3, order:2 },
+      { type:"line", label:"4-wk avg closed",  data: rollingAvg(closedPerWeek), borderColor:"#16a34a", yAxisID:"yActivity",
+        backgroundColor:"transparent", borderWidth:2, borderDash:[5,3], pointRadius:3, pointBackgroundColor:"#16a34a", tension:0.3, order:2 },
+      { type:"line", label:"total open DRs",   data: netOpen, borderColor:"#dc2626", yAxisID:"yOpen",
+        backgroundColor:"rgba(220,38,38,0.07)", fill:true, tension:0.3,
+        pointRadius:3, pointBackgroundColor:"#dc2626", borderWidth:2, order:1 },
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:"index", intersect:false },
+      plugins: { legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } } },
+      scales: {
+        x: { ticks:{ font:{size:9}, maxRotation:45, autoSkip:true, maxTicksLimit:26 }, grid:{ display:false } },
+        yOpen:     { type:"linear", position:"left",  beginAtZero:true, ticks:{ font:{size:11} }, grid:{ color:"#e2e5f0" },
+                     title:{ display:true, text:"open DRs",       font:{size:10}, color:"#6b7280" } },
+        yActivity: { type:"linear", position:"right", beginAtZero:true, ticks:{ font:{size:11} }, grid:{ drawOnChartArea:false },
+                     title:{ display:true, text:"weekly activity", font:{size:10}, color:"#6b7280" } }
+      }
+    }
+  });
+}
+
+function setNewClosedFs(key) {
+  _newClosedFuncSys = (key === "all") ? null : key;
+  renderNewVsClosedChart(_newClosedFuncSys);
+}
 </script>
 </body>
 </html>
