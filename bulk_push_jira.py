@@ -5,17 +5,13 @@ values from the dashboard shared KV store to the corresponding Jira custom field
 customfield_11176 = Functional System
 customfield_12607 = SFHA Function
 
-Valid Jira values for customfield_11176 (Functional System):
-  Navigation, NLP, Emrys, Flight Controls, MPX Hardware Rack,
-  Takeoff/Landing, CV Systems, FTS, Autochecklists, DevOps,
-  FCC, ACC, Avidyne IFD, Avidyne Vantage Display, Other
-
-Dashboard values that need manual remapping (not valid in Jira):
-  "ACS"      → no automatic mapping; skipped with a warning
-  "EFIS/IFD" → no automatic mapping; skipped with a warning
+Mapping rules:
+  "ACS"      → pushed as "ACC" (ACC is the Jira field value)
+  "EFIS/IFD" → skipped (no Jira equivalent)
+  all others → pushed as-is
 """
 
-import json, os, requests
+import os, requests
 
 JIRA_BASE  = os.environ["JIRA_BASE"]
 JIRA_EMAIL = os.environ["JIRA_EMAIL"]
@@ -27,11 +23,10 @@ FIELD_MAP = {
     "SfhaFunc": "customfield_12607",   # SFHA Function
 }
 
-# Jira allowed values for Functional System (customfield_11176)
-FUNC_SYS_VALID = {
-    "Navigation", "NLP", "Emrys", "Flight Controls", "MPX Hardware Rack",
-    "Takeoff/Landing", "CV Systems", "FTS", "Autochecklists", "DevOps",
-    "FCC", "ACC", "Avidyne IFD", "Avidyne Vantage Display", "Other",
+# Dashboard value → Jira value (None = skip)
+FUNC_SYS_REMAP = {
+    "ACS":      "ACC",   # ACS in dashboard = ACC in Jira
+    "EFIS/IFD": None,    # no Jira equivalent — skip
 }
 
 
@@ -52,8 +47,7 @@ def main():
 
     auth    = (JIRA_EMAIL, JIRA_TOKEN)
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
-    ok_count = err_count = skip_count = invalid_count = 0
-    invalid_values = {}
+    ok_count = err_count = skip_count = 0
 
     # ── 2. Push each entry to Jira ──────────────────────────────────────────
     for row in to_update:
@@ -66,13 +60,16 @@ def main():
         func_sys  = row.get("FuncSys", "")
         sfha_func = row.get("SfhaFunc", "")
 
-        # Validate FuncSys against Jira's allowed values
         if func_sys:
-            if func_sys in FUNC_SYS_VALID:
-                jira_fields[FIELD_MAP["FuncSys"]] = {"value": func_sys}
+            if func_sys in FUNC_SYS_REMAP:
+                mapped = FUNC_SYS_REMAP[func_sys]
+                if mapped is None:
+                    print(f"  – {key:12s}  FuncSys={func_sys!r} skipped (no Jira equivalent)")
+                    skip_count += 1
+                    continue
+                jira_fields[FIELD_MAP["FuncSys"]] = {"value": mapped}
             else:
-                invalid_values.setdefault(func_sys, []).append(key)
-                invalid_count += 1
+                jira_fields[FIELD_MAP["FuncSys"]] = {"value": func_sys}
 
         if sfha_func:
             jira_fields[FIELD_MAP["SfhaFunc"]] = {"value": sfha_func}
@@ -89,8 +86,8 @@ def main():
             timeout=30,
         )
 
-        label_fs  = func_sys  or "—"
-        label_sf  = sfha_func or "—"
+        label_fs = FUNC_SYS_REMAP.get(func_sys, func_sys) if func_sys else "—"
+        label_sf = sfha_func or "—"
 
         if resp.ok or resp.status_code == 204:
             print(f"  ✓ {key:12s}  FuncSys={label_fs!r:25s}  SfhaFunc={label_sf!r}")
@@ -101,16 +98,9 @@ def main():
 
     # ── 3. Summary ──────────────────────────────────────────────────────────
     print(f"\n{'─'*60}")
-    print(f"  Updated      : {ok_count}")
-    print(f"  Jira errors  : {err_count}")
-    print(f"  Skipped      : {skip_count}")
-    if invalid_values:
-        print(f"\n  ⚠ {invalid_count} ticket(s) skipped — Functional System value not")
-        print(f"    recognised by Jira. Update the dashboard dropdown to use one")
-        print(f"    of the valid Jira values, then re-run this script:")
-        for val, keys in sorted(invalid_values.items()):
-            print(f"      {val!r:20s} → {len(keys)} tickets: {', '.join(keys[:8])}{'…' if len(keys)>8 else ''}")
-        print(f"\n    Valid Jira values: {', '.join(sorted(FUNC_SYS_VALID))}")
+    print(f"  Updated : {ok_count}")
+    print(f"  Errors  : {err_count}")
+    print(f"  Skipped : {skip_count}  (EFIS/IFD or non-MPPT keys)")
     print(f"{'─'*60}")
 
 
