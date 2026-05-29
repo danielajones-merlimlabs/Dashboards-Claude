@@ -16,7 +16,8 @@ FIELDS = [
     "components","customfield_10123","customfield_10376","customfield_10681","customfield_11439",
     "customfield_11770","customfield_11869","customfield_11935","customfield_12068",
     "fixVersions","issuelinks","labels","parent","priority",
-    "created","updated","resolutiondate","comment"
+    "created","updated","resolutiondate","comment",
+    "customfield_11176","customfield_12607"
 ]
 
 # All DRs from MPPT — no aircraft or type filter
@@ -135,6 +136,8 @@ def parse_issue(i):
         "Resolution Date":              (f.get("resolutiondate", "") or "")[:10],
         "URL":                          f"https://merlinlabs.atlassian.net/browse/{i['key']}",
         "Affected Aircraft":            ", ".join(opt.get("value","") for opt in (f.get("customfield_10123") or []) if isinstance(opt, dict)),
+        "Functional System":            get_select(f.get("customfield_11176")),
+        "SFHA Function":                get_select(f.get("customfield_12607")),
     }
 
 def parse_closed(i):

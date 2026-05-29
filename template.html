@@ -410,6 +410,9 @@ async function saveToSheet(key, fields) {
 }
 
 function getShared(key, field){ return (sharedData[key]||{})[field] || ""; }
+// Read FuncSys/SfhaFunc from dirty state first, then from Jira DR data
+function getFuncSys(r){ const d=dirty[r.Key]||{}; return ("Functional System" in d)?d["Functional System"]:(r["Functional System"]||""); }
+function getSfhaFunc(r){ const d=dirty[r.Key]||{}; return ("SFHA Function" in d)?d["SFHA Function"]:(r["SFHA Function"]||""); }
 
 // ── JIRA DIRTY STATE ──
 let dirty = JSON.parse(localStorage.getItem("dr_dirty_v1") || "{}");
@@ -460,8 +463,8 @@ const COLS=[
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
   {id:"disposition", label:"DR Disposition 🟢", group:"core",  type:"shared-select", minW:260, shared:true, sfield:"DRDisposition", options:DR_DISPOSITION},
-  {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
-  {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
+  {id:"funcsys",  label:"Functional System ✏️", group:"core",    type:"jira-select",   minW:155, sortField:"Functional System", field:"Functional System", options:FUNC_SYS},
+  {id:"sfhafunc", label:"SFHA Function ✏️",   group:"core",    type:"jira-select",   minW:210, sortField:"SFHA Function",    field:"SFHA Function",    options:SFHA_FUNCS},
   {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
   {id:"c130opr",   label:"C130 OPRs Applicability 🟢",      group:"core", type:"shared-select", minW:185, shared:true, sfield:"C130OPRs",   options:C130_OPR},
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
@@ -659,19 +662,19 @@ function render(){
 
   // card-count pools (each layer filters on top of the previous)
   const typePool=allDRsFilterState.types.size>0?DR_DATA.filter(r=>allDRsFilterState.types.has(r["DR Type"]||"(none)")):DR_DATA;
-  const funcSysPool=allDRsFilterState.funcSys?(allDRsFilterState.funcSys==="(unassigned)"?typePool.filter(r=>!getShared(r.Key,"FuncSys")):typePool.filter(r=>getShared(r.Key,"FuncSys")===allDRsFilterState.funcSys)):typePool;
+  const funcSysPool=allDRsFilterState.funcSys?(allDRsFilterState.funcSys==="(unassigned)"?typePool.filter(r=>!getFuncSys(r)):typePool.filter(r=>getFuncSys(r)===allDRsFilterState.funcSys)):typePool;
   _renderAllDRsTypeChips(DR_DATA);
   _renderAllDRsFuncSysCards(typePool);
   _renderAllDRsStatusCards(funcSysPool);
 
   filtered=DR_DATA.filter(r=>{
     if(allDRsFilterState.types.size>0&&!allDRsFilterState.types.has(r["DR Type"]||"(none)"))return false;
-    if(allDRsFilterState.funcSys){if(allDRsFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==allDRsFilterState.funcSys)return false;}
+    if(allDRsFilterState.funcSys){if(allDRsFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==allDRsFilterState.funcSys)return false;}
     if(allDRsFilterState.statusGroup){const g=SC_STATUS_GROUPS.find(g=>g.key===allDRsFilterState.statusGroup);if(g&&!g.statuses.includes(r.Status))return false;}
     if(assign&&r.Assignee!==assign)return false;
     if(where&&getShared(r.Key,"WhereObserved")!==where)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
-    if(sfha&&getShared(r.Key,"SfhaFunc")!==sfha)return false;
+    if(sfha&&getSfhaFunc(r)!==sfha)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes"),getShared(r.Key,"ObservedBehavior")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -701,6 +704,8 @@ async function syncRow(key,btn){
     if(changes["Functional Team (System)"]!==undefined)payload.updates.system=changes["Functional Team (System)"];
     if(changes["Status"]!==undefined)payload.updates.status=changes["Status"];
     if(changes["Assignee"]!==undefined)payload.updates.assignee=changes["Assignee"];
+    if(changes["Functional System"]!==undefined)payload.updates.funcSys=changes["Functional System"];
+    if(changes["SFHA Function"]!==undefined)payload.updates.sfhaFunc=changes["SFHA Function"];
   }
   try{
     const res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
@@ -778,7 +783,7 @@ function exportCSV(){
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r.Assignee,r["DR Type"],q(s.DRDisposition||""),r["Functional Team (System)"],r.Priority,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r.Assignee,r["DR Type"],q(s.DRDisposition||""),r["Functional Team (System)"],r.Priority,r.Labels,r.Updated,getFuncSys(r)||"",getSfhaFunc(r)||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
@@ -802,7 +807,7 @@ function exportPDF(){
     {label:"Priority",    val:r=>esc(r.Priority||"—")},
     {label:"Assignee",    val:r=>esc(r.Assignee||"—")},
     {label:"Affected Aircraft", val:r=>esc(r["Affected Aircraft"]||"—")},
-    {label:"Functional System", val:r=>esc(getShared(r.Key,"FuncSys")||"—")},
+    {label:"Functional System", val:r=>esc(getFuncSys(r)||"—")},
     {label:"FT Campaign", val:r=>esc(getShared(r.Key,"Campaign")||"—")},
     {label:"Avidyne",     val:r=>getAvi(r.Key,r)?"✓":""},
     {label:"Notes",       val:r=>esc(getShared(r.Key,"Notes")||"")},
@@ -957,7 +962,7 @@ function renderSCCert(){
 
   // funcSys-filtered pool: status cards update when funcSys is clicked
   const funcSysPool = scCertFilterState.funcSys
-    ? (scCertFilterState.funcSys==="(unassigned)" ? typeFiltered.filter(r=>!getShared(r.Key,"FuncSys")) : typeFiltered.filter(r=>getShared(r.Key,"FuncSys")===scCertFilterState.funcSys))
+    ? (scCertFilterState.funcSys==="(unassigned)" ? typeFiltered.filter(r=>!getFuncSys(r)) : typeFiltered.filter(r=>getFuncSys(r)===scCertFilterState.funcSys))
     : typeFiltered;
 
   _renderSCTypeChips(allSCCert);
@@ -968,7 +973,7 @@ function renderSCCert(){
   const activeGroup = SC_STATUS_GROUPS.find(g => g.key===scCertFilterState.statusGroup);
   let rows = typeFiltered.filter(r=>{
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
-    if(scCertFilterState.funcSys){if(scCertFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==scCertFilterState.funcSys)return false;}
+    if(scCertFilterState.funcSys){if(scCertFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==scCertFilterState.funcSys)return false;}
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1028,7 +1033,7 @@ function _renderSCFuncSysCards(pool){
   const active = scCertFilterState.funcSys;
   let html = `<span class="sc-fs-label">Func. System:</span>`;
   SC_FUNCSYS_GROUPS.forEach(g=>{
-    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getFuncSys(r)).length : pool.filter(r=>getFuncSys(r)===g.key).length;
     if(!count) return;
     const isOn = active===g.key;
     const bg  = isOn ? g.color : g.bg;
@@ -1080,7 +1085,7 @@ function renderNewTriage(){
 
   // funcSys-filtered pool for status card counts
   const funcSysPool = newTriageFilterState.funcSys
-    ? (newTriageFilterState.funcSys==="(unassigned)" ? allTriage.filter(r=>!getShared(r.Key,"FuncSys")) : allTriage.filter(r=>getShared(r.Key,"FuncSys")===newTriageFilterState.funcSys))
+    ? (newTriageFilterState.funcSys==="(unassigned)" ? allTriage.filter(r=>!getFuncSys(r)) : allTriage.filter(r=>getFuncSys(r)===newTriageFilterState.funcSys))
     : allTriage;
 
   _renderNewTriageStatusCards(funcSysPool);
@@ -1090,7 +1095,7 @@ function renderNewTriage(){
   const activeGroup = SC_STATUS_GROUPS.find(g => g.key===newTriageFilterState.statusGroup);
   let rows = allTriage.filter(r=>{
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
-    if(newTriageFilterState.funcSys){if(newTriageFilterState.funcSys==="(unassigned)"?getShared(r.Key,"FuncSys")!=="":getShared(r.Key,"FuncSys")!==newTriageFilterState.funcSys)return false;}
+    if(newTriageFilterState.funcSys){if(newTriageFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==newTriageFilterState.funcSys)return false;}
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,r["DR Type"]||"",getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1134,7 +1139,7 @@ function _renderNewTriageFuncSysCards(pool){
   const active = newTriageFilterState.funcSys;
   let html = `<span class="sc-fs-label">Func. System:</span>`;
   SC_FUNCSYS_GROUPS.forEach(g=>{
-    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getFuncSys(r)).length : pool.filter(r=>getFuncSys(r)===g.key).length;
     if(!count) return;
     const isOn = active===g.key;
     const bg  = isOn ? g.color : g.bg;
@@ -1183,7 +1188,7 @@ function _renderAllDRsFuncSysCards(pool){
   const active = allDRsFilterState.funcSys;
   let html = `<span class="sc-fs-label">Func. System:</span>`;
   SC_FUNCSYS_GROUPS.forEach(g=>{
-    const count = g.key==="(unassigned)" ? pool.filter(r=>!getShared(r.Key,"FuncSys")).length : pool.filter(r=>getShared(r.Key,"FuncSys")===g.key).length;
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getFuncSys(r)).length : pool.filter(r=>getFuncSys(r)===g.key).length;
     if(!count) return;
     const isOn = active===g.key;
     const bg  = isOn ? g.color : g.bg;
@@ -1343,7 +1348,7 @@ function renderMetrics(){
   ];
   const datasets = CHART_FS.map(g=>{
     const data = statuses.map(status=>
-      scCertDR.filter(r=>rowStatus(r)===status && (g.key==="(unassigned)"?!getShared(r.Key,"FuncSys"):getShared(r.Key,"FuncSys")===g.key)).length
+      scCertDR.filter(r=>rowStatus(r)===status && (g.key==="(unassigned)"?!getFuncSys(r):getFuncSys(r)===g.key)).length
     );
     return { label: g.label, data, backgroundColor: g.color, borderRadius: 3, borderSkipped: false };
   }).filter(ds=>ds.data.some(v=>v>0));
@@ -1365,7 +1370,7 @@ function renderMetrics(){
         const statusRaw  = statuses[barIndex];
         const statusDisp = statusLabels[barIndex];
         const rows = scCertDR.filter(r => {
-          const matchFs = fs==="unassigned" ? !getShared(r.Key,"FuncSys") : getShared(r.Key,"FuncSys")===fs;
+          const matchFs = fs==="unassigned" ? !getFuncSys(r) : getFuncSys(r)===fs;
           return matchFs && rowStatus(r)===statusRaw;
         });
         openDrillModal(`${statusDisp} — ${fs} (${rows.length})`, rows);
@@ -1745,8 +1750,8 @@ function renderNewVsClosedChart(funcSys) {
   // filter data by funcSys
   const matchFs = r => {
     if (!funcSys || funcSys === "all") return true;
-    if (funcSys === "(unassigned)") return !getShared(r.Key, "FuncSys");
-    return getShared(r.Key, "FuncSys") === funcSys;
+    if (funcSys === "(unassigned)") return !getFuncSys(r);
+    return getFuncSys(r) === funcSys;
   };
 
   const scCertOpen   = DR_DATA.filter(r => SC_CERT.has(r["DR Type"]) && matchFs(r));
