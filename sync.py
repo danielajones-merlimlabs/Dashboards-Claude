@@ -13,11 +13,11 @@ JIRA_TOKEN = os.environ["JIRA_TOKEN"]
 
 FIELDS = [
     "summary","issuetype","project","reporter","description","status","assignee",
-    "components","customfield_10123","customfield_10376","customfield_10681","customfield_11439",
+    "components","customfield_10376","customfield_10681","customfield_11439",
     "customfield_11770","customfield_11869","customfield_11935","customfield_12068",
     "fixVersions","issuelinks","labels","parent","priority",
     "created","updated","resolutiondate","comment",
-    "customfield_11176","customfield_12607"
+    "customfield_11176","customfield_12607","customfield_12605"
 ]
 
 # All DRs from MPPT — no aircraft or type filter
@@ -26,7 +26,7 @@ QUERIES = {"MPPT": MPPT_JQL}
 
 # Closed DRs — minimal fields only, last 18 months, for burndown chart
 CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "issuetype",
-                 "customfield_10123", "customfield_11935", "customfield_12068"]
+                 "customfield_11935", "customfield_12068"]
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL}
@@ -135,9 +135,9 @@ def parse_issue(i):
         "Updated":                      (f.get("updated", "") or "")[:10],
         "Resolution Date":              (f.get("resolutiondate", "") or "")[:10],
         "URL":                          f"https://merlinlabs.atlassian.net/browse/{i['key']}",
-        "Affected Aircraft":            ", ".join(opt.get("value","") for opt in (f.get("customfield_10123") or []) if isinstance(opt, dict)),
         "Functional System":            get_select(f.get("customfield_11176")),
         "SFHA Function":                get_select(f.get("customfield_12607")),
+        "Issue Found On":               get_select(f.get("customfield_12605")),
     }
 
 def parse_closed(i):

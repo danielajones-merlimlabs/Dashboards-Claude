@@ -414,6 +414,7 @@ function getShared(key, field){ return (sharedData[key]||{})[field] || ""; }
 // Read FuncSys/SfhaFunc from dirty state first, then from Jira DR data
 function getFuncSys(r){ const d=dirty[r.Key]||{}; return ("Functional System" in d)?d["Functional System"]:(r["Functional System"]||""); }
 function getSfhaFunc(r){ const d=dirty[r.Key]||{}; return ("SFHA Function" in d)?d["SFHA Function"]:(r["SFHA Function"]||""); }
+function getIssueFoundOn(r){ const d=dirty[r.Key]||{}; return ("Issue Found On" in d)?d["Issue Found On"]:(r["Issue Found On"]||""); }
 
 // ── JIRA DIRTY STATE ──
 let dirty = JSON.parse(localStorage.getItem("dr_dirty_v1") || "{}");
@@ -452,6 +453,7 @@ const SFHA_FUNCS = ["","Automatic Flight Guidance","Autopilot","Pitch Trim Contr
 const PROG_APPLIC = ["","STC only","C130","King Air","L-39"];
 const C130_OPR       = ["","No","Yes - no action required","Yes - action required"];
 const AVI_FIX_CHANGE = ["","Fix","Change","TBD"];
+const ISSUE_FOUND_ON = ["","Systems Bench 1","Systems Bench 2","Aircraft N208B","Aircraft ZK-MLN","Other"];
 
 const SC={"Investigating":["#fff3cd","#856404"],"Reviewed - To-Do":["#ede9ff","#5b4ecc"],"To-Do":["#ede9ff","#5b4ecc"],"New":["#e8f4fd","#1565c0"],"In progress":["#d1fae5","#065f46"],"In Review":["#ccfbf1","#0f766e"],"Needs Testing":["#dcfce7","#166534"],"Blocked":["#ffe4d6","#9a3412"],"Need Team Input":["#fee2e2","#991b1b"],"Triaged":["#fff3cd","#856404"],"Ready to Test Fix":["#ccfbf1","#0f766e"],"Watch":["#fef9c3","#854d0e"],"Product Backlog- Future":["#f1f5f9","#475569"],"[CLOSED]":["#fee2e2","#dc2626"]};
 const STATUSES = ["", ...Object.keys(SC)];
@@ -470,7 +472,7 @@ const COLS=[
   {id:"c130opr",   label:"C130 OPRs Applicability 🟢",      group:"core", type:"shared-select", minW:185, shared:true, sfield:"C130OPRs",   options:C130_OPR},
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
-  {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
+  {id:"issueFoundOn",label:"Issue Found On ✏️",group:"core",   type:"jira-select",   minW:155, sortField:"Issue Found On", field:"Issue Found On", options:ISSUE_FOUND_ON},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
   {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
@@ -569,7 +571,6 @@ function cellForCol(c,r){
       else if(c.id==="status")content=isClosed?'<span class="closed-tag">[CLOSED]</span>':pill(r.Status);
       else if(c.id==="labels")content=ltags(r.Labels);
       else if(c.id==="updated")content=`<span class="date-cell">${r.Updated||"—"}</span>`;
-      else if(c.id==="affAircraft")content=r.Project==="FFT"?`<span style="font-size:10px;color:var(--text2)">${r["Affected Aircraft"]||"—"}</span>`:"";
       else if(c.id==="comments")content=`<span style="font-size:10px;color:var(--text3)">${r["Comment Count"]??""}</span>`;
       return`<td style="text-align:${c.id==="comments"?"center":"left"}">${content}</td>`;
     }
@@ -700,6 +701,7 @@ async function syncRow(key,btn){
     if(changes["Assignee"]!==undefined)payload.updates.assignee=changes["Assignee"];
     if(changes["Functional System"]!==undefined)payload.updates.funcSys=changes["Functional System"];
     if(changes["SFHA Function"]!==undefined)payload.updates.sfhaFunc=changes["SFHA Function"];
+    if(changes["Issue Found On"]!==undefined)payload.updates.issueFoundOn=changes["Issue Found On"];
   }
   try{
     const res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
@@ -772,12 +774,12 @@ function clearFilters(){["search","assigneeFilter","campaignFilter","sfhaFilter"
 ["search","assigneeFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","Assignee","DR Type","DR Disposition","System","Priority","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","FT Campaign","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
+  const headers=["Key","Project","Summary","Status","Assignee","DR Type","DR Disposition","System","Priority","Labels","Updated","Functional System","SFHA Function","Issue Found On","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","FT Campaign","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
   const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r.Assignee,r["DR Type"],q(s.DRDisposition||""),r["Functional Team (System)"],r.Priority,r.Labels,r.Updated,getFuncSys(r)||"",getSfhaFunc(r)||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.Campaign||"",q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r.Assignee,r["DR Type"],q(s.DRDisposition||""),r["Functional Team (System)"],r.Priority,r.Labels,r.Updated,getFuncSys(r)||"",getSfhaFunc(r)||"",getIssueFoundOn(r)||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.Campaign||"",q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();
@@ -826,7 +828,7 @@ function exportPDF(){
     {label:"DR Type",     val:r=>esc(r["DR Type"]||"—")},
     {label:"Priority",    val:r=>esc(r.Priority||"—")},
     {label:"Assignee",    val:r=>esc(r.Assignee||"—")},
-    {label:"Affected Aircraft", val:r=>esc(r["Affected Aircraft"]||"—")},
+    {label:"Issue Found On",    val:r=>esc(getIssueFoundOn(r)||"—")},
     {label:"Functional System", val:r=>esc(getFuncSys(r)||"—")},
     {label:"FT Campaign", val:r=>esc(getShared(r.Key,"Campaign")||"—")},
     {label:"Avidyne",     val:r=>getAvi(r.Key,r)?"✓":""},

@@ -19,6 +19,7 @@ const FIELD_LABELS = {
   "jira:comment": "Comment Added",
   "jira:FuncSys": "Functional System → Jira", "jira:SfhaFunc": "SFHA Function → Jira",
   "jira:funcSys": "Functional System (Jira)", "jira:sfhaFunc": "SFHA Function (Jira)",
+  "jira:issueFoundOn": "Issue Found On (Jira)",
 };
 
 async function appendChangelog(env, entries) {
@@ -167,8 +168,9 @@ export default {
     const fields = {};
     if (updates.drType)   fields.customfield_11935 = { value: updates.drType };
     if (updates.system)   fields.customfield_12068 = { value: updates.system };
-    if ("funcSys"  in updates) fields.customfield_11176 = updates.funcSys  ? { value: updates.funcSys  } : null;
-    if ("sfhaFunc" in updates) fields.customfield_12607 = updates.sfhaFunc ? { value: updates.sfhaFunc } : null;
+    if ("funcSys"      in updates) fields.customfield_11176 = updates.funcSys      ? { value: updates.funcSys      } : null;
+    if ("sfhaFunc"     in updates) fields.customfield_12607 = updates.sfhaFunc     ? { value: updates.sfhaFunc     } : null;
+    if ("issueFoundOn" in updates) fields.customfield_12605 = updates.issueFoundOn ? { value: updates.issueFoundOn } : null;
 
     if (updates.assignee) {
       const userRes = await fetch(
