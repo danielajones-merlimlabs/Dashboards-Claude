@@ -37,7 +37,8 @@ def jira_search(jql, fields, start=0, max_results=100):
         auth=(JIRA_EMAIL, JIRA_TOKEN),
         headers={"Accept": "application/json"},
         params={"jql": jql, "fields": ",".join(fields),
-                "startAt": start, "maxResults": max_results}
+                "startAt": start, "maxResults": max_results},
+        timeout=60
     )
     print(f"  HTTP {r.status_code}")
     if r.status_code != 200:
