@@ -302,6 +302,7 @@
   <div id="scTypeChips" style="display:flex;gap:6px"></div>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
     <select id="sccertAssigneeFilter" onchange="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Assignees</option></select>
+    <select id="sccertFuncTeamFilter" onchange="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Functional Teams</option></select>
     <input type="text" id="sccertSearch" placeholder="🔍  Search…" oninput="renderSCCert()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
     <button class="btn" onclick="clearSCCertFilters()">Clear all</button>
   </div>
@@ -320,6 +321,7 @@
   <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Showing OPRs that are New or do not have a DR Type assigned</span>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
     <select id="newTriageAssigneeFilter" onchange="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Assignees</option></select>
+    <select id="newTriageFuncTeamFilter" onchange="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Functional Teams</option></select>
     <input type="text" id="newTriageSearch" placeholder="🔍  Search…" oninput="renderNewTriage()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
     <button class="btn" onclick="clearNewTriageFilters()">Clear all</button>
   </div>
@@ -416,6 +418,7 @@ function getShared(key, field){ return (sharedData[key]||{})[field] || ""; }
 function getFuncSys(r){ const d=dirty[r.Key]||{}; return ("Functional System" in d)?d["Functional System"]:(r["Functional System"]||""); }
 function getSfhaFunc(r){ const d=dirty[r.Key]||{}; return ("SFHA Function" in d)?d["SFHA Function"]:(r["SFHA Function"]||""); }
 function getIssueFoundOn(r){ const d=dirty[r.Key]||{}; return ("Issue Found On" in d)?d["Issue Found On"]:(r["Issue Found On"]||""); }
+function getFuncTeam(r){ const d=dirty[r.Key]||{}; return ("Functional Team (System)" in d)?d["Functional Team (System)"]:(r["Functional Team (System)"]||""); }
 
 // ── JIRA DIRTY STATE ──
 let dirty = JSON.parse(localStorage.getItem("dr_dirty_v1") || "{}");
@@ -434,7 +437,7 @@ function getAvi(key,r){
 
 // ── OPTIONS ──
 const DR_TYPES   = ["","1 - Safety Critical","2 - Required for Certification","3 - Performance Issue","4 - Product Improvement","5 - Test Infrastructure","6 - SII"];
-const SYSTEMS    = ["","ACC + MCC Platform SW","Aircraft Integration","Certification","FCC Platform SW + Model SW - IO","Human Factors","Natural Language Processing","Systems Engineering","VTE"];
+const SYSTEMS    = ["","ACC + MCC Platform SW","Aircraft Integration","Certification","FCC Platform SW + Model SW - IO","Human Factors","Model SW - AFCS","Natural Language Processing","Systems Engineering","VTE"];
 const PRIORITIES = ["","Highest","High","Medium","Low"];
 const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalashian","Brad Heath","Bryce Hill","Ellis Ahn","Gabriel Heredia Acevedo","Harlan Waldrop","Jared Basile","Karen Linda","Katelyn Schroll","Larry Friese Jr","Matt Rendos","Molly Connolly","Patrick Shine","Patrick Van Wie","Reed Bimson","Ryan McMahon","Shawn Bonneau","Shirley Shah","Tas Marshall","Ted Sieffert","Thao Trinh","Victoria Gilroy","Vincent Nhieu"];
 const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
@@ -466,7 +469,7 @@ const COLS=[
   {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
-  {id:"functeam", label:"Functional Team", group:"core",        type:"text",          minW:150, sortField:"Functional Team (System)", field:"Functional Team (System)"},
+  {id:"functeam", label:"Functional Team ✏️", group:"core",      type:"jira-select",   minW:185, sortField:"Functional Team (System)", field:"Functional Team (System)", options:SYSTEMS},
   {id:"disposition", label:"DR Disposition 🟢", group:"core",  type:"shared-select", minW:260, shared:true, sfield:"DRDisposition", options:DR_DISPOSITION},
   {id:"funcsys",  label:"Functional System ✏️", group:"core",    type:"jira-select",   minW:155, sortField:"Functional System", field:"Functional System", options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function ✏️",   group:"core",    type:"jira-select",   minW:210, sortField:"SFHA Function",    field:"SFHA Function",    options:SFHA_FUNCS},
@@ -508,7 +511,7 @@ function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].so
 [["assigneeFilter","Assignee"],["sccertAssigneeFilter","Assignee"],["newTriageAssigneeFilter","Assignee"]].forEach(([id,key])=>{
   const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
-uniq("Functional Team (System)").forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("funcTeamFilter").appendChild(o);});
+uniq("Functional Team (System)").forEach(v=>{["funcTeamFilter","sccertFuncTeamFilter","newTriageFuncTeamFilter"].forEach(id=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById(id).appendChild(o);});});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
 SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
 
@@ -673,7 +676,7 @@ function render(){
     if(allDRsFilterState.funcSys){if(allDRsFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==allDRsFilterState.funcSys)return false;}
     if(allDRsFilterState.statusGroup){const g=SC_STATUS_GROUPS.find(g=>g.key===allDRsFilterState.statusGroup);if(g&&!g.statuses.includes(r.Status))return false;}
     if(assign&&r.Assignee!==assign)return false;
-    if(funcTeam&&(r["Functional Team (System)"]||"")!==funcTeam)return false;
+    if(funcTeam&&getFuncTeam(r)!==funcTeam)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
     if(sfha&&getSfhaFunc(r)!==sfha)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
@@ -982,6 +985,7 @@ function renderSCCert(){
   if(!sheetLoaded)return;
   const search = document.getElementById("sccertSearch").value.toLowerCase();
   const assign = document.getElementById("sccertAssigneeFilter").value;
+  const funcTeam = document.getElementById("sccertFuncTeamFilter").value;
 
   // base pool: all SC+Cert DRs
   const allSCCert = DR_DATA.filter(r => SC_CERT_SET.has(r["DR Type"]));
@@ -1006,6 +1010,7 @@ function renderSCCert(){
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
     if(scCertFilterState.funcSys){if(scCertFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==scCertFilterState.funcSys)return false;}
     if(assign&&r.Assignee!==assign)return false;
+    if(funcTeam&&getFuncTeam(r)!==funcTeam)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1081,6 +1086,7 @@ function _renderSCFuncSysCards(pool){
 
 function clearSCCertFilters(){
   document.getElementById("sccertAssigneeFilter").value="";
+  document.getElementById("sccertFuncTeamFilter").value="";
   document.getElementById("sccertSearch").value="";
   scCertFilterState = { statusGroup: null, funcSys: null, types: new Set() };
   renderSCCert();
@@ -1114,6 +1120,7 @@ function renderNewTriage(){
   if(!sheetLoaded)return;
   const search = document.getElementById("newTriageSearch").value.toLowerCase();
   const assign = document.getElementById("newTriageAssigneeFilter").value;
+  const funcTeam = document.getElementById("newTriageFuncTeamFilter").value;
 
   // base pool: Status=New OR no DR Type
   const allTriage = DR_DATA.filter(r => r.Status==="New" || !r["DR Type"]);
@@ -1132,6 +1139,7 @@ function renderNewTriage(){
     if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
     if(newTriageFilterState.funcSys){if(newTriageFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==newTriageFilterState.funcSys)return false;}
     if(assign&&r.Assignee!==assign)return false;
+    if(funcTeam&&getFuncTeam(r)!==funcTeam)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,r["DR Type"]||"",getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
     return true;
   });
@@ -1199,6 +1207,7 @@ function toggleNewTriageFuncSys(key){
 }
 function clearNewTriageFilters(){
   document.getElementById("newTriageAssigneeFilter").value="";
+  document.getElementById("newTriageFuncTeamFilter").value="";
   document.getElementById("newTriageSearch").value="";
   newTriageFilterState = { statusGroup: null, funcSys: null };
   renderNewTriage();
