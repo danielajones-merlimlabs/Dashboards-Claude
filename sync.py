@@ -46,21 +46,16 @@ def jira_search(jql, fields, start=0, max_results=100):
     r.raise_for_status()
     return r.json()
 
-def fetch_all(jql, fields, max_results=100):
+def fetch_all(jql, fields):
     issues, start = [], 0
     while True:
-        data = jira_search(jql, fields, start=start, max_results=max_results)
+        data = jira_search(jql, fields, start=start)
         batch = data.get("issues", [])
         issues.extend(batch)
         total = data.get("total", 0)
         start += len(batch)
         print(f"  Fetched {start}/{total}")
-        # Stop if batch is empty OR smaller than page size (last page)
-        # Don't rely on total — Jira sometimes returns total=0 even with results
-        if not batch or len(batch) < max_results:
-            break
-        # Also stop if total is reliable and we've fetched everything
-        if total > 0 and start >= total:
+        if start >= total or not batch:
             break
     return issues
 
