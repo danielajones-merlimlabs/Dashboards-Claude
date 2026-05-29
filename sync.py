@@ -31,7 +31,7 @@ MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done 
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):
-    url = f"{JIRA_BASE}/rest/api/3/search/jql"
+    url = f"{JIRA_BASE}/rest/api/3/search"
     r = requests.get(
         url,
         auth=(JIRA_EMAIL, JIRA_TOKEN),
