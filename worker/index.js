@@ -17,6 +17,7 @@ const FIELD_LABELS = {
   "jira:drType": "DR Type (Jira)", "jira:status": "Status (Jira)",
   "jira:assignee": "Assignee (Jira)", "jira:system": "System (Jira)",
   "jira:comment": "Comment Added",
+  "jira:FuncSys": "Functional System → Jira", "jira:SfhaFunc": "SFHA Function → Jira",
 };
 
 async function appendChangelog(env, entries) {
@@ -104,6 +105,44 @@ export default {
         }
       }
       if (changed.length > 0) await appendChangelog(env, changed);
+
+      // ── Push FuncSys / SfhaFunc changes to Jira fields ──
+      // customfield_11176 = Functional System, customfield_12607 = SFHA Function
+      const JIRA_FIELD_MAP = { FuncSys: "customfield_11176", SfhaFunc: "customfield_12607" };
+      const jiraFields = {};
+      for (const [sfield, cfId] of Object.entries(JIRA_FIELD_MAP)) {
+        if (sfield in fields && fields[sfield] !== (existing[sfield] || "")) {
+          // non-empty → set value; empty string → send null to clear the field
+          jiraFields[cfId] = fields[sfield] ? { value: fields[sfield] } : null;
+        }
+      }
+      if (Object.keys(jiraFields).length > 0 && env.JIRA_EMAIL && env.JIRA_TOKEN) {
+        const base = env.JIRA_BASE.replace(/\/$/, "");
+        const auth = btoa(`${env.JIRA_EMAIL}:${env.JIRA_TOKEN}`);
+        const jiraRes = await fetch(`${base}/rest/api/3/issue/${key}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ fields: jiraFields }),
+        });
+        const jiraOk = jiraRes.ok || jiraRes.status === 204;
+        const jiraEntries = [];
+        for (const [sfield, cfId] of Object.entries(JIRA_FIELD_MAP)) {
+          if (cfId in jiraFields) {
+            jiraEntries.push({
+              ts, drKey: key,
+              field: FIELD_LABELS[`jira:${sfield}`] || `Jira: ${FIELD_LABELS[sfield] || sfield}`,
+              oldVal: existing[sfield] || "",
+              newVal: (fields[sfield] || "") + (jiraOk ? "" : " ⚠ Jira update failed"),
+              user: user || "",
+            });
+          }
+        }
+        if (jiraEntries.length > 0) await appendChangelog(env, jiraEntries);
+      }
 
       return jsonResp({ success: true, timestamp: updated.LastEditedAt });
     }
