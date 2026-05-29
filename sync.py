@@ -30,14 +30,17 @@ MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done 
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
 QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL}
 
-def jira_search(jql, fields, start=0, max_results=100):
-    url = f"{JIRA_BASE}/rest/api/3/search"
+def jira_search_page(jql, fields, next_page_token=None, max_results=100):
+    """Fetch one page from the Jira Cloud search/jql endpoint (cursor-based pagination)."""
+    url = f"{JIRA_BASE}/rest/api/3/search/jql"
+    params = {"jql": jql, "fields": ",".join(fields), "maxResults": max_results}
+    if next_page_token:
+        params["nextPageToken"] = next_page_token
     r = requests.get(
         url,
         auth=(JIRA_EMAIL, JIRA_TOKEN),
         headers={"Accept": "application/json"},
-        params={"jql": jql, "fields": ",".join(fields),
-                "startAt": start, "maxResults": max_results},
+        params=params,
         timeout=60
     )
     print(f"  HTTP {r.status_code}")
@@ -47,15 +50,18 @@ def jira_search(jql, fields, start=0, max_results=100):
     return r.json()
 
 def fetch_all(jql, fields):
-    issues, start = [], 0
+    """Fetch all results using cursor-based pagination (nextPageToken)."""
+    issues = []
+    next_page_token = None
+    page = 0
     while True:
-        data = jira_search(jql, fields, start=start)
+        page += 1
+        data = jira_search_page(jql, fields, next_page_token=next_page_token)
         batch = data.get("issues", [])
         issues.extend(batch)
-        total = data.get("total", 0)
-        start += len(batch)
-        print(f"  Fetched {start}/{total}")
-        if start >= total or not batch:
+        next_page_token = data.get("nextPageToken")
+        print(f"  Page {page}: {len(batch)} issues fetched (running total: {len(issues)})")
+        if not batch or not next_page_token:
             break
     return issues
 
