@@ -19,23 +19,7 @@ FIELDS = [
     "created","updated","resolutiondate","comment"
 ]
 
-AIRCRAFT_TERMS = ["n208", "208b", "mln", "zkmln", "zk-mln", "208"]
-
-def is_fft_aircraft(issue):
-    """Return True if this FFT issue is for our tracked aircraft."""
-    f = issue["fields"]
-    summary = (f.get("summary") or "").lower()
-    if any(t in summary for t in AIRCRAFT_TERMS):
-        return True
-    affected = f.get("customfield_10123") or []
-    if isinstance(affected, list):
-        for opt in affected:
-            val = (opt.get("value") or "").lower() if isinstance(opt, dict) else str(opt).lower()
-            if any(t in val for t in AIRCRAFT_TERMS):
-                return True
-    return False
-
-# FFT tickets have been migrated to MPPT — only query MPPT going forward
+# All DRs from MPPT — no aircraft or type filter
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
 QUERIES = {"MPPT": MPPT_JQL}
 
