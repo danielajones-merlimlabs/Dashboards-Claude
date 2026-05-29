@@ -220,6 +220,7 @@
   <input type="text" id="search" placeholder="🔍  Search…">
   <div class="fsep"></div>
   <select id="assigneeFilter"><option value="">All Assignees</option></select>
+  <select id="funcTeamFilter"><option value="">All Functional Teams</option></select>
   <select id="campaignFilter"><option value="">All Campaigns</option></select>
   <select id="sfhaFilter"><option value="">All SFHA Functions</option></select>
   <div class="fsep"></div>
@@ -465,6 +466,7 @@ const COLS=[
   {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
   {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
+  {id:"functeam", label:"Functional Team", group:"core",        type:"text",          minW:150, sortField:"Functional Team (System)", field:"Functional Team (System)"},
   {id:"disposition", label:"DR Disposition 🟢", group:"core",  type:"shared-select", minW:260, shared:true, sfield:"DRDisposition", options:DR_DISPOSITION},
   {id:"funcsys",  label:"Functional System ✏️", group:"core",    type:"jira-select",   minW:155, sortField:"Functional System", field:"Functional System", options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function ✏️",   group:"core",    type:"jira-select",   minW:210, sortField:"SFHA Function",    field:"SFHA Function",    options:SFHA_FUNCS},
@@ -506,6 +508,7 @@ function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].so
 [["assigneeFilter","Assignee"],["sccertAssigneeFilter","Assignee"],["newTriageAssigneeFilter","Assignee"]].forEach(([id,key])=>{
   const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
+uniq("Functional Team (System)").forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("funcTeamFilter").appendChild(o);});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
 SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
 
@@ -579,6 +582,7 @@ function cellForCol(c,r){
       const atFmt=at?at.slice(0,10):"";
       return`<td class="shared-col"><span style="font-size:10px;color:var(--text2)">${by||"—"}</span>${atFmt?`<div class="edited-by">${atFmt}</div>`:""}`;
     }
+    case"text":return`<td><span style="white-space:nowrap">${r[c.field]||"—"}</span></td>`;
     case"jira-select":return`<td>${makeJiraSelect(c.options,r[c.field]||"",c.field,key)}</td>`;
     case"jira-text":return`<td>${makeJiraText(r[c.field]||"",c.field,key)}</td>`;
     case"shared-notes":{
@@ -653,6 +657,7 @@ function render(){
   if(!sheetLoaded)return;
   const search=document.getElementById("search").value.toLowerCase();
   const assign=document.getElementById("assigneeFilter").value;
+  const funcTeam=document.getElementById("funcTeamFilter").value;
   const campaign=document.getElementById("campaignFilter").value;
   const sfha=document.getElementById("sfhaFilter").value;
 
@@ -668,6 +673,7 @@ function render(){
     if(allDRsFilterState.funcSys){if(allDRsFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==allDRsFilterState.funcSys)return false;}
     if(allDRsFilterState.statusGroup){const g=SC_STATUS_GROUPS.find(g=>g.key===allDRsFilterState.statusGroup);if(g&&!g.statuses.includes(r.Status))return false;}
     if(assign&&r.Assignee!==assign)return false;
+    if(funcTeam&&(r["Functional Team (System)"]||"")!==funcTeam)return false;
     if(campaign&&getShared(r.Key,"Campaign")!==campaign)return false;
     if(sfha&&getSfhaFunc(r)!==sfha)return false;
     if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
@@ -770,8 +776,8 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape") document.getEleme
 function showToast(msg,ok){const t=document.getElementById("toast");t.textContent=msg;t.className="show "+(ok?"ok":"err");clearTimeout(t._t);t._t=setTimeout(()=>t.className="",3500);}
 
 
-function clearFilters(){["search","assigneeFilter","campaignFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");allDRsFilterState={statusGroup:null,funcSys:null,types:new Set()};render();}
-["search","assigneeFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+function clearFilters(){["search","assigneeFilter","funcTeamFilter","campaignFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");allDRsFilterState={statusGroup:null,funcSys:null,types:new Set()};render();}
+["search","assigneeFilter","funcTeamFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
   const headers=["Key","Project","Summary","Status","Assignee","DR Type","DR Disposition","System","Priority","Labels","Updated","Functional System","SFHA Function","Issue Found On","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","FT Campaign","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
