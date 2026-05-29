@@ -35,24 +35,16 @@ def is_fft_aircraft(issue):
                 return True
     return False
 
-# Aircraft filter done in JQL (cf[10123] "in" operator works for select fields)
-# Python-based is_fft_aircraft() was unreliable — REST API sometimes returns customfield_10123
-# as null for older tickets even when the field is populated in the UI.
+# FFT tickets have been migrated to MPPT — only query MPPT going forward
 MPPT_JQL = 'project = MPPT AND issuetype = DR AND statusCategory != Done ORDER BY created DESC'
-FFT_JQL  = ('project = FFT AND issuetype = DR AND statusCategory != Done '
-            'AND cf[10123] in ("N208B", "ZK-MLN (NZ Caravan)") ORDER BY created DESC')
-
-QUERIES = {"MPPT": MPPT_JQL, "FFT": FFT_JQL}
+QUERIES = {"MPPT": MPPT_JQL}
 
 # Closed DRs — minimal fields only, last 18 months, for burndown chart
 CLOSED_FIELDS = ["summary", "created", "resolutiondate", "status", "project", "issuetype",
                  "customfield_10123", "customfield_11935", "customfield_12068"]
 MPPT_CLOSED_JQL = ('project = MPPT AND issuetype = DR AND statusCategory = Done '
                    'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
-FFT_CLOSED_JQL  = ('project = FFT AND issuetype = DR AND statusCategory = Done '
-                   'AND cf[10123] in ("N208B", "ZK-MLN (NZ Caravan)") '
-                   'AND resolutiondate >= "2026-03-01" ORDER BY resolutiondate DESC')
-QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL, "FFT": FFT_CLOSED_JQL}
+QUERIES_CLOSED  = {"MPPT": MPPT_CLOSED_JQL}
 
 def jira_search(jql, fields, start=0, max_results=100):
     url = f"{JIRA_BASE}/rest/api/3/search/jql"
