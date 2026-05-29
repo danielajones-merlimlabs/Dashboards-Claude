@@ -434,6 +434,16 @@ const ASSIGNEES  = ["","Adam Starr","Andrew Lee","Andy LoPiccolo","Aubrey Kalash
 const WHERE_OBS  = ["","System Bench 1","System Bench 2","System Bench 3","Mini Bench","MLN Aircraft","208B Aircraft","Simulation","Other"];
 const CAMPAIGNS  = ["","Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other"];
 const FUNC_SYS   = ["","FCC","ACS","EFIS/IFD","Other"];
+const DR_DISPOSITION = ["",
+  "Fix required - Safety Critical or Cert Required",
+  "Accepted/Mitigated - By Design / Functions as Intended",
+  "Accepted/Mitigated - Documentation Limited",
+  "Accepted/Mitigated - Operational / Procedure Work Around",
+  "Accepted - Residual Risk Carried as OPR",
+  "Not a Deficiency - Test Error / Invalid",
+  "Not a Deficiency - Not Reproduceable",
+  "Not a Deficiency - Out of Scope",
+];
 const SFHA_FUNCS = ["","Automatic Flight Guidance","Autopilot","Pitch Trim Control","Automatic Throttle Control","AFCS Activation and Deactivation","Automated ATC Communication","AFCS ATC Interface","FMS Functions","Display Flight Information","Display AFCS Mode Information","Display Target Information","Display Navigation Information","Display Terrain Awareness","Flight Crew Alerting","Operational Mode Determination","Maintenance"];
 const PROG_APPLIC = ["","STC only","C130","King Air","L-39"];
 const C130_OPR       = ["","No","Yes - no action required","Yes - action required"];
@@ -447,7 +457,9 @@ const COLS=[
   {id:"key",      label:"Key",             group:"core",        type:"static",        minW:95,  sortField:"Key"},
   {id:"summary",  label:"Summary",         group:"core",        type:"static",        minW:250, sortField:"Summary"},
   {id:"status",   label:"Status ✏️",        group:"core",        type:"jira-select",   minW:155, sortField:"Status",   field:"Status",   options:STATUSES},
+  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"drtype",   label:"DR Type ✏️",      group:"core",        type:"jira-select",   minW:155, sortField:"DR Type",                  field:"DR Type",                   options:DR_TYPES},
+  {id:"disposition", label:"DR Disposition 🟢", group:"core",  type:"shared-select", minW:260, shared:true, sfield:"DRDisposition", options:DR_DISPOSITION},
   {id:"funcsys",  label:"Functional System", group:"core",      type:"shared-select", minW:130, shared:true, sfield:"FuncSys",    options:FUNC_SYS},
   {id:"sfhafunc", label:"SFHA Function",     group:"core",      type:"shared-select", minW:200, shared:true, sfield:"SfhaFunc",   options:SFHA_FUNCS},
   {id:"progapplic",label:"Additional Program Applicability", group:"core", type:"shared-select", minW:190, shared:true, sfield:"ProgApplic", options:PROG_APPLIC},
@@ -455,7 +467,6 @@ const COLS=[
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"affAircraft",label:"Affected Aircraft",group:"core",     type:"static",        minW:130, sortField:"Affected Aircraft"},
-  {id:"assignee", label:"Assignee ✏️",     group:"core",        type:"jira-text",     minW:145, sortField:"Assignee",                 field:"Assignee"},
   {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
   {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
   {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
@@ -762,12 +773,12 @@ function clearFilters(){["search","assigneeFilter","whereFilter","campaignFilter
 ["search","assigneeFilter","whereFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
 
 function exportCSV(){
-  const headers=["Key","Project","Summary","Status","DR Type","System","Priority","Assignee","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
+  const headers=["Key","Project","Summary","Status","Assignee","DR Type","DR Disposition","System","Priority","Labels","Updated","Functional System","SFHA Function","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","Where Observed","FT Campaign","Observed Behavior","Expected Behavior","Effect on Crew","Effect on Occupants","Effect on Aircraft","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
   const q=v=>`"${String(v||"").replace(/"/g,'""')}"`;
   const rows=[headers.join(",")];
   DR_DATA.forEach(r=>{
     const k=r.Key;const s=sharedData[k]||{};
-    rows.push([k,r.Project,q(r.Summary),r.Status,r["DR Type"],r["Functional Team (System)"],r.Priority,r.Assignee,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
+    rows.push([k,r.Project,q(r.Summary),r.Status,r.Assignee,r["DR Type"],q(s.DRDisposition||""),r["Functional Team (System)"],r.Priority,r.Labels,r.Updated,s.FuncSys||"",s.SfhaFunc||"",s.ProgApplic||"",s.C130OPRs||"",q(s.Notes||""),getAvi(k,r)?"Yes":"No",s.MissingSortie==="true"?"Yes":"No",s.WhereObserved||"",s.Campaign||"",q(s.ObservedBehavior||""),q(s.ExpectedBehavior||""),q(s.EffectCrew||""),q(s.EffectOccupants||""),q(s.EffectAircraft||""),q(s.ReqAffected||""),s.FccBuildFound||"",s.AccBuildFound||"",s.AvidineBuildFound||"",s.FccBuildFix||"",s.AccBuildFix||"",s.AvidineBuildFix||"",s.AvidyneFixVsChange||"",s.AvidineCR||"",s.PlannedCompletion||"",s.LastEditedBy||"",s.LastEditedAt||""].join(","));
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="DR_tracker_export.csv";a.click();

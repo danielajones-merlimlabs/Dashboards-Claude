@@ -2,7 +2,7 @@ const CHANGELOG_KEY = "__changelog__";
 const CHANGELOG_MAX = 2000;
 
 const FIELD_LABELS = {
-  FuncSys: "Functional System", SfhaFunc: "SFHA Function",
+  FuncSys: "Functional System", SfhaFunc: "SFHA Function", DRDisposition: "DR Disposition",
   ProgApplic: "Additional Program Applicability", Campaign: "FT Campaign Blocking",
   WhereObserved: "Where Observed", ObservedBehavior: "Observed Behavior",
   ExpectedBehavior: "Expected Behavior", EffectCrew: "Effect on Crew",
