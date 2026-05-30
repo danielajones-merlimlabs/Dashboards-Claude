@@ -447,6 +447,17 @@ function saveDirty(){
   document.getElementById("syncAllBtn").style.display = Object.keys(dirty).length > 0 ? "block" : "none";
 }
 
+// ── Jira field cache: persists synced values across refreshes ──
+// Written on successful sync; applied to DR_DATA on load so fields
+// show the last-synced value even before the next full data sync.
+let jiraCache = JSON.parse(localStorage.getItem("dr_jira_cache_v1") || "{}");
+function saveJiraCache(){ localStorage.setItem("dr_jira_cache_v1", JSON.stringify(jiraCache)); }
+// Patch DR_DATA rows with any cached values so all rendering is up to date
+Object.entries(jiraCache).forEach(([k,fields])=>{
+  const row=DR_DATA.find(r=>r.Key===k);
+  if(row) Object.assign(row, fields);
+});
+
 function isAviDefault(r){ return [r.Labels||"",r.Summary||"",r.Components||"",r["Functional Team (System)"]||""].join(" ").toLowerCase().includes("avidyne"); }
 function getAvi(key,r){
   const v = getShared(key, "Avidyne");
@@ -743,6 +754,15 @@ async function syncRow(key,btn){
     const data=await res.json();
     const hasErr=data.results&&data.results.some(r=>r.error);
     if(!hasErr){
+      // Persist synced values so they survive a page refresh
+      if(changes){
+        if(!jiraCache[key]) jiraCache[key]={};
+        Object.assign(jiraCache[key], changes);
+        saveJiraCache();
+        // Also update DR_DATA in memory so filtering/rendering is immediately correct
+        const dataRow=DR_DATA.find(r=>r.Key===key);
+        if(dataRow) Object.assign(dataRow, changes);
+      }
       delete dirty[key];saveDirty();
       btn.textContent="✓";btn.className="sync-row-btn synced";btn.disabled=false;
       document.querySelector(`tr[data-key="${key}"] .dirty-dot`)?.remove();
