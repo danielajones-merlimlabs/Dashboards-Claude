@@ -243,8 +243,8 @@
       <canvas id="chartStatusType"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Safety Critical &amp; Cert Required by Functional Team</div>
-      <div class="chart-sub">Safety Critical + Required for Certification only</div>
+      <div class="chart-title">SC + Cert Required by Functional System</div>
+      <div class="chart-sub">Safety Critical + Required for Certification · stacked by Functional System · click bar to drill in</div>
       <canvas id="chartFuncTeam" style="min-height:380px;max-height:500px"></canvas>
     </div>
   </div>
@@ -1613,11 +1613,24 @@ function renderMetrics(){
 
   // stacked by functional system — all SC+Cert combined
   const CHART_FS = [
-    { key:"FCC",          label:"FCC",        color:"#0891b2" },
-    { key:"ACS",          label:"ACS",        color:"#d97706" },
-    { key:"EFIS/IFD",     label:"EFIS/IFD",   color:"#7c3aed" },
-    { key:"Other",        label:"Other",      color:"#16a34a" },
-    { key:"(unassigned)", label:"unassigned", color:"#94a3b8" },
+    { key:"FCC",                     label:"FCC",                      color:"#0891b2" },
+    { key:"ACC",                     label:"ACC",                      color:"#059669" },
+    { key:"Avidyne IFD",             label:"Avidyne IFD",              color:"#4f46e5" },
+    { key:"Avidyne Vantage Display", label:"Avidyne Vantage Display",  color:"#be185d" },
+    { key:"ACS",                     label:"ACS",                      color:"#d97706" },
+    { key:"EFIS/IFD",                label:"EFIS/IFD",                 color:"#7c3aed" },
+    { key:"Autochecklists",          label:"Autochecklists",           color:"#0f766e" },
+    { key:"CV Systems",              label:"CV Systems",               color:"#0369a1" },
+    { key:"DevOps",                  label:"DevOps",                   color:"#4b5563" },
+    { key:"Emrys",                   label:"Emrys",                    color:"#9333ea" },
+    { key:"FTS",                     label:"FTS",                      color:"#b45309" },
+    { key:"Flight Controls",         label:"Flight Controls",          color:"#65a30d" },
+    { key:"MPX Hardware Rack",       label:"MPX Hardware Rack",        color:"#0c4a6e" },
+    { key:"NLP",                     label:"NLP",                      color:"#e11d48" },
+    { key:"Navigation",              label:"Navigation",               color:"#6b7280" },
+    { key:"Other",                   label:"Other",                    color:"#a16207" },
+    { key:"Takeoff/Landing",         label:"Takeoff/Landing",          color:"#047857" },
+    { key:"(unassigned)",            label:"(unassigned)",             color:"#94a3b8" },
   ];
   const datasets = CHART_FS.map(g=>{
     const data = statuses.map(status=>
@@ -1665,65 +1678,71 @@ function renderMetrics(){
     }
   });
 
-  // ── Stacked Bar: Safety Critical + Cert Required by Functional Team ──
+  // ── Stacked Bar: SC + Cert Required — Status (x) stacked by Functional System ──
   {
-    const teamStatusMap = {};
+    const FS_COLOR_MAP = Object.fromEntries(CHART_FS.map(g => [g.key, g.color]));
+
+    // build status → funcSys → count map
+    const statusFsMap = {};
     scCertDR.forEach(r => {
-      const team = r["Functional Team (System)"] || "(none)";
-      const st   = STATUS_MERGE[r.Status] || r.Status || "Unknown";
-      if(!teamStatusMap[team]) teamStatusMap[team] = {};
-      teamStatusMap[team][st] = (teamStatusMap[team][st]||0) + 1;
+      const st = rowStatus(r);
+      const fs = getFuncSys(r) || "(unassigned)";
+      if(!statusFsMap[st]) statusFsMap[st] = {};
+      statusFsMap[st][fs] = (statusFsMap[st][fs]||0) + 1;
     });
-    // sort teams by total count descending
-    const teamLabels = Object.entries(teamStatusMap)
-      .sort((a,b) => Object.values(b[1]).reduce((s,v)=>s+v,0) - Object.values(a[1]).reduce((s,v)=>s+v,0))
-      .map(([t])=>t);
-    const TEAM_STATUS_COLORS = {
-      "New":"#1565c0","Investigating":"#856404","To-Do":"#5b4ecc","Triaged":"#0369a1",
-      "In progress":"#065f46","In Review":"#0f766e","Ready to Test Fix":"#0d9488",
-      "Blocked":"#9a3412","Need Team Input":"#991b1b","Watch":"#854d0e",
-      "Product Backlog- Future":"#475569","Unknown":"#94a3b8"
-    };
-    const allTeamStatuses = [...new Set(scCertDR.map(r => STATUS_MERGE[r.Status]||r.Status))].filter(Boolean);
-    const teamDatasets = [...STATUS_ORDER.filter(s=>allTeamStatuses.includes(s)), ...allTeamStatuses.filter(s=>!STATUS_ORDER.includes(s))]
-      .map(st => ({
-        label: STATUS_DISPLAY[st]||st,
-        data: teamLabels.map(t => (teamStatusMap[t]||{})[st]||0),
-        backgroundColor: TEAM_STATUS_COLORS[st]||"#94a3b8",
-        borderRadius: 3, borderSkipped: false,
-      })).filter(ds => ds.data.some(v=>v>0));
+
+    // ordered status labels (reuse STATUS_ORDER)
+    const fs2StatusLabels = statuses.map(s => STATUS_DISPLAY[s] || s);
+
+    // collect all funcSys values present in data, ordered by CHART_FS then alphabetical, unassigned last
+    const allFsInData = [...new Set(scCertDR.map(r => getFuncSys(r)||"(unassigned)"))];
+    const fsOrderKeys = CHART_FS.map(g => g.key);
+    const EXTRA_FS_COLORS = ["#0891b2","#059669","#d97706","#7c3aed","#0f766e","#0369a1","#9333ea","#b45309","#65a30d","#e11d48"];
+    let extraIdx2 = 0;
+    const fsColorOf = fs => FS_COLOR_MAP[fs] || EXTRA_FS_COLORS[extraIdx2++ % EXTRA_FS_COLORS.length];
+    const orderedFs = [
+      ...fsOrderKeys.filter(fs => allFsInData.includes(fs)),
+      ...allFsInData.filter(fs => !fsOrderKeys.includes(fs) && fs !== "(unassigned)").sort(),
+      ...(allFsInData.includes("(unassigned)") ? ["(unassigned)"] : []),
+    ];
+
+    const fs2Datasets = orderedFs.map(fs => ({
+      label: fs,
+      data: statuses.map(st => (statusFsMap[st]||{})[fs]||0),
+      backgroundColor: fsColorOf(fs),
+      borderRadius: 3, borderSkipped: false,
+    })).filter(ds => ds.data.some(v=>v>0));
 
     if(_pieChart){ _pieChart.destroy(); }
     _pieChart = new Chart(document.getElementById("chartFuncTeam").getContext("2d"), {
       type: "bar",
-      data: { labels: teamLabels, datasets: teamDatasets },
+      data: { labels: fs2StatusLabels, datasets: fs2Datasets },
       options: {
-        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         onClick(evt, elements){
           if(!elements.length) return;
           const dsIndex  = elements[0].datasetIndex;
           const barIndex = elements[0].index;
-          const team     = teamLabels[barIndex];
-          const status   = teamDatasets[dsIndex].label;
+          const fs       = fs2Datasets[dsIndex].label;
+          const statusRaw  = statuses[barIndex];
+          const statusDisp = fs2StatusLabels[barIndex];
           const rows = scCertDR.filter(r => {
-            const t = r["Functional Team (System)"] || "(none)";
-            const s = STATUS_DISPLAY[STATUS_MERGE[r.Status]||r.Status] || r.Status;
-            return t===team && s===status;
+            const f = getFuncSys(r) || "(unassigned)";
+            return f === fs && rowStatus(r) === statusRaw;
           });
-          openDrillModal(`${team} — ${status} (${rows.length})`, rows);
+          openDrillModal(`${statusDisp} — ${fs} (${rows.length})`, rows);
         },
         onHover(evt, elements){ evt.native.target.style.cursor = elements.length ? "pointer" : "default"; },
         plugins: {
           legend: { position:"bottom", labels:{ font:{size:11}, padding:12, boxWidth:12 } },
           tooltip: { mode:"index", intersect:false,
-            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.x,0) }
+            callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) }
           }
         },
         scales: {
-          x: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"rgba(0,0,0,.06)" } },
-          y: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } }
+          x: { stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
+          y: { stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" } }
         }
       }
     });
