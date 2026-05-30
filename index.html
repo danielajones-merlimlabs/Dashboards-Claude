@@ -249,11 +249,6 @@
     </div>
   </div>
   <div class="chart-card">
-    <div class="chart-title">SC + Cert Required by FT Test Campaign</div>
-    <div class="chart-sub">Safety Critical + Cert Required only · stacked by project</div>
-    <canvas id="chartCampaign" style="max-height:300px"></canvas>
-  </div>
-  <div class="chart-card">
     <div class="chart-title">SC + Cert Required: New vs Closed by Week</div>
     <div class="chart-sub">Safety Critical + Cert Required only · Since March 2026</div>
     <div id="newClosedFsChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
@@ -1585,7 +1580,6 @@ let _metricsChart = null;
 let _newClosedFuncSys = null;
 let _pieChart = null;
 let _burndownChart = null;
-let _campaignChart = null;
 let _funcSysChart = null;
 let _ageBucketsChart = null;
 let _assigneeChart = null;
@@ -1741,36 +1735,6 @@ function renderMetrics(){
     });
   }
 
-
-  // ── Bar: DRs by FT Test Campaign ──
-  {
-    const CAMP_ORDER = ["Takeoff (TO)","Touchdown (TD)","LPV","ACS","Human Factors (HF)","Multiple","Other","(none)"];
-    const campMPPT = {}, campFFT = {};
-    scCertDR.forEach(r => {
-      const camp = getShared(r.Key,"Campaign") || "(none)";
-      if(r.Project==="MPPT") campMPPT[camp] = (campMPPT[camp]||0)+1;
-      else                   campFFT[camp]  = (campFFT[camp]||0)+1;
-    });
-    const campLabels = CAMP_ORDER.filter(c=>(campMPPT[c]||0)+(campFFT[c]||0)>0);
-    if(_campaignChart) _campaignChart.destroy();
-    _campaignChart = new Chart(document.getElementById("chartCampaign").getContext("2d"),{
-      type:"bar",
-      data:{ labels:campLabels, datasets:[
-        { label:"MPPT", data:campLabels.map(c=>campMPPT[c]||0), backgroundColor:"#1d4ed8", borderRadius:3, borderSkipped:false },
-        { label:"FFT",  data:campLabels.map(c=>campFFT[c]||0),  backgroundColor:"#ea580c", borderRadius:3, borderSkipped:false },
-      ]},
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ position:"bottom", labels:{ font:{size:11}, padding:14, boxWidth:12 } },
-          tooltip:{ mode:"index", intersect:false, callbacks:{ footer: items=>"Total: "+items.reduce((s,i)=>s+i.parsed.y,0) } }
-        },
-        scales:{
-          x:{ stacked:true, ticks:{ font:{size:11} }, grid:{ display:false } },
-          y:{ stacked:true, beginAtZero:true, ticks:{ font:{size:11}, stepSize:1 }, grid:{ color:"#e2e5f0" } }
-        }
-      }
-    });
-  }
 
   // ── New vs Closed per week ──
   renderNewVsClosedChart(_newClosedFuncSys);
