@@ -64,6 +64,61 @@ export default {
       return jsonResp({ log });
     }
 
+    // ── GET ?action=triggerSync — dispatch the GitHub Actions sync workflow ──
+    if (request.method === "GET" && action === "triggerSync") {
+      if (!env.GH_DISPATCH_TOKEN) return jsonResp({ error: "GH_DISPATCH_TOKEN not configured" }, 500);
+      const repo = "danielajones-merlimlabs/Dashboards-Claude";
+      const r = await fetch(
+        `https://api.github.com/repos/${repo}/actions/workflows/sync.yml/dispatches`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "DR-Dashboard-Worker",
+          },
+          body: JSON.stringify({ ref: "main" }),
+        }
+      );
+      if (r.ok || r.status === 204) return jsonResp({ triggered: true });
+      const text = await r.text();
+      return jsonResp({ error: `GitHub API error (${r.status}): ${text.slice(0, 300)}` }, 500);
+    }
+
+    // ── GET ?action=getSyncStatus — latest sync workflow run status ──
+    if (request.method === "GET" && action === "getSyncStatus") {
+      if (!env.GH_DISPATCH_TOKEN) return jsonResp({ error: "GH_DISPATCH_TOKEN not configured" }, 500);
+      const repo = "danielajones-merlimlabs/Dashboards-Claude";
+      const r = await fetch(
+        `https://api.github.com/repos/${repo}/actions/workflows/sync.yml/runs?per_page=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "DR-Dashboard-Worker",
+          },
+        }
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const run = data.workflow_runs?.[0];
+        if (run) {
+          return jsonResp({
+            status: run.status,       // "queued" | "in_progress" | "completed"
+            conclusion: run.conclusion, // "success" | "failure" | null
+            updatedAt: run.updated_at,
+            runId: run.id,
+          });
+        }
+        return jsonResp({ status: "unknown" });
+      }
+      const text = await r.text();
+      return jsonResp({ error: `GitHub API error (${r.status}): ${text.slice(0, 300)}` }, 500);
+    }
+
     if (request.method !== "POST") {
       return new Response("Method not allowed", { status: 405 });
     }

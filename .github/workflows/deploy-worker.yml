@@ -26,9 +26,11 @@ jobs:
           secrets: |
             JIRA_EMAIL
             JIRA_TOKEN
+            GH_DISPATCH_TOKEN
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
 
       - name: Patch Worker URL into dashboard
         run: |

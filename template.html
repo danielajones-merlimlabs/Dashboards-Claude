@@ -188,7 +188,7 @@
     <button class="btn success" onclick="syncAllDirty()" id="syncAllBtn" style="display:none">⬆ Sync All to Jira</button>
     <button class="btn primary" onclick="exportCSV()">Export CSV</button>
     <button class="btn primary" onclick="exportPDF()">Export PDF</button>
-    <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong></div>
+    <div class="sync-badge">Jira sync: <strong id="syncDate">—</strong> <button id="syncNowBtn" onclick="triggerDashboardSync()" style="margin-left:8px;padding:3px 10px;font-size:11px;border-radius:5px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-family:inherit" title="Pull latest data from Jira now">🔄 Sync Now</button></div>
   </div>
 </div>
 
@@ -781,6 +781,51 @@ function showToast(msg,ok){const t=document.getElementById("toast");t.textConten
 
 function clearFilters(){["search","assigneeFilter","funcTeamFilter","campaignFilter","sfhaFilter"].forEach(id=>document.getElementById(id).value="");allDRsFilterState={statusGroup:null,funcSys:null,types:new Set()};render();}
 ["search","assigneeFilter","funcTeamFilter","campaignFilter","sfhaFilter"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+
+// ── Sync Now (GitHub Actions on-demand trigger) ───────────────────────────────
+let _syncPollInterval=null;
+async function triggerDashboardSync(){
+  const btn=document.getElementById("syncNowBtn");
+  btn.disabled=true; btn.textContent="⏳ Triggering…";
+  try{
+    const res=await fetch(WORKER_URL+"?action=triggerSync");
+    const data=await res.json();
+    if(data.triggered){
+      btn.textContent="⏳ Running…";
+      // Wait a few seconds for the run to appear in the API, then poll
+      setTimeout(pollSyncStatus,6000);
+    }else{
+      btn.textContent="❌ "+((data.error||"Failed").slice(0,40));
+      setTimeout(()=>{btn.textContent="🔄 Sync Now";btn.disabled=false;},5000);
+    }
+  }catch(e){
+    btn.textContent="❌ Network error";
+    setTimeout(()=>{btn.textContent="🔄 Sync Now";btn.disabled=false;},4000);
+  }
+}
+function pollSyncStatus(){
+  if(_syncPollInterval)clearInterval(_syncPollInterval);
+  _syncPollInterval=setInterval(async()=>{
+    try{
+      const res=await fetch(WORKER_URL+"?action=getSyncStatus");
+      const data=await res.json();
+      const btn=document.getElementById("syncNowBtn");
+      if(data.status==="completed"){
+        clearInterval(_syncPollInterval);_syncPollInterval=null;
+        if(data.conclusion==="success"){
+          btn.textContent="✅ Done! Reloading…";
+          setTimeout(()=>location.reload(),2500);
+        }else{
+          btn.textContent="❌ Sync failed";
+          setTimeout(()=>{btn.textContent="🔄 Sync Now";btn.disabled=false;},5000);
+        }
+      }else{
+        // still queued or in_progress — keep spinner
+        if(btn)btn.textContent="⏳ Running…";
+      }
+    }catch(e){/* ignore transient poll errors */}
+  },12000);
+}
 
 function exportCSV(){
   const headers=["Key","Project","Summary","Status","Assignee","DR Type","DR Disposition","System","Priority","Labels","Updated","Functional System","SFHA Function","Issue Found On","Additional Program Applicability","C130 OPRs Applicability","Notes","Avidyne","Missing Sortie # or Pertinent Info","FT Campaign","Req Affected","FCC Build Found","ACC Build Found","Avidyne Build Found","FCC Fix Build","ACC Fix Build","Avidyne Fix Build","Avidyne Fix vs Change","Avidyne CR","Planned Completion","Last Edited By","Last Edited At"];
