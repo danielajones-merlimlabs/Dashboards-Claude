@@ -626,6 +626,14 @@ function cellForCol(c,r){
   }
 }
 
+function updateSyncBtn(key){
+  const has=dirty[key]&&Object.keys(dirty[key]).length;
+  document.querySelectorAll(`tr[data-key="${key}"] .sync-row-btn`).forEach(btn=>{
+    btn.textContent=has?"↑ Sync":"✓";
+    btn.className="sync-row-btn"+(has?"":" synced");
+  });
+}
+
 function onJiraChange(sel){
   const key=sel.dataset.key,field=sel.dataset.field;
   const row=DR_DATA.find(r=>r.Key===key);const orig=row?row[field]||"":"";
@@ -634,8 +642,7 @@ function onJiraChange(sel){
   else dirty[key][field]=sel.value;
   sel.classList.toggle("changed",field in(dirty[key]||{}));
   saveDirty();updateStats();
-  const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
-  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
+  updateSyncBtn(key);
 }
 
 function onJiraTextBlur(input){
@@ -646,8 +653,7 @@ function onJiraTextBlur(input){
   else dirty[key][field]=input.value.trim();
   input.classList.toggle("changed",field in(dirty[key]||{}));
   saveDirty();updateStats();
-  const btn=document.querySelector(`tr[data-key="${key}"] .sync-row-btn`);
-  if(btn){const has=dirty[key]&&Object.keys(dirty[key]).length;btn.textContent=has?"↑ Sync":"✓";btn.className="sync-row-btn"+(has?"":" synced");}
+  updateSyncBtn(key);
 }
 
 function onSharedChange(sel){ onSharedBlur(sel); }
