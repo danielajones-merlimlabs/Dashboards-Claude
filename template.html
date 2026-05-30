@@ -498,10 +498,6 @@ const COLS=[
   {id:"campaign", label:"FT Campaign Blocking", group:"core",   type:"shared-select", minW:175, shared:true, sfield:"Campaign",   options:CAMPAIGNS},
   {id:"missingSortie",label:"Missing Sortie # or Pertinent Info 🟢", group:"core", type:"shared-checkbox", minW:80, shared:true, sfield:"MissingSortie"},
   {id:"issueFoundOn",label:"Issue Found On ✏️",group:"core",   type:"jira-select",   minW:155, sortField:"Issue Found On", field:"Issue Found On", options:ISSUE_FOUND_ON},
-  {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
-  {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
-  {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
-  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, shared:true, sfield:"Notes"},
   {id:"reqAff",   label:"Requirement Affected 🟢",group:"observation", type:"shared-textarea", minW:180, sfield:"ReqAffected"},
   {id:"fccFound", label:"FCC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"FccBuildFound"},
   {id:"accFound", label:"ACC SW Build Found 🟢",  group:"builds", type:"shared-text", minW:150, sfield:"AccBuildFound"},
@@ -514,6 +510,10 @@ const COLS=[
   {id:"aviCR",         label:"Avidyne CR 🟢",             group:"builds", type:"shared-text",   minW:120, sfield:"AvidineCR",              aviCol:true},
   {id:"planned",  label:"Planned Completion 🟢",  group:"planning", type:"shared-date", minW:140, sfield:"PlannedCompletion"},
   {id:"editedBy", label:"Last Edited By",         group:"planning", type:"static-shared", minW:130},
+  {id:"labels",   label:"Labels",          group:"core",        type:"static",        minW:100, sortField:"Labels"},
+  {id:"updated",  label:"Updated",         group:"core",        type:"static",        minW:82,  sortField:"Updated"},
+  {id:"comments", label:"💬",              group:"core",        type:"static",        minW:42,  sortField:"Comment Count"},
+  {id:"notes",    label:"Notes 🟢",        group:"core",        type:"shared-notes",  minW:170, shared:true, sfield:"Notes"},
 ];
 
 let visibleCols=()=>COLS;
