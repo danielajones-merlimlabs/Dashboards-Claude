@@ -203,6 +203,7 @@
 <div class="tab-nav">
   <button class="tab-btn active" id="tabBtnSCCert" onclick="switchTab('sccert')">SC + Cert Required</button>
   <button class="tab-btn" id="tabBtnNewTriage" onclick="switchTab('newtriage')">New or no DR Type Assigned</button>
+  <button class="tab-btn" id="tabBtnAvidyne" onclick="switchTab('avidyne')">Avidyne DRs</button>
   <button class="tab-btn" id="tabBtnTable" onclick="switchTab('table')">All DRs</button>
   <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">Metrics</button>
   <button class="tab-btn" id="tabBtnHistory" onclick="switchTab('history')">Revision History</button>
@@ -334,6 +335,25 @@
 </div>
 <div class="footer" style="border-top:1px solid var(--border)"><span id="newTriageFooterCount"></span><span>New status or no DR Type assigned</span></div>
 </div><!-- #tab-newtriage -->
+
+<div id="tab-avidyne" style="display:none">
+<div class="sc-topbar">
+  <span style="font-size:11px;font-weight:600;color:var(--text3);white-space:nowrap">Showing OPRs with Avidyne checkbox checked</span>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <select id="avidyneAssigneeFilter" onchange="renderAvidyne()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Assignees</option></select>
+    <select id="avidyneFuncTeamFilter" onchange="renderAvidyne()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none"><option value="">All Functional Teams</option></select>
+    <input type="text" id="avidyneSearch" placeholder="🔍  Search…" oninput="renderAvidyne()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:5px;font-size:12px;font-family:inherit;outline:none;width:185px">
+    <button class="btn" onclick="clearAvidyneFilters()">Clear all</button>
+  </div>
+</div>
+<div id="avidyneStatusCards" class="sc-cards-bar"></div>
+<div id="avidyneFuncSysCards" class="sc-funcsys-bar"></div>
+<div class="table-wrap">
+  <table id="avidyneTable"><thead id="avidyne-thead"></thead><tbody id="avidyne-tbody"></tbody></table>
+  <div class="no-results" id="avidyneNoResults" style="display:none">No Avidyne DRs match.</div>
+</div>
+<div class="footer" style="border-top:1px solid var(--border)"><span id="avidyneFooterCount"></span><span>Avidyne DRs only</span></div>
+</div><!-- #tab-avidyne -->
 
 <div class="footer"><span id="footerCount"></span><span>🟢 Green columns are shared · Changes auto-save on blur</span></div>
 <div id="toast"></div>
@@ -498,7 +518,7 @@ const COLS=[
 
 let visibleCols=()=>COLS;
 let sortCol="Key", sortDir=1, filtered=[];
-let scCertFilteredRows=[], newTriageFilteredRows=[];
+let scCertFilteredRows=[], newTriageFilteredRows=[], avidyneFilteredRows=[];
 let currentTab="sccert";
 let allDRsFilterState = { statusGroup: null, funcSys: null, types: new Set() };
 function toggleAllDRsStatusGroup(key){ allDRsFilterState.statusGroup=allDRsFilterState.statusGroup===key?null:key; render(); }
@@ -508,10 +528,10 @@ function toggleAllDRsType(type){ allDRsFilterState.types.has(type)?allDRsFilterS
 document.getElementById("syncDate").textContent=SYNC_TIMESTAMP;
 
 function uniq(key){return[...new Set(DR_DATA.map(r=>r[key]).filter(Boolean))].sort();}
-[["assigneeFilter","Assignee"],["sccertAssigneeFilter","Assignee"],["newTriageAssigneeFilter","Assignee"]].forEach(([id,key])=>{
+[["assigneeFilter","Assignee"],["sccertAssigneeFilter","Assignee"],["newTriageAssigneeFilter","Assignee"],["avidyneAssigneeFilter","Assignee"]].forEach(([id,key])=>{
   const sel=document.getElementById(id);uniq(key).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;sel.appendChild(o);});
 });
-uniq("Functional Team (System)").forEach(v=>{["funcTeamFilter","sccertFuncTeamFilter","newTriageFuncTeamFilter"].forEach(id=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById(id).appendChild(o);});});
+uniq("Functional Team (System)").forEach(v=>{["funcTeamFilter","sccertFuncTeamFilter","newTriageFuncTeamFilter","avidyneFuncTeamFilter"].forEach(id=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById(id).appendChild(o);});});
 CAMPAIGNS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("campaignFilter").appendChild(o);});
 SFHA_FUNCS.filter(Boolean).forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;document.getElementById("sfhaFilter").appendChild(o);});
 
@@ -862,6 +882,15 @@ function exportPDF(){
     if(a) filterParts.push(`Assignee: ${a}`);
     const s = document.getElementById("newTriageSearch").value.trim();
     if(s) filterParts.push(`Search: "${s}"`);
+  } else if(currentTab === "avidyne"){
+    exportRows = avidyneFilteredRows;
+    tabLabel = "Avidyne DRs";
+    if(avidyneFilterState.statusGroup) filterParts.push("Status: " + avidyneFilterState.statusGroup);
+    if(avidyneFilterState.funcSys) filterParts.push("Func. System: " + avidyneFilterState.funcSys);
+    const a = document.getElementById("avidyneAssigneeFilter").value;
+    if(a) filterParts.push(`Assignee: ${a}`);
+    const s = document.getElementById("avidyneSearch").value.trim();
+    if(s) filterParts.push(`Search: "${s}"`);
   } else {
     exportRows = filtered;
     tabLabel = "All Open DRs";
@@ -935,6 +964,7 @@ if(Object.keys(dirty).length>0)document.getElementById("syncAllBtn").style.displ
 renderHeader();
 renderSCCertHeader();
 renderNewTriageHeader();
+renderAvidyneHeader();
 loadSharedData(); // loads sheet then calls render()
 
 // ── TABS ──
@@ -945,15 +975,18 @@ function switchTab(tab){
   document.getElementById("tab-history").style.display    = tab==="history"    ? "block" : "none";
   document.getElementById("tab-sccert").style.display     = tab==="sccert"     ? "block" : "none";
   document.getElementById("tab-newtriage").style.display  = tab==="newtriage"  ? "block" : "none";
+  document.getElementById("tab-avidyne").style.display    = tab==="avidyne"    ? "block" : "none";
   document.getElementById("tabBtnTable").classList.toggle("active",      tab==="table");
   document.getElementById("tabBtnMetrics").classList.toggle("active",    tab==="metrics");
   document.getElementById("tabBtnHistory").classList.toggle("active",    tab==="history");
   document.getElementById("tabBtnSCCert").classList.toggle("active",     tab==="sccert");
   document.getElementById("tabBtnNewTriage").classList.toggle("active",  tab==="newtriage");
+  document.getElementById("tabBtnAvidyne").classList.toggle("active",    tab==="avidyne");
   if(tab==="metrics")    renderMetrics();
   if(tab==="history")    loadHistory();
   if(tab==="sccert")     renderSCCert();
   if(tab==="newtriage")  renderNewTriage();
+  if(tab==="avidyne")    renderAvidyne();
 }
 
 // ── SC + CERT REQUIRED TAB ──
@@ -1256,6 +1289,126 @@ function clearNewTriageFilters(){
   document.getElementById("newTriageSearch").value="";
   newTriageFilterState = { statusGroup: null, funcSys: null };
   renderNewTriage();
+}
+
+// ── AVIDYNE TAB ───────────────────────────────────────────────────────────────
+let avidyneSortCol="Key", avidyneSortDir=1;
+let avidyneFilterState = { statusGroup: null, funcSys: null };
+
+function renderAvidyneHeader(){
+  const vc=visibleCols();
+  document.getElementById("avidyne-thead").innerHTML=`<tr>${vc.map(c=>{
+    const isAvi=!!c.aviCol;
+    const isShared=!isAvi&&(c.group!=="core"||["notes"].includes(c.id));
+    const cls=isAvi?"avi-col no-sort":isShared?"shared-col no-sort":"";
+    return`<th class="${cls}${c.sortField?" sortable":""}" data-col="${c.sortField||""}" style="min-width:${c.minW}px">${c.label}${c.sortField?'<span class="arr">↕</span>':""}</th>`;
+  }).join("")}</tr>`;
+  document.querySelectorAll("#avidyne-thead th.sortable").forEach(th=>{
+    th.classList.remove("no-sort"); th.style.cursor="pointer";
+    th.addEventListener("click",()=>{
+      const col=th.dataset.col;
+      document.querySelectorAll("#avidyne-thead th").forEach(h=>{h.classList.remove("sorted");const a=h.querySelector(".arr");if(a)a.textContent="↕";});
+      if(avidyneSortCol===col)avidyneSortDir*=-1;else{avidyneSortCol=col;avidyneSortDir=1;}
+      th.classList.add("sorted");th.querySelector(".arr").textContent=avidyneSortDir===1?"↓":"↑";
+      renderAvidyne();
+    });
+  });
+}
+
+function renderAvidyne(){
+  if(!sheetLoaded)return;
+  const search  = document.getElementById("avidyneSearch").value.toLowerCase();
+  const assign  = document.getElementById("avidyneAssigneeFilter").value;
+  const funcTeam= document.getElementById("avidyneFuncTeamFilter").value;
+
+  // base pool: all DRs with Avidyne checkbox checked (or auto-detected)
+  const allAvi = DR_DATA.filter(r => getAvi(r.Key, r));
+
+  // funcSys-filtered pool for status card counts
+  const funcSysPool = avidyneFilterState.funcSys
+    ? (avidyneFilterState.funcSys==="(unassigned)" ? allAvi.filter(r=>!getFuncSys(r)) : allAvi.filter(r=>getFuncSys(r)===avidyneFilterState.funcSys))
+    : allAvi;
+
+  _renderAvidyneStatusCards(funcSysPool);
+  _renderAvidyneFuncSysCards(allAvi);
+
+  const activeGroup = SC_STATUS_GROUPS.find(g => g.key===avidyneFilterState.statusGroup);
+  let rows = allAvi.filter(r=>{
+    if(activeGroup && !activeGroup.statuses.includes(r.Status)) return false;
+    if(avidyneFilterState.funcSys){if(avidyneFilterState.funcSys==="(unassigned)"?getFuncSys(r)!=="":getFuncSys(r)!==avidyneFilterState.funcSys)return false;}
+    if(assign&&r.Assignee!==assign)return false;
+    if(funcTeam&&getFuncTeam(r)!==funcTeam)return false;
+    if(search){const h=[r.Key,r.Summary,r.Assignee,r.Labels,r.Status,r["DR Type"]||"",getShared(r.Key,"Notes")].join(" ").toLowerCase();if(!h.includes(search))return false;}
+    return true;
+  });
+
+  rows.sort((a,b)=>{let av=a[avidyneSortCol]??"",bv=b[avidyneSortCol]??"";if(avidyneSortCol==="Comment Count"){av=+av;bv=+bv;}return av<bv?-avidyneSortDir:av>bv?avidyneSortDir:0;});
+  avidyneFilteredRows = rows;
+
+  const vc=visibleCols();
+  const tbody=document.getElementById("avidyne-tbody");
+  if(!rows.length){tbody.innerHTML="";document.getElementById("avidyneNoResults").style.display="block";}
+  else{
+    document.getElementById("avidyneNoResults").style.display="none";
+    tbody.innerHTML=rows.map(r=>`<tr data-key="${r.Key}" class="${r.Status==="[CLOSED]"?"closed-row":""}">${vc.map(c=>cellForCol(c,r)).join("")}</tr>`).join("");
+  }
+  document.getElementById("avidyneFooterCount").textContent=`${rows.length} of ${allAvi.length} Avidyne DRs`;
+}
+
+function _renderAvidyneStatusCards(pool){
+  const active = avidyneFilterState.statusGroup;
+  const totalStyle = active ? "background:var(--surface2);border-color:var(--border2);color:var(--text2)" : "background:var(--surface2);border-color:var(--accent);color:var(--accent)";
+  let html = `<div class="sc-stat-card${!active?" sc-card-active":""}" style="${totalStyle}" onclick="toggleAvidyneStatusGroup(null)">
+    <div class="sc-stat-num">${pool.length}</div>
+    <div class="sc-stat-label">Total DRs</div>
+  </div>`;
+  SC_STATUS_GROUPS.forEach(g=>{
+    const count = pool.filter(r=>g.statuses.includes(r.Status)).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    const shadow = isOn ? "sc-card-active" : "";
+    html += `<div class="sc-stat-card ${shadow}" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleAvidyneStatusGroup('${g.key}')">
+      <div class="sc-stat-num">${count}</div>
+      <div class="sc-stat-label">${g.label}</div>
+    </div>`;
+  });
+  document.getElementById("avidyneStatusCards").innerHTML = html;
+}
+
+function _renderAvidyneFuncSysCards(pool){
+  const active = avidyneFilterState.funcSys;
+  let html = `<span class="sc-fs-label">Func. System:</span>`;
+  SC_FUNCSYS_GROUPS.forEach(g=>{
+    const count = g.key==="(unassigned)" ? pool.filter(r=>!getFuncSys(r)).length : pool.filter(r=>getFuncSys(r)===g.key).length;
+    if(!count) return;
+    const isOn = active===g.key;
+    const bg  = isOn ? g.color : g.bg;
+    const bdr = isOn ? g.color : g.border;
+    const clr = isOn ? "#fff"  : g.color;
+    html += `<div class="sc-fs-chip" style="background:${bg};border-color:${bdr};color:${clr}" onclick="toggleAvidyneFuncSys('${g.key}')">
+      <div class="sc-fs-num">${count}</div>${g.key==="(unassigned)"?"unassigned":g.key}
+    </div>`;
+  });
+  document.getElementById("avidyneFuncSysCards").innerHTML = html;
+}
+
+function toggleAvidyneStatusGroup(key){
+  avidyneFilterState.statusGroup = avidyneFilterState.statusGroup===key ? null : key;
+  renderAvidyne();
+}
+function toggleAvidyneFuncSys(key){
+  avidyneFilterState.funcSys = avidyneFilterState.funcSys===key ? null : key;
+  renderAvidyne();
+}
+function clearAvidyneFilters(){
+  document.getElementById("avidyneAssigneeFilter").value="";
+  document.getElementById("avidyneFuncTeamFilter").value="";
+  document.getElementById("avidyneSearch").value="";
+  avidyneFilterState = { statusGroup: null, funcSys: null };
+  renderAvidyne();
 }
 
 // ── ALL DRs STAT CARDS ──
